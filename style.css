@@ -18,6 +18,22 @@ h1, h2, h3 {
     text-align: center;
 }
 
+#cloud-section {
+    background: #e8f5e8;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+#cloud-section button {
+    background-color: #FF9800;
+    margin: 0 5px;
+}
+
+#cloud-section button:hover {
+    background-color: #F57C00;
+}
+
 input {
     margin: 5px;
     padding: 8px;
@@ -62,4 +78,9 @@ li {
 .redeem-btn:disabled {
     background-color: #ccc;
     cursor: not-allowed;
+}
+
+#cloud-status {
+    color: #666;
+    font-style: italic;
 }
