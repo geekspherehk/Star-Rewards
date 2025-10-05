@@ -5,10 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>孩子积分奖励系统</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
     <div class="container">
         <h1>孩子积分奖励系统</h1>
+        
+        <!-- 云端备份按钮 -->
+        <div id="cloud-section">
+            <h3>云端备份</h3>
+            <button onclick="backupToCloud()">备份到云端</button>
+            <button onclick="restoreFromCloud()">从云端恢复</button>
+            <p id="cloud-status">未连接</p>
+        </div>
         
         <!-- 积分信息 -->
         <div id="points-section">
@@ -17,6 +27,7 @@
             <input type="text" id="behavior-desc" placeholder="描述行为（例如：完成作业）">
             <input type="number" id="points-change" placeholder="积分变化（正加负扣）">
             <button onclick="addPoints()">记录积分</button>
+            <button onclick="clearData()">清空数据</button>
             <h3>行为日志</h3>
             <ul id="behavior-log"></ul>
         </div>
