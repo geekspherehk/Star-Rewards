@@ -1,94 +1,65 @@
-// 初始化数据
-let points = parseInt(localStorage.getItem('points')) || 0;
-let behaviors = JSON.parse(localStorage.getItem('behaviors')) || [];
-let gifts = JSON.parse(localStorage.getItem('gifts')) || [];
-
-// 更新积分显示
-function updatePointsDisplay() {
-    document.getElementById('current-points').textContent = points;
-    localStorage.setItem('points', points);
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
 }
 
-// 更新行为日志
-function updateBehaviorLog() {
-    const logList = document.getElementById('behavior-log');
-    logList.innerHTML = '';
-    behaviors.forEach(behavior => {
-        const li = document.createElement('li');
-        li.textContent = `${behavior.desc}: ${behavior.change} 分`;
-        logList.appendChild(li);
-    });
-    localStorage.setItem('behaviors', JSON.stringify(behaviors));
+.container {
+    max-width: 600px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
-// 更新礼物列表
-function updateGiftList() {
-    const giftList = document.getElementById('gift-list');
-    giftList.innerHTML = '';
-    gifts.forEach((gift, index) => {
-        const li = document.createElement('li');
-        li.textContent = `${gift.name} - 需要 ${gift.points} 分`;
-        
-        const redeemBtn = document.createElement('button');
-        redeemBtn.className = 'redeem-btn';
-        redeemBtn.textContent = '兑换';
-        redeemBtn.disabled = points < gift.points;
-        redeemBtn.onclick = () => redeemGift(index);
-        
-        li.appendChild(redeemBtn);
-        giftList.appendChild(li);
-    });
-    localStorage.setItem('gifts', JSON.stringify(gifts));
+h1, h2, h3 {
+    text-align: center;
 }
 
-// 添加积分
-function addPoints() {
-    const desc = document.getElementById('behavior-desc').value;
-    const change = parseInt(document.getElementById('points-change').value);
-    
-    if (desc && !isNaN(change)) {
-        points += change;
-        behaviors.push({ desc, change });
-        updatePointsDisplay();
-        updateBehaviorLog();
-        updateGiftList(); // 更新按钮状态
-        document.getElementById('behavior-desc').value = '';
-        document.getElementById('points-change').value = '';
-    } else {
-        alert('请填写描述和积分变化！');
-    }
+input {
+    margin: 5px;
+    padding: 8px;
+    width: 200px;
 }
 
-// 添加礼物
-function addGift() {
-    const name = document.getElementById('gift-name').value;
-    const giftPoints = parseInt(document.getElementById('gift-points').value);
-    
-    if (name && !isNaN(giftPoints)) {
-        gifts.push({ name, points: giftPoints });
-        updateGiftList();
-        document.getElementById('gift-name').value = '';
-        document.getElementById('gift-points').value = '';
-    } else {
-        alert('请填写礼物名称和所需积分！');
-    }
+button {
+    padding: 8px 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
 }
 
-// 兑换礼物
-function redeemGift(index) {
-    const gift = gifts[index];
-    if (points >= gift.points) {
-        points -= gift.points;
-        alert(`恭喜！已兑换 ${gift.name}。剩余积分: ${points}`);
-        gifts.splice(index, 1); // 移除已兑换礼物
-        updatePointsDisplay();
-        updateGiftList();
-    }
+button:hover {
+    background-color: #45a049;
 }
 
-// 页面加载时初始化
-window.onload = () => {
-    updatePointsDisplay();
-    updateBehaviorLog();
-    updateGiftList();
-};
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+li {
+    background: #eee;
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.redeem-btn {
+    background-color: #2196F3;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    cursor: pointer;
+}
+
+.redeem-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
