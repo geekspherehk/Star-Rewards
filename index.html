@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>孩子积分奖励系统</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>孩子积分奖励系统</h1>
+        
+        <!-- 当前积分显示 -->
+        <div id="points-section">
+            <h2>当前积分: <span id="current-points">0</span></h2>
+            <input type="text" id="behavior-desc" placeholder="描述行为（例如：完成作业）">
+            <input type="number" id="points-change" placeholder="积分变化（正加负扣）">
+            <button onclick="addPoints()">记录积分</button>
+            <ul id="behavior-log"></ul>
+        </div>
+        
+        <!-- 礼物列表 -->
+        <div id="gifts-section">
+            <h2>礼物列表</h2>
+            <input type="text" id="gift-name" placeholder="礼物名称">
+            <input type="number" id="gift-points" placeholder="所需积分">
+            <button onclick="addGift()">添加礼物</button>
+            <ul id="gift-list"></ul>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
