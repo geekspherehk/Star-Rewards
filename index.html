@@ -10,12 +10,14 @@
     <div class="container">
         <h1>孩子积分奖励系统</h1>
         
-        <!-- 当前积分显示 -->
+        <!-- 积分信息 -->
         <div id="points-section">
             <h2>当前积分: <span id="current-points">0</span></h2>
+            <h2>累计总积分: <span id="total-points">0</span></h2>
             <input type="text" id="behavior-desc" placeholder="描述行为（例如：完成作业）">
             <input type="number" id="points-change" placeholder="积分变化（正加负扣）">
             <button onclick="addPoints()">记录积分</button>
+            <h3>行为日志</h3>
             <ul id="behavior-log"></ul>
         </div>
         
@@ -26,6 +28,12 @@
             <input type="number" id="gift-points" placeholder="所需积分">
             <button onclick="addGift()">添加礼物</button>
             <ul id="gift-list"></ul>
+        </div>
+        
+        <!-- 已兑换礼物 -->
+        <div id="redeemed-section">
+            <h2>已兑换礼物</h2>
+            <ul id="redeemed-list"></ul>
         </div>
     </div>
     
