@@ -1,7 +1,18 @@
 // Supabase 配置 - 替换为你的实际配置
 const supabaseUrl = 'https://pjxpyppafaxepdzqgume.supabase.co'; // 例如: https://your-project-id.supabase.co
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqeHB5cHBhZmF4ZXBkenFndW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NDk5NzgsImV4cCI6MjA3NTIyNTk3OH0.RmAMBhVeJ-bWHqjdrnHaRMvidR9Jvk5s7TyTPZN3GMM'; // 例如: eyJhb...
-const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+let supabase;
+
+try {
+    if (typeof window.supabase === 'undefined') {
+        throw new Error('Supabase SDK 未加载');
+    }
+    supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    updateCloudStatus('Supabase 初始化成功');
+} catch (error) {
+    console.error('Supabase 初始化失败:', error);
+    updateCloudStatus('云端连接失败，请检查网络或配置');
+}
 
 // 本地数据变量
 let currentPoints = parseInt(localStorage.getItem('currentPoints')) || 0;
@@ -12,13 +23,17 @@ let redeemedGifts = JSON.parse(localStorage.getItem('redeemedGifts')) || [];
 
 // 初始化 Supabase 匿名认证
 async function initAuth() {
+    if (!supabase) {
+        updateCloudStatus('Supabase 未初始化，无法登录');
+        return;
+    }
     try {
         const { data, error } = await supabase.auth.signInAnonymously();
         if (error) throw error;
         updateCloudStatus(`已登录 (UID: ${data.user.id.substring(0, 8)}...)`);
     } catch (error) {
         console.error('匿名登录失败:', error);
-        updateCloudStatus('登录失败');
+        updateCloudStatus('登录失败: ' + error.message);
     }
 }
 
@@ -86,8 +101,12 @@ function updateRedeemedList() {
 
 // 备份到云端
 async function backupToCloud() {
-    const user = supabase.auth.getUser();
-    if (!user.data.user) {
+    if (!supabase) {
+        alert('Supabase 未初始化，无法备份！');
+        return;
+    }
+    const { data: user, error: userError } = await supabase.auth.getUser();
+    if (userError || !user.user) {
         alert('请等待登录...');
         return;
     }
@@ -103,7 +122,7 @@ async function backupToCloud() {
         const { error } = await supabase
             .from('user_data')
             .upsert(
-                { uid: user.data.user.id, data },
+                { uid: user.user.id, data },
                 { onConflict: ['uid'] }
             );
         if (error) throw error;
@@ -117,8 +136,12 @@ async function backupToCloud() {
 
 // 从云端恢复
 async function restoreFromCloud() {
-    const user = supabase.auth.getUser();
-    if (!user.data.user) {
+    if (!supabase) {
+        alert('Supabase 未初始化，无法恢复！');
+        return;
+    }
+    const { data: user, error: userError } = await supabase.auth.getUser();
+    if (userError || !user.user) {
         alert('请等待登录...');
         return;
     }
@@ -126,7 +149,7 @@ async function restoreFromCloud() {
         const { data, error } = await supabase
             .from('user_data')
             .select('data')
-            .eq('uid', user.data.user.id)
+            .eq('uid', user.user.id)
             .single();
         if (error) throw error;
         if (data) {
@@ -225,9 +248,16 @@ function clearData() {
 
 // 页面加载时初始化
 window.onload = async () => {
+    if (!supabase) {
+        updatePointsDisplay();
+        updateBehaviorLog();
+        updateGiftList();
+        updateRedeemedList();
+        return;
+    }
     await initAuth();
-    const user = supabase.auth.getUser();
-    if (user.data.user) {
+    const { data: user, error } = await supabase.auth.getUser();
+    if (user && !error) {
         await restoreFromCloud(); // 尝试从云端加载
     } else {
         updatePointsDisplay();
