@@ -4,46 +4,101 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>孩子积分奖励系统</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>孩子积分奖励系统</h1>
+        <h1>🌟 孩子积分奖励系统</h1>
+        
+        <!-- 用户认证区域 -->
+        <div id="auth-section">
+            <div id="auth-forms">
+                <!-- 登录表单 -->
+                <div id="login-form" class="auth-form">
+                    <h3>🔐 用户登录</h3>
+                    <input type="email" id="login-email" placeholder="邮箱地址">
+                    <input type="password" id="login-password" placeholder="密码">
+                    <button onclick="handleSignIn()">登录</button>
+                    <p>还没有账户？<a href="#" onclick="toggleAuthForm('register')">立即注册</a></p>
+                </div>
+                
+                <!-- 注册表单 -->
+                <div id="register-form" class="auth-form" style="display: none;">
+                    <h3>📝 用户注册</h3>
+                    <input type="email" id="register-email" placeholder="邮箱地址">
+                    <input type="password" id="register-password" placeholder="密码（至少6位）">
+                    <button onclick="handleSignUp()">注册</button>
+                    <p>已有账户？<a href="#" onclick="toggleAuthForm('login')">立即登录</a></p>
+                </div>
+                
+                <!-- 已登录状态显示 -->
+                <div id="logged-in" class="auth-form" style="display: none;">
+                    <h3>👤 用户面板</h3>
+                    <p>欢迎，<span id="user-email"></span></p>
+                    <button onclick="signOut()">退出登录</button>
+                </div>
+            </div>
+        </div>
         
         <!-- 云端备份按钮 -->
         <div id="cloud-section">
-            <h3>云端备份</h3>
-            <button onclick="backupToCloud()">备份到云端</button>
-            <button onclick="restoreFromCloud()">从云端恢复</button>
-            <p id="cloud-status">未连接</p>
+            <h3>☁️ 云端备份</h3>
+            <div class="cloud-buttons">
+                <button onclick="backupToCloud()">📤 备份到云端</button>
+                <button onclick="restoreFromCloud()">📥 从云端恢复</button>
+            </div>
+            <p id="cloud-status">📡 未连接</p>
         </div>
         
         <!-- 积分信息 -->
         <div id="points-section">
-            <h2>当前积分: <span id="current-points">0</span></h2>
-            <h2>累计总积分: <span id="total-points">0</span></h2>
-            <input type="text" id="behavior-desc" placeholder="描述行为（例如：完成作业）">
-            <input type="number" id="points-change" placeholder="积分变化（正加负扣）">
-            <button onclick="addPoints()">记录积分</button>
-            <button onclick="clearData()">清空数据</button>
-            <h3>行为日志</h3>
+            <div class="points-display">
+                <div class="points-card">
+                    <div class="points-value" id="current-points">0</div>
+                    <div class="points-label">当前积分</div>
+                </div>
+                <div class="points-card">
+                    <div class="points-value" id="total-points">0</div>
+                    <div class="points-label">累计总积分</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <h3>📝 记录行为积分</h3>
+                <div class="form-row">
+                    <input type="text" id="behavior-desc" placeholder="描述行为（例如：完成作业）">
+                    <input type="number" id="points-change" placeholder="积分变化（正加负扣）">
+                </div>
+                <div class="button-group">
+                    <button class="add-points-btn" onclick="addPoints()">➕ 记录积分</button>
+                    <button class="clear-data-btn" onclick="clearData()">🗑️ 清空数据</button>
+                </div>
+            </div>
+            
+            <h3>📋 行为日志</h3>
             <ul id="behavior-log"></ul>
         </div>
         
         <!-- 礼物列表 -->
         <div id="gifts-section">
-            <h2>礼物列表</h2>
-            <input type="text" id="gift-name" placeholder="礼物名称">
-            <input type="number" id="gift-points" placeholder="所需积分">
-            <button onclick="addGift()">添加礼物</button>
+            <div class="form-group">
+                <h3>🎁 添加礼物</h3>
+                <div class="form-row">
+                    <input type="text" id="gift-name" placeholder="礼物名称">
+                    <input type="number" id="gift-points" placeholder="所需积分">
+                </div>
+                <button class="add-gift-btn" onclick="addGift()">➕ 添加礼物</button>
+            </div>
+            
+            <h3>🎉 礼物列表</h3>
             <ul id="gift-list"></ul>
         </div>
         
         <!-- 已兑换礼物 -->
         <div id="redeemed-section">
-            <h2>已兑换礼物</h2>
+            <h3>🏆 已兑换礼物</h3>
             <ul id="redeemed-list"></ul>
         </div>
     </div>
