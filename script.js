@@ -502,7 +502,11 @@ function redeemGift(index) {
 
 function clearData() {
     if (confirm('⚠️ 确定要清空所有数据吗？此操作不可恢复！\n\n（本地数据将被清空，云端数据需手动备份）')) {
-        localStorage.clear();
+        localStorage.removeItem('currentPoints');
+        localStorage.removeItem('totalPoints');
+        localStorage.removeItem('behaviors');
+        localStorage.removeItem('gifts');
+        localStorage.removeItem('redeemedGifts');
         currentPoints = 0;
         totalPoints = 0;
         behaviors = [];
@@ -512,7 +516,7 @@ function clearData() {
         updateBehaviorLog();
         updateGiftList();
         updateRedeemedList();
-        
+
         // 显示成功消息
         showTemporaryMessage('🗑️ 所有数据已清空', 'success');
     }
