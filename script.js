@@ -214,7 +214,9 @@ function updateGiftList() {
         redeemBtn.className = 'redeem-btn';
         redeemBtn.textContent = '🎁 兑换';
         redeemBtn.disabled = currentPoints < gift.points;
-        redeemBtn.onclick = () => redeemGift(index);
+        redeemBtn.onclick = async () => {
+            await redeemGift(index);
+        };
         
         li.appendChild(redeemBtn);
         giftList.appendChild(li);
@@ -259,22 +261,82 @@ async function backupToCloud() {
         alert('请等待登录...');
         return;
     }
-    const data = {
-        currentPoints,
-        totalPoints,
-        behaviors,
-        gifts,
-        redeemedGifts,
-        lastBackup: new Date().toISOString()
-    };
+    
     try {
-        const { error } = await supabase
-            .from('user_data')
+        // 更新积分信息到 profiles 表
+        const { error: profileError } = await supabase
+            .from('profiles')
             .upsert(
-                { uid: user.user.id, data },
-                { onConflict: ['uid'] }
+                { 
+                    id: user.user.id, 
+                    current_points: currentPoints,
+                    total_points: totalPoints,
+                    updated_at: new Date().toISOString()
+                },
+                { onConflict: ['id'] }
             );
-        if (error) throw error;
+        
+        if (profileError) throw profileError;
+        
+        // 先删除用户现有的 gifts 数据，然后重新插入
+        const { error: deleteGiftsError } = await supabase
+            .from('gifts')
+            .delete()
+            .eq('user_id', user.user.id);
+        
+        if (deleteGiftsError) throw deleteGiftsError;
+        
+        // 插入新的 gifts 数据
+        if (gifts.length > 0) {
+            const giftsData = gifts.map(gift => {
+                // 如果礼物对象包含id，说明是从云端恢复的，需要排除id字段
+                if (gift.id) {
+                    return {
+                        user_id: user.user.id,
+                        name: gift.name,
+                        points: gift.points
+                    };
+                } else {
+                    // 否则，是本地添加的礼物，直接使用原对象
+                    return {
+                        user_id: user.user.id,
+                        name: gift.name,
+                        points: gift.points
+                    };
+                }
+            });
+            
+            const { error: insertGiftsError } = await supabase
+                .from('gifts')
+                .insert(giftsData);
+            
+            if (insertGiftsError) throw insertGiftsError;
+        }
+        
+        // 先删除用户现有的 redeemed_gifts 数据，然后重新插入
+        const { error: deleteRedeemedError } = await supabase
+            .from('redeemed_gifts')
+            .delete()
+            .eq('user_id', user.user.id);
+        
+        if (deleteRedeemedError) throw deleteRedeemedError;
+        
+        // 插入新的 redeemed_gifts 数据
+        if (redeemedGifts.length > 0) {
+            const redeemedData = redeemedGifts.map(gift => ({
+                user_id: user.user.id,
+                name: gift.name,
+                points: gift.points,
+                redeem_date: gift.redeemDate
+            }));
+            
+            const { error: insertRedeemedError } = await supabase
+                .from('redeemed_gifts')
+                .insert(redeemedData);
+            
+            if (insertRedeemedError) throw insertRedeemedError;
+        }
+        
         showTemporaryMessage('📤 数据备份成功！', 'success');
         updateCloudStatus('备份成功');
     } catch (error) {
@@ -296,68 +358,70 @@ async function restoreFromCloud() {
         showTemporaryMessage('⏳ 请等待登录...', 'error');
         return;
     }
+    
     try {
-        const { data, error } = await supabase
-            .from('user_data')
-            .select('data')
-            .eq('uid', user.user.id)
+        // 从 profiles 表获取积分信息
+        const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('current_points, total_points')
+            .eq('id', user.user.id)
             .single();
         
         // 特别处理 PGRST116 错误（无数据）
-        if (error && error.code === 'PGRST116') {
+        if (profileError && profileError.code === 'PGRST116') {
             showTemporaryMessage('☁️ 云端无数据，使用本地数据', 'success');
             updateCloudStatus('无云端数据');
             return;
         }
         
-        if (error) throw error;
-        if (data) {
-            // 解析数据，处理可能的字符串格式
-            let parsedData = data.data;
-            if (typeof data.data === 'string') {
-                try {
-                    parsedData = JSON.parse(data.data);
-                } catch (parseError) {
-                    console.error('JSON解析失败:', parseError);
-                    throw new Error('云端数据格式不正确');
-                }
-            }
-            
-            // 验证数据结构
-            if (typeof parsedData !== 'object' || parsedData === null) {
-                throw new Error('云端数据格式不正确');
-            }
-            
-            // 确保数组字段存在且为数组类型
-            if (!Array.isArray(parsedData.behaviors)) parsedData.behaviors = [];
-            if (!Array.isArray(parsedData.gifts)) parsedData.gifts = [];
-            if (!Array.isArray(parsedData.redeemedGifts)) parsedData.redeemedGifts = [];
-            
-            // 恢复数据
-            currentPoints = parsedData.currentPoints || 0;
-            totalPoints = parsedData.totalPoints || 0;
-            behaviors = parsedData.behaviors;
-            gifts = parsedData.gifts;
-            redeemedGifts = parsedData.redeemedGifts;
-            
-            // 保存到本地
-            saveToLocalStorage('currentPoints', currentPoints);
-            saveToLocalStorage('totalPoints', totalPoints);
-            saveToLocalStorage('behaviors', behaviors);
-            saveToLocalStorage('gifts', gifts);
-            saveToLocalStorage('redeemedGifts', redeemedGifts);
-            
-            // 更新显示
-            updatePointsDisplay();
-            updateBehaviorLog();
-            updateGiftList();
-            updateRedeemedList();
-            
-            showTemporaryMessage('📥 数据恢复成功！', 'success');
-            updateCloudStatus('恢复成功');
-        } else {
-            showTemporaryMessage('☁️ 云端无数据！', 'error');
-        }
+        if (profileError) throw profileError;
+        
+        // 从 gifts 表获取礼物信息
+        const { data: giftsData, error: giftsError } = await supabase
+            .from('gifts')
+            .select('id, name, points')
+            .eq('user_id', user.user.id);
+        
+        if (giftsError) throw giftsError;
+        
+        // 从 redeemed_gifts 表获取已兑换礼物信息
+        const { data: redeemedData, error: redeemedError } = await supabase
+            .from('redeemed_gifts')
+            .select('name, points, redeem_date')
+            .eq('user_id', user.user.id);
+        
+        if (redeemedError) throw redeemedError;
+        
+        // 恢复数据
+        currentPoints = profileData?.current_points || 0;
+        totalPoints = profileData?.total_points || 0;
+        gifts = giftsData || [];
+        redeemedGifts = redeemedData || [];
+        
+        // 更新UI
+        updatePointsDisplay();
+        updateGiftList();
+        updateRedeemedList();
+        
+        // behaviors 数据仍然从 localStorage 获取，因为它没有存储在数据库中
+        const savedBehaviors = localStorage.getItem('behaviors');
+        behaviors = savedBehaviors ? JSON.parse(savedBehaviors) : [];
+        
+        // 保存到本地
+        saveToLocalStorage('currentPoints', currentPoints);
+        saveToLocalStorage('totalPoints', totalPoints);
+        saveToLocalStorage('behaviors', behaviors);
+        saveToLocalStorage('gifts', gifts);
+        saveToLocalStorage('redeemedGifts', redeemedGifts);
+        
+        // 更新显示
+        updatePointsDisplay();
+        updateBehaviorLog();
+        updateGiftList();
+        updateRedeemedList();
+        
+        showTemporaryMessage('📥 数据恢复成功！', 'success');
+        updateCloudStatus('恢复成功');
     } catch (error) {
         console.error('恢复失败:', error);
         showTemporaryMessage(`🔄 恢复失败: ${error.message}`, 'error');
@@ -366,7 +430,7 @@ async function restoreFromCloud() {
 }
 
 // 添加积分
-function addPoints() {
+async function addPoints() {
     const desc = document.getElementById('behavior-desc').value.trim();
     const change = parseInt(document.getElementById('points-change').value);
     
@@ -397,6 +461,31 @@ function addPoints() {
     updateBehaviorLog();
     updateGiftList();
     
+    // 如果用户已登录，同时更新云端数据
+    if (supabase) {
+        const { data: user, error: userError } = await supabase.auth.getUser();
+        if (!userError && user.user) {
+            try {
+                const { error } = await supabase
+                    .from('profiles')
+                    .upsert(
+                        { 
+                            id: user.user.id, 
+                            current_points: currentPoints,
+                            updated_at: new Date().toISOString()
+                        },
+                        { onConflict: ['id'] }
+                    );
+                
+                if (error) throw error;
+                updateCloudStatus('积分已同步到云端');
+            } catch (error) {
+                console.error('同步积分到云端失败:', error);
+                updateCloudStatus('同步失败: ' + error.message);
+            }
+        }
+    }
+    
     // 清空输入并给出反馈
     document.getElementById('behavior-desc').value = '';
     document.getElementById('points-change').value = '';
@@ -410,7 +499,7 @@ function addPoints() {
 }
 
 // 添加礼物
-function addGift() {
+async function addGift() {
     const name = document.getElementById('gift-name').value.trim();
     const giftPoints = parseInt(document.getElementById('gift-points').value);
     
@@ -426,8 +515,43 @@ function addGift() {
         return;
     }
     
-    gifts.push({ name, points: giftPoints });
-    updateGiftList();
+    // 如果用户已登录，同时更新云端数据
+    if (supabase) {
+        const { data: user, error: userError } = await supabase.auth.getUser();
+        if (!userError && user.user) {
+            try {
+                const { data, error } = await supabase
+                    .from('gifts')
+                    .insert({
+                        user_id: user.user.id,
+                        name: name,
+                        points: giftPoints
+                    })
+                    .select();
+                
+                if (error) throw error;
+                
+                // 将包含id的完整礼物对象添加到数组中
+                gifts.push(data[0]);
+                updateGiftList();
+                updateCloudStatus('礼物已同步到云端');
+            } catch (error) {
+                console.error('同步礼物到云端失败:', error);
+                updateCloudStatus('同步失败: ' + error.message);
+                // 如果云端同步失败，仍然在本地添加礼物
+                gifts.push({ name, points: giftPoints });
+                updateGiftList();
+            }
+        } else {
+            // 用户未登录，只在本地添加
+            gifts.push({ name, points: giftPoints });
+            updateGiftList();
+        }
+    } else {
+        // Supabase未初始化，只在本地添加
+        gifts.push({ name, points: giftPoints });
+        updateGiftList();
+    }
     
     // 清空输入并给出反馈
     document.getElementById('gift-name').value = '';
@@ -476,51 +600,87 @@ function showTemporaryMessage(message, type) {
 }
 
 // 兑换礼物
-function redeemGift(index) {
+async function redeemGift(index) {
     const gift = gifts[index];
-    if (currentPoints >= gift.points) {
-        // 确认兑换
-        if (!confirm(`确定要兑换 "${gift.name}" 吗？这将扣除 ${gift.points} 分`)) {
-            return;
-        }
-        
+    if (!gift) {
+        showTemporaryMessage('❌ 礼物不存在！', 'error');
+        return;
+    }
+
+    if (currentPoints < gift.points) {
+        showTemporaryMessage('❌ 积分不足！', 'error');
+        return;
+    }
+
+    // 确认兑换
+    const confirmed = confirm(`确定要兑换 "${gift.name}" 吗？这将消耗 ${gift.points} 分。`);
+    if (!confirmed) return;
+
+    try {
+        // 更新本地数据
         currentPoints -= gift.points;
-        const redeemDate = new Date().toLocaleString('zh-CN');
-        redeemedGifts.push({ name: gift.name, points: gift.points, redeemDate });
+        const now = new Date().toLocaleString('zh-CN');
+        redeemedGifts.push({
+            name: gift.name,
+            points: gift.points,
+            redeemDate: now
+        });
+
+        // 从本地礼物列表中移除
         gifts.splice(index, 1);
-        
+
+        // 更新UI
         updatePointsDisplay();
         updateGiftList();
         updateRedeemedList();
-        
-        // 显示成功消息
-        showTemporaryMessage(`🎉 恭喜！成功兑换 "${gift.name}"`, 'success');
-    } else {
-        showTemporaryMessage(`😢 积分不足，无法兑换 "${gift.name}"`, 'error');
+        saveAllData();
+
+        // 如果用户已登录，同时更新云端数据
+        if (supabase) {
+            const { data: user, error: userError } = await supabase.auth.getUser();
+            if (!userError && user.user) {
+                try {
+                    // 使用事务处理确保数据一致性
+                    const { error: transactionError } = await supabase.rpc('execute_transaction', {
+                        user_id_param: user.user.id,
+                        gift_id_param: gift.id,
+                        gift_name_param: gift.name,
+                        gift_points_param: gift.points,
+                        redeem_date_param: now,
+                        current_points_param: currentPoints
+                    });
+
+                    if (transactionError) throw transactionError;
+                    updateCloudStatus('兑换已同步到云端');
+                } catch (error) {
+                    console.error('同步兑换到云端失败:', error);
+                    updateCloudStatus('同步失败: ' + error.message);
+                    
+                    // 回滚本地更改
+                    currentPoints += gift.points;
+                    gifts.splice(index, 0, gift); // 将礼物重新插入到原来的位置
+                    redeemedGifts.pop(); // 移除刚刚添加的兑换记录
+                    
+                    // 更新UI
+                    updatePointsDisplay();
+                    updateGiftList();
+                    updateRedeemedList();
+                    saveAllData();
+                    
+                    showTemporaryMessage(`❌ 兑换失败，请重试: ${error.message}`, 'error');
+                    return;
+                }
+            }
+        }
+
+        showTemporaryMessage('🎉 兑换成功！', 'success');
+    } catch (error) {
+        console.error('兑换失败:', error);
+        showTemporaryMessage(`❌ 兑换失败: ${error.message}`, 'error');
     }
 }
 
-function clearData() {
-    if (confirm('⚠️ 确定要清空所有数据吗？此操作不可恢复！\n\n（本地数据将被清空，云端数据需手动备份）')) {
-        localStorage.removeItem('currentPoints');
-        localStorage.removeItem('totalPoints');
-        localStorage.removeItem('behaviors');
-        localStorage.removeItem('gifts');
-        localStorage.removeItem('redeemedGifts');
-        currentPoints = 0;
-        totalPoints = 0;
-        behaviors = [];
-        gifts = [];
-        redeemedGifts = [];
-        updatePointsDisplay();
-        updateBehaviorLog();
-        updateGiftList();
-        updateRedeemedList();
 
-        // 显示成功消息
-        showTemporaryMessage('🗑️ 所有数据已清空', 'success');
-    }
-}
 
 // 表单验证和用户体验增强
 function validatePointsInput(inputElement) {

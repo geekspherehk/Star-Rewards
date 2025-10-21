@@ -1,0 +1,84 @@
+-- 1. 创建 profiles 表，用于存储用户的积分等信息
+CREATE TABLE public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  updated_at TIMESTAMPTZ,
+  current_points INT DEFAULT 0,
+  total_points INT DEFAULT 0
+);
+
+-- 当 auth.users 表中新增用户时，自动在 profiles 表中创建一条记录
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $
+BEGIN
+  INSERT INTO public.profiles (id, total_points)
+  VALUES (new.id, 0);
+  RETURN new;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- 2. 创建 gifts 表
+CREATE TABLE public.gifts (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  points INT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. 创建 redeemed_gifts 表
+CREATE TABLE public.redeemed_gifts (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  points INT NOT NULL,
+  redeem_date TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. 为新表启用行级安全 (RLS - Row Level Security)
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gifts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.redeemed_gifts ENABLE ROW LEVEL SECURITY;
+
+-- 5. 创建 RLS 策略，确保用户只能访问自己的数据
+-- For profiles table
+CREATE POLICY "用户可以查看和修改自己的 profile" ON public.profiles
+  FOR ALL USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+-- For gifts table
+CREATE POLICY "用户可以管理自己的 gifts" ON public.gifts
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- For redeemed_gifts table
+CREATE POLICY "用户可以管理自己的 redeemed_gifts" ON public.redeemed_gifts
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- 6. 创建存储过程处理兑换礼物的事务
+CREATE OR REPLACE FUNCTION public.execute_transaction(
+  user_id_param UUID,
+  gift_id_param BIGINT,
+  gift_name_param TEXT,
+  gift_points_param INT,
+  redeem_date_param TIMESTAMPTZ,
+  current_points_param INT
+)
+RETURNS VOID AS $
+BEGIN
+  -- 删除gifts表中的记录
+  DELETE FROM public.gifts 
+  WHERE id = gift_id_param AND user_id = user_id_param;
+
+  -- 添加到redeemed_gifts表
+  INSERT INTO public.redeemed_gifts (user_id, name, points, redeem_date)
+  VALUES (user_id_param, gift_name_param, gift_points_param, redeem_date_param);
+
+  -- 更新profiles表中的积分
+  UPDATE public.profiles 
+  SET current_points = current_points_param, updated_at = NOW()
+  WHERE id = user_id_param;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
