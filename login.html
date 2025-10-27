@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>孩子积分奖励系统 - 登录</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        // 页面加载日志
+        console.log('login.html页面开始加载...');
+        window.addEventListener('load', function() {
+            console.log('login.html页面加载完成');
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>🌟 孩子积分奖励系统</h1>
+        
+        <!-- 用户认证区域 -->
+        <div id="auth-section">
+            <div id="auth-forms">
+                <!-- 登录表单 -->
+                <div id="login-form" class="auth-form">
+                    <h3>🔐 用户登录</h3>
+                    <input type="email" id="login-email" placeholder="邮箱地址">
+                    <input type="password" id="login-password" placeholder="密码">
+                    <button onclick="handleSignIn()">登录</button>
+                    <p>还没有账户？<a href="#" onclick="toggleAuthForm('register')">立即注册</a></p>
+                </div>
+                
+                <!-- 注册表单 -->
+                <div id="register-form" class="auth-form" style="display: none;">
+                    <h3>📝 用户注册</h3>
+                    <input type="email" id="register-email" placeholder="邮箱地址">
+                    <input type="password" id="register-password" placeholder="密码（至少6位）">
+                    <button onclick="handleSignUp()">注册</button>
+                    <p>已有账户？<a href="#" onclick="toggleAuthForm('login')">立即登录</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="login.js"></script>
+</body>
+</html>
