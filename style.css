@@ -100,16 +100,7 @@ h3 {
     transform: translateY(0);
 }
 
-#cloud-status {
-    text-align: center;
-    color: #2e7d32;
-    font-style: italic;
-    font-weight: 500;
-    padding: 10px;
-    background: rgba(255,255,255,0.7);
-    border-radius: 5px;
-    margin-top: 10px;
-}
+
 
 /* 用户认证区域样式 */
 #auth-section {
@@ -203,6 +194,23 @@ h3 {
     margin-bottom: 25px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.05);
     text-align: center;
+}
+
+#login-status-card {
+    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+    margin-bottom: 25px;
+}
+
+#login-status-card .points-value {
+    color: #9C27B0;
+}
+
+#login-status-card .points-card {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    min-width: 200px;
 }
 
 .points-card {

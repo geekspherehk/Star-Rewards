@@ -7,6 +7,13 @@
     <link rel="stylesheet" href="style.css">
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        // 页面加载日志
+        console.log('index.html页面开始加载...');
+        window.addEventListener('load', function() {
+            console.log('index.html页面加载完成');
+        });
+    </script>
 </head>
 <body>
     <div class="container">
@@ -15,24 +22,6 @@
         <!-- 用户认证区域 -->
         <div id="auth-section">
             <div id="auth-forms">
-                <!-- 登录表单 -->
-                <div id="login-form" class="auth-form">
-                    <h3>🔐 用户登录</h3>
-                    <input type="email" id="login-email" placeholder="邮箱地址">
-                    <input type="password" id="login-password" placeholder="密码">
-                    <button onclick="handleSignIn()">登录</button>
-                    <p>还没有账户？<a href="#" onclick="toggleAuthForm('register')">立即注册</a></p>
-                </div>
-                
-                <!-- 注册表单 -->
-                <div id="register-form" class="auth-form" style="display: none;">
-                    <h3>📝 用户注册</h3>
-                    <input type="email" id="register-email" placeholder="邮箱地址">
-                    <input type="password" id="register-password" placeholder="密码（至少6位）">
-                    <button onclick="handleSignUp()">注册</button>
-                    <p>已有账户？<a href="#" onclick="toggleAuthForm('login')">立即登录</a></p>
-                </div>
-                
                 <!-- 已登录状态显示 -->
                 <div id="logged-in" class="auth-form" style="display: none;">
                     <h3>👤 用户面板</h3>
@@ -42,14 +31,12 @@
             </div>
         </div>
         
-        <!-- 云端备份按钮 -->
-        <div id="cloud-section">
-            <h3>☁️ 云端备份</h3>
-            <div class="cloud-buttons">
-                <button class="backup-btn" onclick="backupToCloud()">📤 备份到云端</button>
-                <button class="restore-btn" onclick="restoreFromCloud()">📥 从云端恢复</button>
+        <!-- 登录状态信息 -->
+        <div class="points-display" id="login-status-card" style="display: none;">
+            <div class="points-card">
+                <div class="points-value" id="login-status-text">未登录</div>
+                <div class="points-label">登录状态</div>
             </div>
-            <p id="cloud-status">📡 未连接</p>
         </div>
         
         <!-- 积分信息 -->

@@ -33,16 +33,27 @@ CREATE TABLE public.gifts (
 CREATE TABLE public.redeemed_gifts (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  gift_id BIGINT,
   name TEXT NOT NULL,
   points INT NOT NULL,
   redeem_date TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 4. 创建 behaviors 表，用于存储用户的行为记录
+CREATE TABLE public.behaviors (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  description TEXT NOT NULL,
+  points INT NOT NULL,
+  timestamp TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 4. 为新表启用行级安全 (RLS - Row Level Security)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gifts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.redeemed_gifts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.behaviors ENABLE ROW LEVEL SECURITY;
 
 -- 5. 创建 RLS 策略，确保用户只能访问自己的数据
 -- For profiles table
@@ -55,6 +66,10 @@ CREATE POLICY "用户可以管理自己的 gifts" ON public.gifts
 
 -- For redeemed_gifts table
 CREATE POLICY "用户可以管理自己的 redeemed_gifts" ON public.redeemed_gifts
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- For behaviors table
+CREATE POLICY "用户可以管理自己的 behaviors" ON public.behaviors
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- 6. 创建存储过程处理兑换礼物的事务
@@ -73,8 +88,8 @@ BEGIN
   WHERE id = gift_id_param AND user_id = user_id_param;
 
   -- 添加到redeemed_gifts表
-  INSERT INTO public.redeemed_gifts (user_id, name, points, redeem_date)
-  VALUES (user_id_param, gift_name_param, gift_points_param, redeem_date_param);
+  INSERT INTO public.redeemed_gifts (user_id, gift_id, name, points, redeem_date)
+  VALUES (user_id_param, gift_id_param, gift_name_param, gift_points_param, redeem_date_param);
 
   -- 更新profiles表中的积分
   UPDATE public.profiles 
