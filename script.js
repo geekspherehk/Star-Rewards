@@ -75,6 +75,9 @@ let behaviors = [];
 let gifts = [];
 let redeemedGifts = [];
 
+// 当前登录用户信息
+let currentUser = null;
+
 // // 页面加载时从数据库获取数据
 // window.addEventListener('DOMContentLoaded', async () => {
 //     console.log('页面开始加载...');
@@ -262,6 +265,7 @@ async function signOut() {
         console.log('登出成功，清空本地数据...');
         // 清空本地数据
         localStorage.clear();
+        sessionStorage.clear();
         currentPoints = 0;
         totalPoints = 0;
         behaviors = [];
@@ -281,6 +285,11 @@ async function signOut() {
         
         console.log('登出流程完成');
         showTemporaryMessage('👋 已退出登录，本地数据已清空', 'success');
+        
+        // 2秒后跳转到登录页面
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 2000);
     } catch (error) {
         console.error('登出过程中发生错误:', error);
         showTemporaryMessage(`❌ 登出失败: ${escapeHtml(error.message)}`, 'error');
@@ -399,33 +408,73 @@ function updateBehaviorLog() {
     
     logContainer.innerHTML = '';
     
+    // 添加统计信息
+    const totalBehaviors = behaviors.length;
+    const totalPointsGained = behaviors.filter(b => b.points > 0).reduce((sum, b) => sum + b.points, 0);
+    const totalPointsLost = behaviors.filter(b => b.points < 0).reduce((sum, b) => sum + b.points, 0);
+    
     if (behaviors.length === 0) {
-        const emptyMessage = document.createElement('p');
-        emptyMessage.className = 'empty-message';
-        emptyMessage.textContent = '暂无行为记录';
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'empty-behavior-message';
+        emptyMessage.innerHTML = '📋 暂无行为记录，开始记录孩子的好行为吧！';
         logContainer.appendChild(emptyMessage);
         return;
     }
     
-    behaviors.forEach(behavior => {
-        const div = document.createElement('div');
-        div.className = 'behavior-item';
+    // 创建统计卡片
+    const statsDiv = document.createElement('div');
+    statsDiv.className = 'behavior-stats';
+    statsDiv.innerHTML = `
+        <div class="stat-item">
+            <div class="stat-icon">📊</div>
+            <div class="stat-text">总记录: ${totalBehaviors}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-icon">✅</div>
+            <div class="stat-text">获得积分: +${totalPointsGained}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-icon">❌</div>
+            <div class="stat-text">扣除积分: ${totalPointsLost}</div>
+        </div>
+    `;
+    logContainer.appendChild(statsDiv);
+    
+    // 创建行为日志容器
+    const behaviorsContainer = document.createElement('div');
+    behaviorsContainer.className = 'behavior-log-container';
+    
+    behaviors.forEach((behavior, index) => {
+        const behaviorDiv = document.createElement('div');
+        behaviorDiv.className = 'behavior-item';
+        behaviorDiv.style.animationDelay = `${index * 0.1}s`;
         
-        const descSpan = document.createElement('span');
-        descSpan.textContent = escapeHtml(behavior.description);
+        // 根据积分正负设置不同的图标和样式
+        const isPositive = behavior.points > 0;
+        const icon = isPositive ? '✅' : '❌';
+        const pointsClass = isPositive ? 'positive-points' : 'negative-points';
         
-        const pointsSpan = document.createElement('span');
-        pointsSpan.className = 'points';
-        pointsSpan.textContent = `${behavior.points > 0 ? '+' : ''}${behavior.points}`;
+        behaviorDiv.innerHTML = `
+            <div class="behavior-icon">${icon}</div>
+            <div class="behavior-content">
+                <div class="behavior-description">${escapeHtml(behavior.description)}</div>
+                <div class="behavior-meta">
+                    <span class="behavior-points ${pointsClass}">${behavior.points > 0 ? '+' : ''}${behavior.points}</span>
+                    <span class="behavior-date">${formatBehaviorDate(behavior.timestamp)}</span>
+                </div>
+            </div>
+        `;
         
-        const dateSmall = document.createElement('small');
-        dateSmall.textContent = new Date(behavior.timestamp).toLocaleString();
-        
-        div.appendChild(descSpan);
-        div.appendChild(pointsSpan);
-        div.appendChild(dateSmall);
-        logContainer.appendChild(div);
+        behaviorsContainer.appendChild(behaviorDiv);
     });
+    
+    logContainer.appendChild(behaviorsContainer);
+    
+    // 更新行为日志计数徽章
+    const behaviorCount = document.getElementById('behavior-count');
+    if (behaviorCount) {
+        behaviorCount.textContent = totalBehaviors;
+    }
 }
 
 function updateGiftList() {
@@ -465,6 +514,12 @@ function updateGiftList() {
 
 function updateRedeemedList() {
     const redeemedList = document.getElementById('redeemed-list');
+    const redeemedCount = document.getElementById('redeemed-count');
+    
+    // 更新计数徽章
+    if (redeemedCount) {
+        redeemedCount.textContent = redeemedGifts.length;
+    }
     
     // 清空现有内容
     while (redeemedList.firstChild) {
@@ -472,35 +527,113 @@ function updateRedeemedList() {
     }
     
     if (redeemedGifts.length === 0) {
-        const emptyMessage = document.createElement('p');
-        emptyMessage.className = 'empty-message';
-        emptyMessage.textContent = '暂无兑换记录';
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'empty-redeemed-message';
+        emptyMessage.innerHTML = '🎁 还没有兑换记录，快去兑换喜欢的礼物吧！';
         redeemedList.appendChild(emptyMessage);
         return;
     }
     
-    redeemedGifts.forEach(item => {
+    // 添加统计信息
+    const totalRedeemedPoints = redeemedGifts.reduce((sum, item) => sum + item.points, 0);
+    const statsDiv = document.createElement('div');
+    statsDiv.className = 'redeemed-stats';
+    statsDiv.innerHTML = `
+        <div class="stat-item">
+            <span class="stat-icon">🏆</span>
+            <span class="stat-text">共兑换 ${redeemedGifts.length} 件礼物</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-icon">💎</span>
+            <span class="stat-text">总计消耗 ${totalRedeemedPoints} 积分</span>
+        </div>
+    `;
+    redeemedList.appendChild(statsDiv);
+    
+    // 创建礼物列表容器
+    const giftsContainer = document.createElement('div');
+    giftsContainer.className = 'redeemed-gifts-container';
+    
+    redeemedGifts.forEach((item, index) => {
         const itemElement = document.createElement('div');
         itemElement.className = 'redeemed-item';
+        itemElement.style.animationDelay = `${index * 0.1}s`;
         
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'redeemed-name';
-        nameSpan.textContent = item.name;
+        // 礼物图标
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'redeemed-icon';
+        iconDiv.textContent = '🎁';
         
+        // 内容区域
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'redeemed-content';
+        
+        // 礼物名称
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'redeemed-name';
+        nameDiv.textContent = item.name;
+        
+        // 底部信息
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'redeemed-info';
+        
+        // 积分信息
         const pointsSpan = document.createElement('span');
         pointsSpan.className = 'redeemed-points';
-        pointsSpan.textContent = `-${item.points} 分`;
+        pointsSpan.innerHTML = `<span class="points-badge">-${item.points}</span> 积分`;
         
+        // 时间信息
         const dateSpan = document.createElement('span');
         dateSpan.className = 'redeemed-date';
-        dateSpan.textContent = item.redeem_date || '未知时间';
+        dateSpan.textContent = formatRedeemDate(item.redeem_date);
         
-        itemElement.appendChild(nameSpan);
-        itemElement.appendChild(pointsSpan);
-        itemElement.appendChild(dateSpan);
+        infoDiv.appendChild(pointsSpan);
+        infoDiv.appendChild(dateSpan);
         
-        redeemedList.appendChild(itemElement);
+        contentDiv.appendChild(nameDiv);
+        contentDiv.appendChild(infoDiv);
+        
+        itemElement.appendChild(iconDiv);
+        itemElement.appendChild(contentDiv);
+        
+        giftsContainer.appendChild(itemElement);
     });
+    
+    redeemedList.appendChild(giftsContainer);
+}
+
+// 格式化兑换日期
+function formatRedeemDate(dateString) {
+    if (!dateString || dateString === '未知时间') return '刚刚';
+    
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) return '刚刚';
+        if (diffMins < 60) return `${diffMins} 分钟前`;
+        if (diffHours < 24) return `${diffHours} 小时前`;
+        if (diffDays < 7) return `${diffDays} 天前`;
+        
+        // 超过一周显示具体日期
+        return date.toLocaleDateString('zh-CN', { 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (error) {
+        return dateString;
+    }
+}
+
+// 格式行为日志日期
+function formatBehaviorDate(timestamp) {
+    return formatRedeemDate(timestamp);
 }
 
 
@@ -527,65 +660,59 @@ async function addPoints() {
         return;
     }
     
-    // 如果用户已登录，直接更新云端数据
+    const timestamp = new Date().toISOString();
+    
+    // 更新本地数据
+    currentPoints += change;
+    if (change > 0) {
+        totalPoints += change;
+    }
+    behaviors.unshift({ description: desc, points: change, timestamp });
+    
+    // 保存到本地存储
+    saveDataToLocalStorage();
+    
+    // 如果用户已登录，同时更新云端数据
     if (supabase) {
         const { data: user, error: userError } = await supabase.auth.getUser();
         if (!userError && user.user) {
             try {
-                // 先更新云端积分
-                const newCurrentPoints = currentPoints + change;
-                const newTotalPoints = change > 0 ? totalPoints + change : totalPoints;
-                
-                const { error } = await supabase
-                    .from('profiles')
-                    .upsert(
-                        { 
-                            id: user.user.id, 
-                            current_points: newCurrentPoints,
-                            total_points: newTotalPoints,
-                            updated_at: new Date().toISOString()
-                        },
-                        { onConflict: ['id'] }
-                    );
+                // 插入行为记录
+                const { data, error } = await supabase
+                    .from('behaviors')
+                    .insert({
+                        user_id: user.user.id,
+                        description: desc,
+                        points: change,
+                        timestamp: timestamp
+                    })
+                    .select();
                 
                 if (error) throw error;
                 
-                // 更新本地状态
-                currentPoints = newCurrentPoints;
-                totalPoints = newTotalPoints;
-                behaviors.push({ desc, change, timestamp: new Date().toISOString() });
+                // 更新profiles表中的积分
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .upsert({
+                        id: user.user.id,
+                        current_points: currentPoints,
+                        total_points: totalPoints,
+                        updated_at: timestamp
+                    });
                 
-                // 更新UI
-                updatePointsDisplay();
-                updateBehaviorLog();
-                updateGiftList();
+                if (profileError) throw profileError;
                 
             } catch (error) {
-                console.error('同步积分到云端失败:', error);
-                return; // 如果云端更新失败，则不进行本地操作
+                console.error('同步到云端失败:', error);
+                showTemporaryMessage('⚠️ 本地更新成功，但云端同步失败', 'warning');
             }
-        } else {
-            // 用户未登录，只在本地操作
-            currentPoints += change;
-            if (change > 0) {
-                totalPoints += change;
-            }
-            behaviors.push({ desc, change, timestamp: new Date().toISOString() });
-            updatePointsDisplay();
-            updateBehaviorLog();
-            updateGiftList();
         }
-    } else {
-        // Supabase未初始化，只在本地操作
-        currentPoints += change;
-        if (change > 0) {
-            totalPoints += change;
-        }
-        behaviors.push({ desc, change, timestamp: new Date().toISOString() });
-        updatePointsDisplay();
-        updateBehaviorLog();
-        updateGiftList();
     }
+    
+    // 更新显示
+    updatePointsDisplay();
+    updateBehaviorLog();
+    updateGiftList();
     
     // 清空输入并给出反馈
     document.getElementById('behavior-desc').value = '';
@@ -723,118 +850,61 @@ async function redeemGift(giftId) {
     const confirmed = confirm(`确定要兑换 "${escapeHtml(gift.name)}" 吗？这将消耗 ${gift.points} 分。`);
     if (!confirmed) return;
 
-    try {
-        // 如果用户已登录，通过云端完成兑换操作
-        if (supabase) {
-            const { data: user, error: userError } = await supabase.auth.getUser();
-            if (!userError && user.user) {
-                try {
-                    const now = new Date().toISOString();
-                    // 调用数据库函数执行兑换逻辑
-                    const { error: transactionError } = await supabase.rpc('execute_transaction', {
-                        user_id_param: user.user.id,
-                        gift_id_param: gift.id,
-                        gift_name_param: gift.name,
-                        gift_points_param: gift.points,
-                        redeem_date_param: now,
-                        current_points_param: currentPoints - gift.points
-                    });
-
-                    if (transactionError) throw transactionError;
-                    
-                    // 成功后更新本地状态
-                    currentPoints -= gift.points;
-                    const localRedeemDate = new Date().toLocaleString('zh-CN');
-                    redeemedGifts.push({
-                        name: gift.name,
-                        points: gift.points,
-                        redeem_date: localRedeemDate
-                    });
-                    
-                    // 从本地礼物列表中移除
-                    const indexToRemove = gifts.findIndex(g => g.id === gift.id);
-                    if (indexToRemove !== -1) {
-                        gifts.splice(indexToRemove, 1);
-                    } else {
-                        // 如果按ID找不到，按索引查找
-                        const indexByPosition = gifts.indexOf(gift);
-                        if (indexByPosition !== -1) {
-                            gifts.splice(indexByPosition, 1);
-                        }
-                    }
-                    
-                    // 更新UI
-                    updatePointsDisplay();
-                    updateGiftList();
-                    updateRedeemedList();
-                    
-                    showTemporaryMessage('🎉 兑换成功！', 'success');
-                } catch (error) {
-                    console.error('兑换失败:', error);
-                    showTemporaryMessage(`❌ 兑换失败，请重试: ${escapeHtml(error.message)}`, 'error');
-                    return;
-                }
-            } else {
-                // 用户未登录，只在本地操作
-                currentPoints -= gift.points;
-                const localRedeemDate = new Date().toLocaleString('zh-CN');
-                redeemedGifts.push({
-                    name: gift.name,
-                    points: gift.points,
-                    redeem_date: localRedeemDate
+    // 先更新本地数据
+    currentPoints -= gift.points;
+    const localRedeemDate = new Date().toLocaleString('zh-CN');
+    redeemedGifts.push({
+        name: gift.name,
+        points: gift.points,
+        redeem_date: localRedeemDate
+    });
+    
+    // 从本地礼物列表中移除
+    const indexToRemove = gifts.findIndex(g => g.id === gift.id);
+    if (indexToRemove !== -1) {
+        gifts.splice(indexToRemove, 1);
+    } else {
+        const indexByPosition = gifts.indexOf(gift);
+        if (indexByPosition !== -1) {
+            gifts.splice(indexByPosition, 1);
+        }
+    }
+    
+    // 保存到本地存储
+    saveDataToLocalStorage();
+    
+    // 更新UI
+    updatePointsDisplay();
+    updateGiftList();
+    updateRedeemedList();
+    
+    // 如果用户已登录，同步到云端
+    if (supabase) {
+        const { data: user, error: userError } = await supabase.auth.getUser();
+        if (!userError && user.user) {
+            try {
+                const now = new Date().toISOString();
+                // 调用数据库函数执行兑换逻辑
+                const { error: transactionError } = await supabase.rpc('execute_transaction', {
+                    user_id_param: user.user.id,
+                    gift_id_param: gift.id,
+                    gift_name_param: gift.name,
+                    gift_points_param: gift.points,
+                    redeem_date_param: now,
+                    current_points_param: currentPoints
                 });
-                
-                // 从本地礼物列表中移除
-                const indexToRemove = gifts.findIndex(g => g.id === gift.id);
-                if (indexToRemove !== -1) {
-                    gifts.splice(indexToRemove, 1);
-                } else {
-                    // 如果按ID找不到，按索引查找
-                    const indexByPosition = gifts.indexOf(gift);
-                    if (indexByPosition !== -1) {
-                        gifts.splice(indexByPosition, 1);
-                    }
-                }
-                
-                // 更新UI
-                updatePointsDisplay();
-                updateGiftList();
-                updateRedeemedList();
-                
-                showTemporaryMessage('🎉 兑换成功！(本地模式)', 'success');
+
+                if (transactionError) throw transactionError;
+                showTemporaryMessage('🎉 兑换成功！', 'success');
+            } catch (error) {
+                console.error('同步到云端失败:', error);
+                showTemporaryMessage('⚠️ 本地更新成功，但云端同步失败', 'warning');
             }
         } else {
-            // Supabase未初始化，只在本地操作
-            currentPoints -= gift.points;
-            const localRedeemDate = new Date().toLocaleString('zh-CN');
-            redeemedGifts.push({
-                name: gift.name,
-                points: gift.points,
-                redeem_date: localRedeemDate
-            });
-            
-            // 从本地礼物列表中移除
-            const indexToRemove = gifts.findIndex(g => g.id === gift.id);
-            if (indexToRemove !== -1) {
-                gifts.splice(indexToRemove, 1);
-            } else {
-                // 如果按ID找不到，按索引查找
-                const indexByPosition = gifts.indexOf(gift);
-                if (indexByPosition !== -1) {
-                    gifts.splice(indexByPosition, 1);
-                }
-            }
-            
-            // 更新UI
-            updatePointsDisplay();
-            updateGiftList();
-            updateRedeemedList();
-            
             showTemporaryMessage('🎉 兑换成功！(本地模式)', 'success');
         }
-    } catch (error) {
-        console.error('兑换过程中出现错误:', error);
-        showTemporaryMessage(`❌ 兑换失败: ${escapeHtml(error.message)}`, 'error');
+    } else {
+        showTemporaryMessage('🎉 兑换成功！(本地模式)', 'success');
     }
 }
 
@@ -930,27 +1000,201 @@ function escapeHtml(text) {
 }
 
 
+// 页面加载完成后的初始化
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('登录页面开始加载...');
+    console.log('主页开始加载...');
     
-    // 检查用户是否已经登录
-    console.log('开始检查用户登录状态...');
-    checkUserLoggedIn().then(isLoggedIn => {
-        console.log('登录状态检查完成，结果:', isLoggedIn ? '已登录' : '未登录');
-        if (isLoggedIn) {
-            // 如果已登录，重定向到主页
-            const currentPath = window.location.pathname.split('/').pop();
-            console.log('当前页面路径:', currentPath);
-            if (currentPath === 'login.html') {
-                console.log('用户已登录，正在重定向到主页...');
-                showTemporaryMessage('🔒 已登录，正在跳转到主页...', 'success');
-            }
-        } else {
-            console.log('用户未登录，保持在登录页面');
-            showTemporaryMessage('🔑 请登录或注册', 'info');
-        }
-    }).catch(error => {
-        console.error('检查登录状态时出错:', error);
-        showTemporaryMessage('❌ 检查登录状态失败', 'error');
-    });
+    // 检查当前页面
+    const currentPage = window.location.pathname.split('/').pop();
+    console.log('当前页面:', currentPage);
+    
+    // 只在主页进行初始化
+    if (currentPage === 'index.html' || currentPage === '') {
+        console.log('在主页，开始初始化...');
+        initializeApp();
+    }
 });
+
+// 初始化应用
+async function initializeApp() {
+    try {
+        console.log('开始初始化应用...');
+        
+        // 1. 检查用户登录状态
+        const isLoggedIn = await checkUserLoggedIn();
+        console.log('用户登录状态:', isLoggedIn ? '已登录' : '未登录');
+        
+        if (!isLoggedIn) {
+            // 未登录，跳转到登录页面
+            console.log('用户未登录，跳转到登录页面...');
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        // 2. 获取当前用户信息
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) {
+            console.error('获取用户信息失败:', error);
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        currentUser = user;
+        console.log('当前用户:', user.email);
+        
+        // 3. 从localStorage加载缓存数据（如果有）
+        loadDataFromLocalStorage();
+        
+        // 4. 从云端加载最新数据
+        await loadDataFromCloud();
+        
+        // 5. 更新UI
+        updateAuthUI(user);
+        updatePointsDisplay();
+        updateBehaviorLog();
+        updateGiftList();
+        updateRedeemedList();
+        
+        console.log('应用初始化完成');
+        
+    } catch (error) {
+        console.error('应用初始化失败:', error);
+        showTemporaryMessage('❌ 应用初始化失败，请刷新页面重试', 'error');
+    }
+}
+
+// 从localStorage加载数据
+function loadDataFromLocalStorage() {
+    console.log('从localStorage加载数据...');
+    
+    // 加载用户信息
+    const savedUserEmail = localStorage.getItem('userEmail');
+    const savedUserId = localStorage.getItem('userId');
+    
+    if (savedUserEmail && savedUserId) {
+        console.log('找到缓存的用户信息:', savedUserEmail);
+    }
+    
+    // 加载业务数据
+    const savedCurrentPoints = localStorage.getItem('currentPoints');
+    const savedTotalPoints = localStorage.getItem('totalPoints');
+    const savedBehaviors = localStorage.getItem('behaviors');
+    const savedGifts = localStorage.getItem('gifts');
+    const savedRedeemedGifts = localStorage.getItem('redeemedGifts');
+    
+    if (savedCurrentPoints) currentPoints = parseInt(savedCurrentPoints) || 0;
+    if (savedTotalPoints) totalPoints = parseInt(savedTotalPoints) || 0;
+    if (savedBehaviors) {
+        try {
+            behaviors = JSON.parse(savedBehaviors);
+        } catch (e) {
+            console.warn('解析行为数据失败:', e);
+            behaviors = [];
+        }
+    }
+    if (savedGifts) {
+        try {
+            gifts = JSON.parse(savedGifts);
+        } catch (e) {
+            console.warn('解析礼物数据失败:', e);
+            gifts = [];
+        }
+    }
+    if (savedRedeemedGifts) {
+        try {
+            redeemedGifts = JSON.parse(savedRedeemedGifts);
+        } catch (e) {
+            console.warn('解析已兑换礼物数据失败:', e);
+            redeemedGifts = [];
+        }
+    }
+    
+    console.log('本地数据加载完成');
+}
+
+// 从云端加载数据
+async function loadDataFromCloud() {
+    if (!currentUser || !supabase) {
+        console.log('无法加载云端数据：用户未登录或Supabase未初始化');
+        return;
+    }
+    
+    console.log('从云端加载数据...');
+    
+    try {
+        // 从profiles表获取积分信息
+        const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('current_points, total_points')
+            .eq('id', currentUser.id)
+            .single();
+        
+        if (profileError && profileError.code !== 'PGRST116') {
+            throw profileError;
+        }
+        
+        // 从behaviors表获取行为记录
+        const { data: behaviorsData, error: behaviorsError } = await supabase
+            .from('behaviors')
+            .select('description, points, timestamp')
+            .eq('user_id', currentUser.id)
+            .order('timestamp', { ascending: false });
+        
+        if (behaviorsError) throw behaviorsError;
+        
+        // 从gifts表获取礼物信息
+        const { data: giftsData, error: giftsError } = await supabase
+            .from('gifts')
+            .select('id, name, points')
+            .eq('user_id', currentUser.id)
+            .order('id', { ascending: false });
+        
+        if (giftsError) throw giftsError;
+        
+        // 从redeemed_gifts表获取已兑换礼物信息
+        const { data: redeemedData, error: redeemedError } = await supabase
+            .from('redeemed_gifts')
+            .select('id, gift_id, name, points, redeem_date')
+            .eq('user_id', currentUser.id)
+            .order('redeem_date', { ascending: false });
+        
+        if (redeemedError) throw redeemedError;
+        
+        // 更新本地数据
+        if (profileData) {
+            currentPoints = profileData.current_points || 0;
+            totalPoints = profileData.total_points || 0;
+        }
+        
+        if (behaviorsData) {
+            behaviors = behaviorsData;
+        }
+        
+        if (giftsData) {
+            gifts = giftsData;
+        }
+        
+        if (redeemedData) {
+            redeemedGifts = redeemedData;
+        }
+        
+        // 保存到localStorage
+        saveDataToLocalStorage();
+        
+        console.log('云端数据加载完成');
+        
+    } catch (error) {
+        console.error('从云端加载数据失败:', error);
+        // 使用本地数据继续运行
+        showTemporaryMessage('⚠️ 云端数据加载失败，使用本地数据', 'warning');
+    }
+}
+
+// 保存数据到localStorage
+function saveDataToLocalStorage() {
+    localStorage.setItem('currentPoints', currentPoints.toString());
+    localStorage.setItem('totalPoints', totalPoints.toString());
+    localStorage.setItem('behaviors', JSON.stringify(behaviors));
+    localStorage.setItem('gifts', JSON.stringify(gifts));
+    localStorage.setItem('redeemedGifts', JSON.stringify(redeemedGifts));
+}

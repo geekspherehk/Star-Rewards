@@ -339,19 +339,125 @@ li:hover {
     border-left-color: #9C27B0;
 }
 
-.item-content {
-    flex: 1;
+/* 已兑换礼物列表优化样式 */
+.empty-redeemed-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+    font-size: 1.1rem;
+    background: rgba(255,255,255,0.5);
+    border-radius: 12px;
+    margin: 20px 0;
 }
 
-.item-title {
-    font-weight: 600;
-    margin-bottom: 5px;
-    color: #333;
+.redeemed-stats {
+    display: flex;
+    justify-content: space-around;
+    background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3);
 }
 
-.item-details {
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.stat-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.stat-text {
     font-size: 0.9rem;
-    color: #666;
+    font-weight: 500;
+    opacity: 0.95;
+}
+
+.redeemed-gifts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.redeemed-item {
+    display: flex;
+    align-items: center;
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    border-left: 5px solid #9C27B0;
+    transition: all 0.3s ease;
+    animation: slideInLeft 0.4s ease-out;
+}
+
+.redeemed-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.redeemed-icon {
+    font-size: 2rem;
+    margin-right: 15px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.redeemed-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.redeemed-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.redeemed-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.redeemed-points {
+    color: #f44336;
+    font-weight: 500;
+}
+
+.points-badge {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.redeemed-date {
+    color: #999;
+    font-size: 0.85rem;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .redeem-btn {
@@ -426,12 +532,201 @@ li:hover {
     .redeem-btn {
         align-self: flex-end;
     }
+    
+    /* 已兑换礼物列表移动端优化 */
+    .redeemed-stats {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .stat-item {
+        flex-direction: row;
+        gap: 10px;
+    }
+    
+    .stat-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    .redeemed-item {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px 15px;
+    }
+    
+    .redeemed-icon {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .redeemed-info {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+    
+    .redeemed-date {
+        font-size: 0.8rem;
+    }
+    
+    /* 行为日志移动端优化 */
+    .behavior-stats {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .behavior-item {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px 15px;
+    }
+    
+    .behavior-icon {
+        margin-right: 0;
+        margin-bottom: 10px;
+        font-size: 2rem;
+    }
+    
+    .behavior-meta {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+    
+    .behavior-date {
+        font-size: 0.8rem;
+    }
 }
 
 /* 动画效果 */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* 区域标题样式 */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.section-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.section-badge {
+    background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-width: 25px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
+}
+
+/* 行为日志优化样式 */
+.empty-behavior-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+    font-size: 1.1rem;
+    background: rgba(255,255,255,0.5);
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.behavior-stats {
+    display: flex;
+    justify-content: space-around;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.behavior-log-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.behavior-item {
+    display: flex;
+    align-items: center;
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    border-left: 5px solid #4CAF50;
+    transition: all 0.3s ease;
+    animation: slideInLeft 0.4s ease-out;
+}
+
+.behavior-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.behavior-icon {
+    font-size: 1.5rem;
+    margin-right: 15px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.behavior-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.behavior-description {
+    font-weight: 500;
+    font-size: 1rem;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.behavior-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.positive-points {
+    color: #4CAF50;
+    font-weight: 600;
+    background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.negative-points {
+    color: #f44336;
+    font-weight: 600;
+    background: linear-gradient(135deg, #ffebee, #ffcdd2);
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.behavior-date {
+    color: #999;
+    font-size: 0.85rem;
 }
 
 .container {
