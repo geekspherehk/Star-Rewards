@@ -78,89 +78,6 @@ let redeemedGifts = [];
 // 当前登录用户信息
 let currentUser = null;
 
-// // 页面加载时从数据库获取数据
-// window.addEventListener('DOMContentLoaded', async () => {
-//     console.log('页面开始加载...');
-    
-//     // 检查当前页面
-//     const currentPage = window.location.pathname.split('/').pop();
-//     console.log('当前页面:', currentPage);
-    
-//     // 只在主页进行登录检查和数据加载
-//     if (currentPage === 'index.html' || currentPage === '') {
-//         console.log('在主页，开始检查登录状态和加载数据...');
-//         checkUserLoggedIn().then(isLoggedIn => {
-//             console.log('登录状态检查完成，结果:', isLoggedIn ? '已登录' : '未登录');
-//             if (isLoggedIn) {
-//                 // 如果已登录，重定向到主页
-//             } else {
-//                 console.log('用户未登录，保持在登录页面');
-//                 showTemporaryMessage('🔑 请登录或注册', 'info');
-//             }
-//         }).catch(error => {
-//             console.error('检查登录状态时出错:', error);
-//             showTemporaryMessage('❌ 检查登录状态失败', 'error');
-//         });
-//         // if (supabase) {
-//         //     console.log('尝试从云端获取数据...');
-//         //     try {
-//         //          // 方法二：获取当前用户信息
-//         //         const { data: { user }, error } = await supabase.auth.getUser();
-//         //         if (user) {
-//         //             console.log('当前用户:', user.email);
-//         //             // 使用用户信息
-//         //         } else {
-//         //             console.log('未获取到用户信息');
-//         //         }
-//         //         // 方法一：获取当前会话
-//         //         const { data } = await supabase.auth.getSession();
-//         //         if (data.session) {
-//         //             console.log('用户已登录:', data.session.user.email);
-//         //             // 使用会话信息
-//         //         } else {
-//         //             console.log('用户未登录');
-//         //         }               
-                
-//         //         // 检查用户是否已登录
-//         //         const { data: { session } } = await supabase.auth.getSession();
-//         //         console.log('获取到的会话信息:', session ? '已登录' : '未登录');
-                
-//         //         if (session) {
-//         //             console.log('用户已登录，正在从云端恢复数据...');
-//         //             // 从数据库加载数据
-//         //             await restoreBasicData();
-//         //             console.log('云端数据恢复完成');
-//         //         } else {
-//         //             console.log('用户未登录，将使用默认数据');
-//         //         }
-//         //         // 无论是否登录，都调用updateAuthUI来正确设置UI状态
-//         //         updateAuthUI(session?.user || null);
-//         //     } catch (error) {
-//         //         console.error('检查用户登录状态时出错:', error);
-//         //         // 确保UI状态正确更新
-//         //         updateAuthUI(null);
-//         //     }
-//         // } else {
-//         //     console.log('Supabase未初始化，使用本地数据');
-//         //     // Supabase未初始化，使用本地数据
-//         //     updatePointsDisplay();
-//         //     updateBehaviorLog();
-//         //     updateGiftList();
-//         //     updateRedeemedList();
-//         //     // 确保UI状态正确更新
-//         //     updateAuthUI(null);
-//         // }
-//     }
-    
-//     // console.log('初始化认证状态监听...');
-//     // // 初始化认证状态监听
-//     // if (supabase) {
-//     //     initAuth();
-//     // }
-    
-//     console.log('页面加载完成');
-// });
-
 // 简化版的数据恢复函数，仅在登录页面使用
 async function restoreBasicData() {
     if (!supabase) {
@@ -337,36 +254,6 @@ function initAuth() {
         console.log('Supabase未初始化，无法设置认证监听');
         return;
     }
-    
-    // console.log('设置认证状态变化监听器');
-    // // 监听认证状态变化
-    // supabase.auth.onAuthStateChange((event, session) => {
-    //     console.log('认证状态发生变化:', event, session ? '有会话信息' : '无会话信息');
-        
-    //     if (event === 'SIGNED_IN') {
-    //         console.log('用户登录事件，用户邮箱:', session.user.email, '用户ID:', session.user.id);
-    //         updateAuthUI(session.user);
-    //         updateCloudStatus(`已登录 (UID: ${session.user.id.substring(0, 8)}...)`);
-    //         showTemporaryMessage('🔒 登录成功', 'success');
-    //         console.log('开始从云端恢复数据...');
-    //         restoreFromCloud(); // 登录后自动恢复数据
-    //     } else if (event === 'SIGNED_OUT') {
-    //         console.log('用户登出事件');
-    //         updateAuthUI(null);
-    //         updateCloudStatus('未登录');
-    //         showTemporaryMessage('🔓 已退出登录', 'success');
-    //         // 检查当前页面，避免在登录页面时重定向
-    //         const currentPage = window.location.pathname.split('/').pop();
-    //         console.log('当前页面:', currentPage);
-    //         if (currentPage === 'index.html') {
-    //             // 登出后重定向到登录页面（仅在主页时）
-    //             console.log('在主页登出，重定向到登录页面');
-    //             window.location.href = 'login.html';
-    //         }
-    //     } else {
-    //         console.log('其他认证事件:', event);
-    //     }
-    // });
     
     console.log('检查当前会话状态');
     // 检查当前会话
@@ -1000,21 +887,6 @@ function escapeHtml(text) {
 }
 
 
-// 页面加载完成后的初始化
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('主页开始加载...');
-    
-    // 检查当前页面
-    const currentPage = window.location.pathname.split('/').pop();
-    console.log('当前页面:', currentPage);
-    
-    // 只在主页进行初始化
-    if (currentPage === 'index.html' || currentPage === '') {
-        console.log('在主页，开始初始化...');
-        initializeApp();
-    }
-});
-
 // 初始化应用
 async function initializeApp() {
     try {
@@ -1198,3 +1070,19 @@ function saveDataToLocalStorage() {
     localStorage.setItem('gifts', JSON.stringify(gifts));
     localStorage.setItem('redeemedGifts', JSON.stringify(redeemedGifts));
 }
+
+
+// 页面加载完成后的初始化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('主页开始加载...');
+    
+    // 检查当前页面
+    const currentPage = window.location.pathname.split('/').pop();
+    console.log('当前页面:', currentPage);
+    
+    // 只在主页进行初始化
+    if (currentPage === 'index.html' || currentPage === '') {
+        console.log('在主页，开始初始化...');
+        initializeApp();
+    }
+});
