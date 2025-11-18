@@ -17,56 +17,49 @@ function initializeSupabase() {
     try {
         // 检查是否已经存在初始化的客户端
         if (window._supabaseClient) {
-            console.log('使用已存在的Supabase客户端实例');
+            console.log('Script.js: 使用已存在的Supabase客户端实例');
+            console.log('Script.js: 已存在的实例信息:', {
+                url: window._supabaseClient.supabaseUrl,
+                hasAuth: !!window._supabaseClient.auth,
+                hasFrom: !!window._supabaseClient.from
+            });
             return window._supabaseClient;
         }
         
         if (typeof window.supabase === 'undefined') {
-            console.warn('Supabase SDK 未加载');
+            console.warn('Script.js: Supabase SDK 未加载');
             return null;
         }
         
+        console.log('Script.js: 创建新的Supabase客户端实例');
         const client = window.supabase.createClient(supabaseUrl, supabaseKey, {
             auth: {
                 storage: localStorage, // 使用localStorage存储会话信息
                 autoRefreshToken: true, // 启用自动刷新令牌
                 persistSession: true // 启用会话持久化
+            },
+            global: {
+                headers: {
+                    'apikey': supabaseKey
+                }
             }
         });
         
         // 保存客户端实例到全局变量
         window._supabaseClient = client;
-        console.log('Supabase客户端初始化成功');
+        console.log('Script.js: Supabase客户端初始化成功', {
+            url: client.supabaseUrl,
+            hasAuth: !!client.auth,
+            hasFrom: !!client.from
+        });
         return client;
     } catch (error) {
-        console.error('Supabase 初始化失败:', error);
+        console.error('Script.js: Supabase 初始化失败:', error);
         return null;
     }
 }
 
-// 初始化Supabase
-supabase = initializeSupabase();
-
-// 检查用户是否已登录的函数
-async function checkUserLoggedIn() {
-    if (!supabase) {
-        console.log('Supabase 未初始化');
-        return false;
-    }
-    
-    try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error) {
-            console.error('获取用户信息失败:', error);
-            return false;
-        }
-        
-        return !!user;
-    } catch (error) {
-        console.error('检查用户登录状态时出错:', error);
-        return false;
-    }
-}
+// 移除checkUserLoggedIn函数 - 认证逻辑全部移至login页面
 
 // 本地数据变量
 let currentPoints = 0;
@@ -78,116 +71,44 @@ let redeemedGifts = [];
 // 当前登录用户信息
 let currentUser = null;
 
-// 简化版的数据恢复函数，仅在登录页面使用
-async function restoreBasicData() {
-    if (!supabase) {
-        console.log('Supabase 未初始化，无法恢复数据');
-        return;
-    }
-    
-    try {
-        const { data: user, error: userError } = await supabase.auth.getUser();
-        if (userError || !user.user) {
-            console.log('无法获取用户信息');
-            return;
-        }
-        
-        // 从 profiles 表获取积分信息
-        const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('current_points, total_points')
-            .eq('id', user.user.id)
-            .single();
-        
-        // 特别处理 PGRST116 错误（无数据）
-        if (profileError && profileError.code === 'PGRST116') {
-            console.log('云端无数据');
-            return;
-        }
-        
-        if (profileError) throw profileError;
-        
-        // 从 behaviors 表获取最近5个行为记录
-        const { data: behaviorsData, error: behaviorsError } = await supabase
-            .from('behaviors')
-            .select('description, points, timestamp')
-            .eq('user_id', user.user.id)
-            .order('timestamp', { ascending: false })
-            .limit(5);
-        
-        if (behaviorsError) throw behaviorsError;
-        
-        // 从 gifts 表获取最近5个礼物信息
-        const { data: giftsData, error: giftsError } = await supabase
-            .from('gifts')
-            .select('id, name, points')
-            .eq('user_id', user.user.id)
-            .order('id', { ascending: false })
-            .limit(5);
-        
-        if (giftsError) throw giftsError;
-        
-        // 从 redeemed_gifts 表获取最近5个已兑换礼物信息
-        const { data: redeemedData, error: redeemedError } = await supabase
-            .from('redeemed_gifts')
-            .select('id, gift_id, name, points, redeem_date')
-            .eq('user_id', user.user.id)
-            .order('redeem_date', { ascending: false })
-            .limit(5);
-        
-        if (redeemedError) throw redeemedError;
-        
-        // 保存所有数据到 sessionStorage，以便主页可以访问
-        if (profileData) {
-            sessionStorage.setItem('currentPoints', profileData.current_points || 0);
-            sessionStorage.setItem('totalPoints', profileData.total_points || 0);
-        }
-        
-        if (behaviorsData) {
-            sessionStorage.setItem('behaviors', JSON.stringify(behaviorsData));
-        }
-        
-        if (giftsData) {
-            sessionStorage.setItem('gifts', JSON.stringify(giftsData));
-        }
-        
-        if (redeemedData) {
-            sessionStorage.setItem('redeemedGifts', JSON.stringify(redeemedData));
-        }
-        
-        console.log('所有数据恢复成功');
-    } catch (error) {
-        console.error('恢复数据失败:', error);
-    }
-}
+// 移除restoreBasicData函数 - 认证逻辑全部移至login页面
 
-// 用户登出
+// 用户登出 - 简化版本，只清除sessionStorage并重定向
 async function signOut() {
-    console.log('开始用户登出流程...');
-    
-    if (!supabase) {
-        console.log('Supabase未初始化，无法执行登出操作');
-        return;
-    }
-    
     try {
-        console.log('调用Supabase登出接口...');
-        const { error } = await supabase.auth.signOut();
+        console.log('开始执行登出流程...');
         
-        if (error) {
-            console.error('Supabase登出接口返回错误:', error);
-            throw error;
+        // 尝试调用Supabase登出API，但忽略错误
+        if (supabase) {
+            console.log('调用Supabase登出API...');
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    console.warn('Supabase登出失败（忽略）:', error.message);
+                } else {
+                    console.log('Supabase登出成功');
+                }
+            } catch (apiError) {
+                console.warn('Supabase登出API调用失败（忽略）:', apiError.message);
+            }
         }
         
-        console.log('登出成功，清空本地数据...');
-        // 清空本地数据
-        localStorage.clear();
+        // 清空sessionStorage中的用户数据
         sessionStorage.clear();
+        
+        // 清空localStorage中的认证数据
+        localStorage.removeItem('supabase.user');
+        localStorage.removeItem('supabase.userEmail');
+        localStorage.removeItem('supabase.userId');
+        localStorage.removeItem('supabase_session');
+        
+        // 重置本地数据
         currentPoints = 0;
         totalPoints = 0;
         behaviors = [];
         gifts = [];
         redeemedGifts = [];
+        currentUser = null;
         
         console.log('更新UI显示...');
         // 更新显示
@@ -201,78 +122,44 @@ async function signOut() {
         updateAuthUI(null);
         
         console.log('登出流程完成');
-        showTemporaryMessage('👋 已退出登录，本地数据已清空', 'success');
+        showTemporaryMessage('👋 已退出登录', 'success');
         
         // 2秒后跳转到登录页面
         setTimeout(() => {
             window.location.href = 'login.html';
         }, 2000);
+        
     } catch (error) {
         console.error('登出过程中发生错误:', error);
         showTemporaryMessage(`❌ 登出失败: ${escapeHtml(error.message)}`, 'error');
-        throw error; // 重新抛出错误供上层处理
+        throw error;
     }
 }
 
-// 更新认证UI状态
+// 简化版的更新认证UI状态 - 只处理显示逻辑
 function updateAuthUI(user) {
     console.log('更新认证UI状态，用户状态:', user ? '已登录' : '未登录');
     
-    // 检查当前页面
-    const currentPage = window.location.pathname.split('/').pop();
-    
-    // 如果在登录页面，只处理已登录用户的情况
-    if (currentPage === 'login.html') {
-        // 不再自动跳转，让用户留在登录页面
-        // if (user) {
-        //     window.location.href = 'index.html';
-        // }
-        return;
-    }
-    
     // 在主页处理UI更新
-    const loggedIn = document.getElementById('logged-in');
     const userEmail = document.getElementById('user-email');
     
     if (user) {
         // 用户已登录，更新UI显示用户信息
         console.log('显示用户登录信息，邮箱:', user.email);
-        if (loggedIn) loggedIn.style.display = 'block';
         if (userEmail) userEmail.textContent = user.email;
+        
+        // 显示已登录状态（隐藏未登录卡片，显示主要内容）
+        showLoggedInState(user);
     } else {
         // 用户未登录，隐藏登录信息
         console.log('隐藏用户登录信息');
-        if (loggedIn) loggedIn.style.display = 'none';
+        
+        // 显示未登录状态（显示未登录卡片，隐藏主要内容）
+        showNotLoggedInState();
     }
 }
 
-// 初始化 Supabase 认证状态监听
-function initAuth() {
-    console.log('开始初始化认证状态监听');
-    
-    if (!supabase) {
-        console.log('Supabase未初始化，无法设置认证监听');
-        return;
-    }
-    
-    console.log('检查当前会话状态');
-    // 检查当前会话
-    supabase.auth.getSession().then(({ data, error }) => {
-        if (error) {
-            console.error('获取会话失败:', error);
-            return;
-        }
-        
-        console.log('获取会话结果:', data.session ? '已登录' : '未登录');
-        if (data.session) {
-            console.log('当前会话用户:', data.session.user.email, '用户ID:', data.session.user.id);
-            updateAuthUI(data.session.user);
-        } else {
-            console.log('当前无有效会话');
-            updateAuthUI(null);
-        }
-    });
-}
+// 移除initAuth函数 - 认证逻辑全部移至login页面
 
 
 
@@ -524,7 +411,7 @@ function formatBehaviorDate(timestamp) {
 }
 
 
-// 添加积分
+// 添加积分 - 直接更新云端
 async function addPoints() {
     const desc = document.getElementById('behavior-desc').value.trim();
     const change = parseInt(document.getElementById('points-change').value);
@@ -549,71 +436,80 @@ async function addPoints() {
     
     const timestamp = new Date().toISOString();
     
-    // 更新本地数据
-    currentPoints += change;
-    if (change > 0) {
-        totalPoints += change;
-    }
-    behaviors.unshift({ description: desc, points: change, timestamp });
-    
-    // 保存到本地存储
-    saveDataToLocalStorage();
-    
-    // 如果用户已登录，同时更新云端数据
-    if (supabase) {
-        const { data: user, error: userError } = await supabase.auth.getUser();
-        if (!userError && user.user) {
-            try {
-                // 插入行为记录
-                const { data, error } = await supabase
-                    .from('behaviors')
-                    .insert({
-                        user_id: user.user.id,
-                        description: desc,
-                        points: change,
-                        timestamp: timestamp
-                    })
-                    .select();
-                
-                if (error) throw error;
-                
-                // 更新profiles表中的积分
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .upsert({
-                        id: user.user.id,
-                        current_points: currentPoints,
-                        total_points: totalPoints,
-                        updated_at: timestamp
-                    });
-                
-                if (profileError) throw profileError;
-                
-            } catch (error) {
-                console.error('同步到云端失败:', error);
-                showTemporaryMessage('⚠️ 本地更新成功，但云端同步失败', 'warning');
-            }
+    try {
+        // 确保Supabase客户端已初始化
+        if (!supabase) {
+            console.log('Script.js: 初始化Supabase客户端...');
+            supabase = initializeSupabase();
         }
+        
+        if (supabase) {
+            const { data: user, error: userError } = await supabase.auth.getUser();
+            if (!userError && user.user) {
+                // 先同步云端数据
+                await loadDataFromCloud();
+                
+                // 更新本地数据
+                currentPoints += change;
+                if (change > 0) {
+                    totalPoints += change;
+                }
+                behaviors.unshift({ description: desc, points: change, timestamp });
+                
+                // 并行更新云端
+                await Promise.all([
+                    supabase
+                        .from('behaviors')
+                        .insert({
+                            user_id: user.user.id,
+                            description: desc,
+                            points: change,
+                            timestamp: timestamp
+                        }),
+                    supabase
+                        .from('profiles')
+                        .upsert({
+                            id: user.user.id,
+                            current_points: currentPoints,
+                            total_points: totalPoints,
+                            updated_at: timestamp
+                        })
+                ]);
+            }
+        } else {
+            // 无云端时仅本地更新
+            currentPoints += change;
+            if (change > 0) {
+                totalPoints += change;
+            }
+            behaviors.unshift({ description: desc, points: change, timestamp });
+        }
+        
+        // 数据已保存在云端，无需本地存储
+        
+        // 更新显示
+        updatePointsDisplay();
+        updateBehaviorLog();
+        updateGiftList();
+        
+        // 清空输入并给出反馈
+        document.getElementById('behavior-desc').value = '';
+        document.getElementById('points-change').value = '';
+        document.getElementById('behavior-desc').focus();
+        
+        // 显示成功消息
+        const message = change > 0 ? 
+            `✅ 成功添加 ${change} 分！` : 
+            `⚠️ 扣除 ${Math.abs(change)} 分`;
+        showTemporaryMessage(message, 'success');
+        
+    } catch (error) {
+        console.error('添加积分失败:', error);
+        showTemporaryMessage('❌ 添加积分失败', 'error');
     }
-    
-    // 更新显示
-    updatePointsDisplay();
-    updateBehaviorLog();
-    updateGiftList();
-    
-    // 清空输入并给出反馈
-    document.getElementById('behavior-desc').value = '';
-    document.getElementById('points-change').value = '';
-    document.getElementById('behavior-desc').focus();
-    
-    // 显示成功消息
-    const message = change > 0 ? 
-        `✅ 成功添加 ${change} 分！` : 
-        `⚠️ 扣除 ${Math.abs(change)} 分`;
-    showTemporaryMessage(message, 'success');
 }
 
-// 添加礼物
+// 添加礼物 - 直接更新云端
 async function addGift() {
     const name = document.getElementById('gift-name').value.trim();
     const giftPoints = parseInt(document.getElementById('gift-points').value);
@@ -630,48 +526,61 @@ async function addGift() {
         return;
     }
     
-    // 如果用户已登录，同时更新云端数据
-    if (supabase) {
-        const { data: user, error: userError } = await supabase.auth.getUser();
-        if (!userError && user.user) {
-            try {
-                const { data, error } = await supabase
-                    .from('gifts')
-                    .insert({
-                        user_id: user.user.id,
-                        name: name,
-                        points: giftPoints
-                    })
-                    .select();
-                
-                if (error) throw error;
-                
-                // 将包含id的完整礼物对象添加到数组中
-                gifts.push(data[0]);
-                updateGiftList();
-            } catch (error) {
-                console.error('同步礼物到云端失败:', error);
-                // 如果云端同步失败，仍然在本地添加礼物
-                gifts.push({ name, points: giftPoints });
-                updateGiftList();
+    try {
+        // 确保Supabase客户端已初始化
+        if (!supabase) {
+            console.log('Script.js: 初始化Supabase客户端...');
+            supabase = initializeSupabase();
+            if (!supabase) {
+                throw new Error('Supabase客户端初始化失败');
             }
-        } else {
-            // 用户未登录，只在本地添加
-            gifts.push({ name, points: giftPoints });
-            updateGiftList();
         }
-    } else {
-        // Supabase未初始化，只在本地添加
-        gifts.push({ name, points: giftPoints });
+        
+        const { data: user, error: userError } = await supabase.auth.getUser();
+        if (userError || !user.user) {
+            throw new Error('用户未登录');
+        }
+        
+        // 先从云端获取最新数据
+        await loadDataFromCloud();
+        
+        const gift = {
+            name: name,
+            points: giftPoints,
+            created_at: new Date().toISOString()
+        };
+        
+        // 添加到本地数组
+        gifts.unshift(gift);
+        
+        // 更新云端数据
+        await supabase
+            .from('gifts')
+            .insert({
+                user_id: user.user.id,
+                name: name,
+                points: giftPoints,
+                created_at: gift.created_at
+            });
+        
+        console.log('礼物已添加到云端');
+        
+        // 数据已保存在云端，无需本地存储
+        
+        // 更新UI
         updateGiftList();
+        
+        // 清空输入
+        document.getElementById('gift-name').value = '';
+        document.getElementById('gift-points').value = '';
+        document.getElementById('gift-name').focus();
+        
+        showTemporaryMessage(`🎁 礼物 "${escapeHtml(name)}" 添加成功！`, 'success');
+        
+    } catch (error) {
+        console.error('添加礼物失败:', error);
+        showTemporaryMessage('添加礼物失败', 'error');
     }
-    
-    // 清空输入并给出反馈
-    document.getElementById('gift-name').value = '';
-    document.getElementById('gift-points').value = '';
-    document.getElementById('gift-name').focus();
-    
-    showTemporaryMessage(`🎁 礼物 "${escapeHtml(name)}" 添加成功！`, 'success');
 }
 
 // 显示临时消息
@@ -712,86 +621,93 @@ function showTemporaryMessage(message, type) {
     }, 3000);
 }
 
-// 兑换礼物
+// 兑换礼物 - 直接更新云端
 async function redeemGift(giftId) {
-    // 确保giftId是数字类型
-    const id = typeof giftId === 'string' ? parseInt(giftId) : giftId;
-    
-    // 查找礼物，先按ID查找，如果找不到再按索引查找
-    let gift = gifts.find(g => g.id === id);
-    if (!gift) {
-        gift = gifts[id]; // 按索引查找
-    }
-    
-    if (!gift) {
-        showTemporaryMessage('❌ 礼物不存在！', 'error');
-        return;
-    }
-
-    if (currentPoints < gift.points) {
-        showTemporaryMessage('❌ 积分不足！', 'error');
-        return;
-    }
-
-    // 确认兑换
-    const confirmed = confirm(`确定要兑换 "${escapeHtml(gift.name)}" 吗？这将消耗 ${gift.points} 分。`);
-    if (!confirmed) return;
-
-    // 先更新本地数据
-    currentPoints -= gift.points;
-    const localRedeemDate = new Date().toLocaleString('zh-CN');
-    redeemedGifts.push({
-        name: gift.name,
-        points: gift.points,
-        redeem_date: localRedeemDate
-    });
-    
-    // 从本地礼物列表中移除
-    const indexToRemove = gifts.findIndex(g => g.id === gift.id);
-    if (indexToRemove !== -1) {
-        gifts.splice(indexToRemove, 1);
-    } else {
-        const indexByPosition = gifts.indexOf(gift);
-        if (indexByPosition !== -1) {
-            gifts.splice(indexByPosition, 1);
-        }
-    }
-    
-    // 保存到本地存储
-    saveDataToLocalStorage();
-    
-    // 更新UI
-    updatePointsDisplay();
-    updateGiftList();
-    updateRedeemedList();
-    
-    // 如果用户已登录，同步到云端
-    if (supabase) {
-        const { data: user, error: userError } = await supabase.auth.getUser();
-        if (!userError && user.user) {
-            try {
-                const now = new Date().toISOString();
-                // 调用数据库函数执行兑换逻辑
-                const { error: transactionError } = await supabase.rpc('execute_transaction', {
-                    user_id_param: user.user.id,
-                    gift_id_param: gift.id,
-                    gift_name_param: gift.name,
-                    gift_points_param: gift.points,
-                    redeem_date_param: now,
-                    current_points_param: currentPoints
-                });
-
-                if (transactionError) throw transactionError;
-                showTemporaryMessage('🎉 兑换成功！', 'success');
-            } catch (error) {
-                console.error('同步到云端失败:', error);
-                showTemporaryMessage('⚠️ 本地更新成功，但云端同步失败', 'warning');
+    try {
+        // 确保Supabase客户端已初始化
+        if (!supabase) {
+            console.log('Script.js: 初始化Supabase客户端...');
+            supabase = initializeSupabase();
+            if (!supabase) {
+                throw new Error('Supabase客户端初始化失败');
             }
-        } else {
-            showTemporaryMessage('🎉 兑换成功！(本地模式)', 'success');
         }
-    } else {
-        showTemporaryMessage('🎉 兑换成功！(本地模式)', 'success');
+        
+        const { data: user, error: userError } = await supabase.auth.getUser();
+        if (userError || !user.user) {
+            throw new Error('用户未登录');
+        }
+        
+        // 先从云端获取最新数据
+        await loadDataFromCloud();
+        
+        // 确保giftId是数字类型
+        const id = typeof giftId === 'string' ? parseInt(giftId) : giftId;
+        
+        // 查找礼物，先按ID查找，如果找不到再按索引查找
+        let gift = gifts.find(g => g.id === id);
+        if (!gift) {
+            gift = gifts[id]; // 按索引查找
+        }
+        
+        if (!gift) {
+            showTemporaryMessage('❌ 礼物不存在！', 'error');
+            return;
+        }
+
+        if (currentPoints < gift.points) {
+            showTemporaryMessage('❌ 积分不足！', 'error');
+            return;
+        }
+
+        // 确认兑换
+        const confirmed = confirm(`确定要兑换 "${escapeHtml(gift.name)}" 吗？这将消耗 ${gift.points} 分。`);
+        if (!confirmed) return;
+
+        // 更新本地数据
+        currentPoints -= gift.points;
+        const localRedeemDate = new Date().toLocaleString('zh-CN');
+        redeemedGifts.push({
+            name: gift.name,
+            points: gift.points,
+            redeem_date: localRedeemDate
+        });
+        
+        // 从本地礼物列表中移除
+        const indexToRemove = gifts.findIndex(g => g.id === gift.id);
+        if (indexToRemove !== -1) {
+            gifts.splice(indexToRemove, 1);
+        } else {
+            const indexByPosition = gifts.indexOf(gift);
+            if (indexByPosition !== -1) {
+                gifts.splice(indexByPosition, 1);
+            }
+        }
+        
+        // 数据已保存在云端，无需本地存储
+        
+        // 更新UI
+        updatePointsDisplay();
+        updateGiftList();
+        updateRedeemedList();
+        
+        // 同步到云端
+        const now = new Date().toISOString();
+        const { error: transactionError } = await supabase.rpc('execute_transaction', {
+            user_id_param: user.user.id,
+            gift_id_param: gift.id,
+            gift_name_param: gift.name,
+            gift_points_param: gift.points,
+            redeem_date_param: now,
+            current_points_param: currentPoints
+        });
+
+        if (transactionError) throw transactionError;
+        showTemporaryMessage('🎉 兑换成功！', 'success');
+        
+    } catch (error) {
+        console.error('兑换礼物失败:', error);
+        showTemporaryMessage('兑换礼物失败', 'error');
     }
 }
 
@@ -840,39 +756,6 @@ function updateAuthUI(user) {
     }
 }
 
-// // 页面加载时初始化
-// window.onload = async () => {
-//     // 添加输入验证
-//     const pointsChangeInput = document.getElementById('points-change');
-//     const giftPointsInput = document.getElementById('gift-points');
-    
-//     if (pointsChangeInput) validatePointsInput(pointsChangeInput);
-//     if (giftPointsInput) validateGiftPointsInput(giftPointsInput);
-    
-//     // 添加输入框焦点效果
-//     const inputs = document.querySelectorAll('input');
-//     inputs.forEach(input => {
-//         input.addEventListener('focus', function() {
-//             this.style.borderColor = '#4CAF50';
-//             this.style.boxShadow = '0 0 0 2px rgba(76, 175, 80, 0.2)';
-//         });
-        
-//         input.addEventListener('blur', function() {
-//             this.style.borderColor = '#ddd';
-//             this.style.boxShadow = 'none';
-//         });
-//     });
-    
-//     // 检查当前页面
-//     const currentPage = window.location.pathname.split('/').pop();
-    
-//     // 只在主页初始化认证
-//     if ((currentPage === 'index.html' || currentPage === '') && supabase) {
-//         // 初始化认证
-//         initAuth();
-//     }
-// };
-
 // HTML 转义函数，防止 XSS 攻击
 function escapeHtml(text) {
     const map = {
@@ -887,72 +770,204 @@ function escapeHtml(text) {
 }
 
 
-// 初始化应用
+// 显示未登录状态
+function showNotLoggedInState() {
+    console.log('Script.js: 显示未登录状态');
+    
+    // 隐藏所有需要登录的内容
+    const pointsSection = document.getElementById('points-section');
+    const giftsSection = document.getElementById('gifts-section');
+    const redeemedSection = document.getElementById('redeemed-section');
+    const loggedInState = document.getElementById('logged-in-state');
+    const notLoggedInState = document.getElementById('not-logged-in-state');
+    
+    if (pointsSection) pointsSection.style.display = 'none';
+    if (giftsSection) giftsSection.style.display = 'none';
+    if (redeemedSection) redeemedSection.style.display = 'none';
+    if (loggedInState) loggedInState.style.display = 'none';
+    
+    // 显示未登录提示
+    if (notLoggedInState) {
+        notLoggedInState.style.display = 'block';
+    }
+    
+    console.log('Script.js: 未登录状态UI已显示');
+}
+
+// 显示已登录状态
+function showLoggedInState(user) {
+    console.log('Script.js: 显示已登录状态:', user.email);
+    
+    // 显示所有需要登录的内容
+    const pointsSection = document.getElementById('points-section');
+    const giftsSection = document.getElementById('gifts-section');
+    const redeemedSection = document.getElementById('redeemed-section');
+    const loggedInState = document.getElementById('logged-in-state');
+    const notLoggedInState = document.getElementById('not-logged-in-state');
+    
+    if (pointsSection) pointsSection.style.display = 'block';
+    if (giftsSection) giftsSection.style.display = 'block';
+    if (redeemedSection) redeemedSection.style.display = 'block';
+    if (loggedInState) loggedInState.style.display = 'block';
+    
+    // 隐藏未登录提示
+    if (notLoggedInState) {
+        notLoggedInState.style.display = 'none';
+    }
+    
+    console.log('Script.js: 已登录状态UI已显示');
+}
+
+// 初始化应用 - 仅云端加载数据
 async function initializeApp() {
     try {
-        console.log('开始初始化应用...');
+        console.log('Script.js: 开始初始化应用...');
         
-        // 1. 检查用户登录状态
-        const isLoggedIn = await checkUserLoggedIn();
-        console.log('用户登录状态:', isLoggedIn ? '已登录' : '未登录');
+        // 确保Supabase客户端已初始化
+        if (!supabase) {
+            console.log('Script.js: 初始化Supabase客户端...');
+            supabase = initializeSupabase();
+            if (!supabase) {
+                console.error('Script.js: Supabase初始化失败');
+                showTemporaryMessage('❌ 数据库连接失败', 'error');
+                return;
+            }
+        }
         
-        if (!isLoggedIn) {
-            // 未登录，跳转到登录页面
-            console.log('用户未登录，跳转到登录页面...');
-            window.location.href = 'login.html';
+        // 直接通过Supabase检查登录状态
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+            // 用户未登录，显示未登录状态
+            console.log('Script.js: 用户未登录');
+            showNotLoggedInState();
             return;
         }
         
-        // 2. 获取当前用户信息
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error || !user) {
-            console.error('获取用户信息失败:', error);
-            window.location.href = 'login.html';
-            return;
-        }
+        // 用户已登录
+        currentUser = { email: user.email, id: user.id };
+        console.log('Script.js: 用户已登录:', user.email);
         
-        currentUser = user;
-        console.log('当前用户:', user.email);
-        
-        // 3. 从localStorage加载缓存数据（如果有）
-        loadDataFromLocalStorage();
-        
-        // 4. 从云端加载最新数据
+        // 仅从云端加载数据
         await loadDataFromCloud();
+        console.log('Script.js: 云端数据加载成功');
         
-        // 5. 更新UI
-        updateAuthUI(user);
+        showLoggedInState(currentUser);
+        
+        // 更新UI
         updatePointsDisplay();
         updateBehaviorLog();
         updateGiftList();
         updateRedeemedList();
         
-        console.log('应用初始化完成');
+        console.log('Script.js: 应用初始化完成');
         
     } catch (error) {
-        console.error('应用初始化失败:', error);
+        console.error('Script.js: 应用初始化失败:', error);
         showTemporaryMessage('❌ 应用初始化失败，请刷新页面重试', 'error');
     }
 }
 
-// 从localStorage加载数据
-function loadDataFromLocalStorage() {
-    console.log('从localStorage加载数据...');
+// 从云端加载用户数据
+async function loadDataFromCloud() {
+    console.log('Script.js: 开始从云端加载用户数据...');
     
-    // 加载用户信息
-    const savedUserEmail = localStorage.getItem('userEmail');
-    const savedUserId = localStorage.getItem('userId');
-    
-    if (savedUserEmail && savedUserId) {
-        console.log('找到缓存的用户信息:', savedUserEmail);
+    try {
+        // 确保Supabase客户端已初始化
+        if (!supabase) {
+            console.log('Script.js: 初始化Supabase客户端...');
+            supabase = initializeSupabase();
+            if (!supabase) {
+                throw new Error('Supabase客户端初始化失败');
+            }
+        }
+        
+        // 获取当前用户
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError || !user) {
+            console.error('Script.js: 获取用户信息失败:', userError);
+            throw new Error('用户未登录');
+        }
+        
+        console.log('Script.js: 当前用户:', user.email);
+        
+        // 并行加载所有用户数据
+        const [
+            profileResponse,
+            behaviorsResponse,
+            giftsResponse,
+            redeemedGiftsResponse
+        ] = await Promise.all([
+            // 加载用户档案
+            supabase
+                .from('profiles')
+                .select('current_points, total_points')
+                .eq('id', user.id)
+                .single(),
+            
+            // 加载行为记录
+            supabase
+                .from('behaviors')
+                .select('description, points, timestamp')
+                .eq('user_id', user.id)
+                .order('timestamp', { ascending: false }),
+            
+            // 加载礼物列表
+            supabase
+                .from('gifts')
+                .select('id, name, points, created_at')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false }),
+            
+            // 加载已兑换礼物
+            supabase
+                .from('redeemed_gifts')
+                .select('name, points, redeem_date')
+                .eq('user_id', user.id)
+                .order('redeem_date', { ascending: false })
+        ]);
+        
+        // 处理响应数据
+        const profile = profileResponse.data;
+        const behaviorsData = behaviorsResponse.data || [];
+        const giftsData = giftsResponse.data || [];
+        const redeemedGiftsData = redeemedGiftsResponse.data || [];
+        
+        console.log('Script.js: 数据加载成功:');
+        console.log('- 档案:', profile ? `当前积分: ${profile.current_points}, 总积分: ${profile.total_points}` : '无档案');
+        console.log('- 行为记录:', behaviorsData.length, '条');
+        console.log('- 礼物:', giftsData.length, '个');
+        console.log('- 已兑换礼物:', redeemedGiftsData.length, '个');
+        
+        // 更新本地数据
+        if (profile) {
+            currentPoints = profile.current_points || 0;
+            totalPoints = profile.total_points || 0;
+        }
+        behaviors = behaviorsData;
+        gifts = giftsData;
+        redeemedGifts = redeemedGiftsData;
+        
+        console.log('Script.js: 云端数据加载完成');
+        return true;
+        
+    } catch (error) {
+        console.error('Script.js: 从云端加载数据失败:', error);
+        throw error;
     }
+}
+
+// 从sessionStorage加载数据 - 登录页面存储的数据
+function loadDataFromSessionStorage() {
+    console.log('从sessionStorage加载数据...');
     
     // 加载业务数据
-    const savedCurrentPoints = localStorage.getItem('currentPoints');
-    const savedTotalPoints = localStorage.getItem('totalPoints');
-    const savedBehaviors = localStorage.getItem('behaviors');
-    const savedGifts = localStorage.getItem('gifts');
-    const savedRedeemedGifts = localStorage.getItem('redeemedGifts');
+    const savedCurrentPoints = sessionStorage.getItem('currentPoints');
+    const savedTotalPoints = sessionStorage.getItem('totalPoints');
+    const savedBehaviors = sessionStorage.getItem('behaviors');
+    const savedGifts = sessionStorage.getItem('gifts');
+    const savedRedeemedGifts = sessionStorage.getItem('redeemedGifts');
     
     if (savedCurrentPoints) currentPoints = parseInt(savedCurrentPoints) || 0;
     if (savedTotalPoints) totalPoints = parseInt(savedTotalPoints) || 0;
@@ -981,108 +996,69 @@ function loadDataFromLocalStorage() {
         }
     }
     
-    console.log('本地数据加载完成');
+    console.log('sessionStorage数据加载完成');
 }
 
-// 从云端加载数据
-async function loadDataFromCloud() {
-    if (!currentUser || !supabase) {
-        console.log('无法加载云端数据：用户未登录或Supabase未初始化');
-        return;
-    }
-    
-    console.log('从云端加载数据...');
+// 移除loadDataFromCloud函数 - 数据加载逻辑全部移至login页面
+
+// 数据保存到云端 - 移除本地存储依赖
+async function saveDataToCloud() {
+    console.log('保存数据到云端...');
     
     try {
-        // 从profiles表获取积分信息
-        const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('current_points, total_points')
-            .eq('id', currentUser.id)
-            .single();
-        
-        if (profileError && profileError.code !== 'PGRST116') {
-            throw profileError;
+        // 确保Supabase客户端已初始化
+        if (!supabase) {
+            console.log('Script.js: 初始化Supabase客户端...');
+            supabase = initializeSupabase();
+            if (!supabase) {
+                throw new Error('Supabase客户端初始化失败');
+            }
         }
         
-        // 从behaviors表获取行为记录
-        const { data: behaviorsData, error: behaviorsError } = await supabase
-            .from('behaviors')
-            .select('description, points, timestamp')
-            .eq('user_id', currentUser.id)
-            .order('timestamp', { ascending: false });
-        
-        if (behaviorsError) throw behaviorsError;
-        
-        // 从gifts表获取礼物信息
-        const { data: giftsData, error: giftsError } = await supabase
-            .from('gifts')
-            .select('id, name, points')
-            .eq('user_id', currentUser.id)
-            .order('id', { ascending: false });
-        
-        if (giftsError) throw giftsError;
-        
-        // 从redeemed_gifts表获取已兑换礼物信息
-        const { data: redeemedData, error: redeemedError } = await supabase
-            .from('redeemed_gifts')
-            .select('id, gift_id, name, points, redeem_date')
-            .eq('user_id', currentUser.id)
-            .order('redeem_date', { ascending: false });
-        
-        if (redeemedError) throw redeemedError;
-        
-        // 更新本地数据
-        if (profileData) {
-            currentPoints = profileData.current_points || 0;
-            totalPoints = profileData.total_points || 0;
+        const { data: user, error } = await supabase.auth.getUser();
+        if (error || !user) {
+            throw new Error('用户未登录');
         }
         
-        if (behaviorsData) {
-            behaviors = behaviorsData;
-        }
+        // 并行更新所有数据
+        await Promise.all([
+            // 更新用户档案
+            supabase
+                .from('profiles')
+                .update({ 
+                    current_points: currentPoints,
+                    total_points: totalPoints,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', user.user.id),
+            
+            // 这里可以添加其他数据表的更新逻辑
+            // 行为记录、礼物列表等通常不需要全量更新
+        ]);
         
-        if (giftsData) {
-            gifts = giftsData;
-        }
-        
-        if (redeemedData) {
-            redeemedGifts = redeemedData;
-        }
-        
-        // 保存到localStorage
-        saveDataToLocalStorage();
-        
-        console.log('云端数据加载完成');
+        console.log('云端数据保存完成');
         
     } catch (error) {
-        console.error('从云端加载数据失败:', error);
-        // 使用本地数据继续运行
-        showTemporaryMessage('⚠️ 云端数据加载失败，使用本地数据', 'warning');
+        console.error('保存到云端失败:', error);
+        throw error;
     }
 }
 
-// 保存数据到localStorage
-function saveDataToLocalStorage() {
-    localStorage.setItem('currentPoints', currentPoints.toString());
-    localStorage.setItem('totalPoints', totalPoints.toString());
-    localStorage.setItem('behaviors', JSON.stringify(behaviors));
-    localStorage.setItem('gifts', JSON.stringify(gifts));
-    localStorage.setItem('redeemedGifts', JSON.stringify(redeemedGifts));
-}
+
+// 移除复杂的Supabase初始化逻辑 - 认证逻辑全部移至login页面
 
 
-// 页面加载完成后的初始化
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('主页开始加载...');
+// 页面加载完成后的初始化 - 简化版本
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('=== Script.js: 页面加载完成，开始初始化应用 ===');
     
     // 检查当前页面
     const currentPage = window.location.pathname.split('/').pop();
-    console.log('当前页面:', currentPage);
+    console.log('Script.js: 当前页面:', currentPage);
     
-    // 只在主页进行初始化
+    // 只在主页执行应用初始化
     if (currentPage === 'index.html' || currentPage === '') {
-        console.log('在主页，开始初始化...');
-        initializeApp();
+        console.log('Script.js: 在主页，开始初始化应用...');
+        await initializeApp();
     }
 });
