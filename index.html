@@ -6,7 +6,7 @@
     <title>孩子积分奖励系统</title>
     <link rel="stylesheet" href="style.css">
     <!-- Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="supabase.min.js"></script>
     <script>
         // 页面加载日志
         console.log('index.html页面开始加载...');
@@ -19,23 +19,22 @@
     <div class="container">
         <h1>🌟 孩子积分奖励系统</h1>
         
-        <!-- 用户认证区域 -->
-        <div id="auth-section">
-            <div id="auth-forms">
-                <!-- 已登录状态显示 -->
-                <div id="logged-in" class="auth-form" style="display: none;">
-                    <h3>👤 用户面板</h3>
-                    <p>欢迎，<span id="user-email"></span></p>
-                    <button onclick="signOut()">退出登录</button>
+        <!-- 用户认证状态卡片 -->
+        <div id="auth-status-card" style="margin-bottom: 15px;">
+            <!-- 已登录状态 -->
+            <div id="logged-in-state" style="display: none; background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.9rem; color: #9C27B0; font-weight: 500;">欢迎，<span id="user-email"></span></span>
+                    <button onclick="signOut()" style="padding: 6px 12px; font-size: 0.8rem; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer;">退出</button>
                 </div>
             </div>
-        </div>
-        
-        <!-- 登录状态信息 -->
-        <div class="points-display" id="login-status-card" style="display: none;">
-            <div class="points-card">
-                <div class="points-value" id="login-status-text">未登录</div>
-                <div class="points-label">登录状态</div>
+            
+            <!-- 未登录状态 -->
+            <div id="not-logged-in-state" style="display: none; background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.9rem; color: #ff9800;">需要登录才能使用</span>
+                    <button onclick="window.location.href='login.html'" style="padding: 6px 12px; font-size: 0.8rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">登录</button>
+                </div>
             </div>
         </div>
         
