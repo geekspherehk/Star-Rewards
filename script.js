@@ -12,6 +12,62 @@ window.addEventListener('unhandledrejection', (event) => {
     console.error('未处理的Promise拒绝:', event.reason);
 });
 
+// 检测URL是否为电商平台URL
+function isEcommerceUrl(url) {
+    const ecommercePatterns = [
+        /jd\.com/,           // 京东
+        /tmall\.com/,        // 天猫
+        /taobao\.com/,       // 淘宝
+        /suning\.com/,       // 苏宁
+        /amazon\.(cn|com)/,  // 亚马逊
+        /pinduoduo\.com/,    // 拼多多
+        /dangdang\.com/,     // 当当
+        /vip\.com/,          // 唯品会
+        /youzan\.com/,       // 有赞
+        /mi\.com/,           // 小米
+        /huawei\.com/,       // 华为
+        /lenovo\.com/        // 联想
+    ];
+    
+    return ecommercePatterns.some(pattern => pattern.test(url));
+}
+
+// 从电商平台URL提取商品图片
+async function extractProductImageFromUrl(url) {
+    try {
+        // 对于不同电商平台，使用不同的策略提取或生成图片URL
+        if (url.includes('jd.com')) {
+            // 京东：尝试从URL中提取商品ID并生成图片URL
+            const match = url.match(/item\.jd\.com\/(\d+)\.html/);
+            if (match && match[1]) {
+                const productId = match[1];
+                // 返回京东商品主图URL（注意：这是基于京东图片CDN规则生成的）
+                return `https://img12.360buyimg.com/n7/jfs/t${productId.slice(-3)}/${productId}/smalls/${productId}_1.jpg`;
+            }
+        } else if (url.includes('tmall.com') || url.includes('taobao.com')) {
+            // 淘宝/天猫：尝试从URL中提取商品ID
+            const match = url.match(/id=(\d+)/) || url.match(/item\.(taobao|tmall)\.com\/item\.htm\?(.*?)(?:id=(\d+))/);
+            if (match && match[1]) {
+                const productId = match[1];
+                // 使用淘宝商品图片占位服务
+                return `https://img.alicdn.com/imgextra/i${productId.slice(-1)}/${productId}.jpg`;
+            }
+        } else if (url.includes('amazon')) {
+            // 亚马逊：使用通用占位图
+            return 'https://m.media-amazon.com/images/G/01/gc/designs/livepreview/amazon_dkblue_noto_email_v2016_us-main._CB468775337_.png';
+        } else {
+            // 其他电商平台：使用商品详情页的通用图片占位服务
+            return `https://via.placeholder.com/80?text=商品图片`;
+        }
+        
+        // 如果无法提取，则使用默认的商品图片占位图
+        return 'https://via.placeholder.com/80?text=商品';
+    } catch (error) {
+        console.error('提取商品图片失败:', error);
+        return null;
+    }
+}
+
 // 初始化Supabase客户端
 function initializeSupabase() {
     try {
@@ -190,7 +246,7 @@ function updateBehaviorLog() {
     if (behaviors.length === 0) {
         const emptyMessage = document.createElement('div');
         emptyMessage.className = 'empty-behavior-message';
-        emptyMessage.innerHTML = '📋 暂无行为记录，开始记录孩子的好行为吧！';
+        emptyMessage.innerHTML = '📋 暂无记录，开始记录您的行为吧！';
         logContainer.appendChild(emptyMessage);
         return;
     }
@@ -258,21 +314,101 @@ function updateGiftList() {
         const li = document.createElement('li');
         li.className = 'gift-item';
         
+        // 礼物内容容器
         const contentDiv = document.createElement('div');
         contentDiv.className = 'item-content';
+        
+        // 礼物图片区域
+        const imageDiv = document.createElement('div');
+        imageDiv.className = 'gift-image-container';
+        if (gift.image_url) {
+            // 检查是否有原始电商URL
+            const hasOriginalUrl = gift.original_url && isEcommerceUrl(gift.original_url);
+            
+            if (hasOriginalUrl) {
+                // 创建可点击的链接
+                const link = document.createElement('a');
+                link.href = gift.original_url;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                
+                const img = document.createElement('img');
+                img.src = gift.image_url;
+                img.alt = gift.name;
+                img.className = 'gift-image';
+                img.onerror = function() {
+                    this.src = 'https://via.placeholder.com/80';
+                    this.alt = '礼物图片';
+                };
+                
+                link.appendChild(img);
+                imageDiv.appendChild(link);
+            } else {
+                const img = document.createElement('img');
+                img.src = gift.image_url;
+                img.alt = gift.name;
+                img.className = 'gift-image';
+                img.onerror = function() {
+                    this.src = 'https://via.placeholder.com/80';
+                    this.alt = '礼物图片';
+                };
+                imageDiv.appendChild(img);
+            }
+        } else {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'gift-image-placeholder';
+            placeholder.textContent = '🎁';
+            imageDiv.appendChild(placeholder);
+        }
+        
+        // 礼物信息区域
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'gift-info';
+        
+        // 礼物标题和类别
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'gift-header';
         
         const titleDiv = document.createElement('div');
         titleDiv.className = 'item-title';
         titleDiv.textContent = gift.name;
         
-        const detailsDiv = document.createElement('div');
-        detailsDiv.className = 'item-details';
-        detailsDiv.textContent = `需要 ${gift.points} 分`;
+        if (gift.category) {
+            const categoryBadge = document.createElement('span');
+            categoryBadge.className = 'category-badge';
+            categoryBadge.textContent = gift.category;
+            headerDiv.appendChild(categoryBadge);
+        }
         
-        contentDiv.appendChild(titleDiv);
-        contentDiv.appendChild(detailsDiv);
+        headerDiv.appendChild(titleDiv);
+        
+        // 礼物描述
+        if (gift.description) {
+            const descDiv = document.createElement('div');
+            descDiv.className = 'gift-description';
+            // 如果有HTML格式的描述（包含可点击链接），则使用它
+            if (gift.description_html) {
+                descDiv.innerHTML = gift.description_html;
+            } else {
+                // 否则使用原始文本描述
+                descDiv.textContent = gift.description;
+            }
+            infoDiv.appendChild(descDiv);
+        }
+        
+        // 礼物积分要求
+        const pointsDiv = document.createElement('div');
+        pointsDiv.className = 'item-details';
+        pointsDiv.textContent = `需要 ${gift.points} 分`;
+        
+        infoDiv.appendChild(headerDiv);
+        infoDiv.appendChild(pointsDiv);
+        
+        contentDiv.appendChild(imageDiv);
+        contentDiv.appendChild(infoDiv);
         li.appendChild(contentDiv);
         
+        // 兑换按钮
         const redeemBtn = document.createElement('button');
         redeemBtn.className = 'redeem-btn';
         redeemBtn.textContent = '🎁 兑换';
@@ -303,7 +439,7 @@ function updateRedeemedList() {
     if (redeemedGifts.length === 0) {
         const emptyMessage = document.createElement('div');
         emptyMessage.className = 'empty-redeemed-message';
-        emptyMessage.innerHTML = '🎁 还没有兑换记录，快去兑换喜欢的礼物吧！';
+        emptyMessage.innerHTML = '🎁 还没有兑换记录，快去兑换喜欢的奖励吧！';
         redeemedList.appendChild(emptyMessage);
         return;
     }
@@ -333,19 +469,83 @@ function updateRedeemedList() {
         itemElement.className = 'redeemed-item';
         itemElement.style.animationDelay = `${index * 0.1}s`;
         
-        // 礼物图标
-        const iconDiv = document.createElement('div');
-        iconDiv.className = 'redeemed-icon';
-        iconDiv.textContent = '🎁';
+        // 礼物图片区域
+        const imageDiv = document.createElement('div');
+        imageDiv.className = 'redeemed-image-container';
+        if (item.image_url) {
+            // 检查是否有原始电商URL
+            const hasOriginalUrl = item.original_url && isEcommerceUrl(item.original_url);
+            
+            if (hasOriginalUrl) {
+                // 创建可点击的链接
+                const link = document.createElement('a');
+                link.href = item.original_url;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                
+                const img = document.createElement('img');
+                img.src = item.image_url;
+                img.alt = item.name;
+                img.className = 'redeemed-image';
+                img.onerror = function() {
+                    this.src = 'https://via.placeholder.com/60';
+                    this.alt = '礼物图片';
+                };
+                
+                link.appendChild(img);
+                imageDiv.appendChild(link);
+            } else {
+                const img = document.createElement('img');
+                img.src = item.image_url;
+                img.alt = item.name;
+                img.className = 'redeemed-image';
+                img.onerror = function() {
+                    this.src = 'https://via.placeholder.com/60';
+                    this.alt = '礼物图片';
+                };
+                imageDiv.appendChild(img);
+            }
+        } else {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'redeemed-image-placeholder';
+            placeholder.textContent = '🎁';
+            imageDiv.appendChild(placeholder);
+        }
         
         // 内容区域
         const contentDiv = document.createElement('div');
         contentDiv.className = 'redeemed-content';
         
-        // 礼物名称
+        // 礼物标题和类别
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'redeemed-header';
+        
         const nameDiv = document.createElement('div');
         nameDiv.className = 'redeemed-name';
         nameDiv.textContent = item.name;
+        
+        if (item.category) {
+            const categoryBadge = document.createElement('span');
+            categoryBadge.className = 'category-badge small';
+            categoryBadge.textContent = item.category;
+            headerDiv.appendChild(categoryBadge);
+        }
+        
+        headerDiv.appendChild(nameDiv);
+        
+        // 礼物描述
+        if (item.description) {
+            const descDiv = document.createElement('div');
+            descDiv.className = 'redeemed-description';
+            // 如果有HTML格式的描述（包含可点击链接），则使用它
+            if (item.description_html) {
+                descDiv.innerHTML = item.description_html;
+            } else {
+                // 否则使用原始文本描述
+                descDiv.textContent = item.description;
+            }
+            contentDiv.appendChild(descDiv);
+        }
         
         // 底部信息
         const infoDiv = document.createElement('div');
@@ -364,10 +564,10 @@ function updateRedeemedList() {
         infoDiv.appendChild(pointsSpan);
         infoDiv.appendChild(dateSpan);
         
-        contentDiv.appendChild(nameDiv);
+        contentDiv.appendChild(headerDiv);
         contentDiv.appendChild(infoDiv);
         
-        itemElement.appendChild(iconDiv);
+        itemElement.appendChild(imageDiv);
         itemElement.appendChild(contentDiv);
         
         giftsContainer.appendChild(itemElement);
@@ -509,10 +709,57 @@ async function addPoints() {
     }
 }
 
+// 将文本中的URL转换为可点击的HTML链接
+function textToHtmlWithLinks(text) {
+    if (!text) return '';
+    
+    // 增强的URL正则表达式，支持多种URL格式：
+    // 1. 带协议的URL: http://example.com, https://example.com
+    // 2. 以www开头的URL: www.example.com
+    // 3. 支持各种顶级域名和路径
+    const urlRegex = /(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=]+|www\.[\w\-._~:/?#[\]@!$&'()*+,;=]+)/g;
+    
+    // 安全协议列表
+    const safeProtocols = ['http:', 'https:', 'mailto:', 'tel:'];
+    
+    // 将匹配到的URL替换为HTML链接
+    return text.replace(urlRegex, function(url) {
+        // 处理URL，添加协议（如果需要）并进行安全检查
+        let href = url;
+        
+        // 检查URL是否包含协议
+        if (!url.includes('://') && !url.startsWith('mailto:') && !url.startsWith('tel:')) {
+            // 为没有协议的URL添加http://
+            href = 'http://' + url;
+        }
+        
+        // 安全检查：验证URL协议是否安全
+        const urlObj = new URL(href);
+        if (!safeProtocols.includes(urlObj.protocol)) {
+            // 如果是不安全的协议，返回原始文本而不是链接
+            return url;
+        }
+        
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+    });
+}
+
 // 添加礼物 - 直接更新云端
 async function addGift() {
     const name = document.getElementById('gift-name').value.trim();
     const giftPoints = parseInt(document.getElementById('gift-points').value);
+    const description = document.getElementById('gift-description').value.trim();
+    let imageUrl = document.getElementById('gift-image').value.trim();
+    
+    // 检查imageUrl是否为电商平台URL，如果是则自动提取商品图片
+    if (isEcommerceUrl(imageUrl)) {
+        console.log('检测到电商平台URL，尝试提取商品图片...');
+        const extractedImage = await extractProductImageFromUrl(imageUrl);
+        if (extractedImage) {
+            imageUrl = extractedImage;
+            console.log('成功提取商品图片:', imageUrl);
+        }
+    }
     
     if (!name) {
         alert('请输入礼物名称！');
@@ -544,9 +791,17 @@ async function addGift() {
         // 先从云端获取最新数据
         await loadDataFromCloud();
         
+        const originalInputUrl = document.getElementById('gift-image').value.trim();
+        // 将描述转换为HTML格式（包含可点击链接）
+        const descriptionHtml = textToHtmlWithLinks(description);
+        
         const gift = {
             name: name,
             points: giftPoints,
+            description: description, // 存储原始文本描述
+            description_html: descriptionHtml, // 存储转换后的HTML描述
+            image_url: imageUrl,
+            original_url: originalInputUrl, // 存储原始输入的URL（可能是电商URL）
             created_at: new Date().toISOString()
         };
         
@@ -560,6 +815,7 @@ async function addGift() {
                 user_id: user.user.id,
                 name: name,
                 points: giftPoints,
+                description: description,
                 created_at: gift.created_at
             });
         
@@ -573,6 +829,8 @@ async function addGift() {
         // 清空输入
         document.getElementById('gift-name').value = '';
         document.getElementById('gift-points').value = '';
+        document.getElementById('gift-description').value = '';
+        document.getElementById('gift-image').value = '';
         document.getElementById('gift-name').focus();
         
         showTemporaryMessage(`🎁 礼物 "${escapeHtml(name)}" 添加成功！`, 'success');
@@ -580,6 +838,27 @@ async function addGift() {
     } catch (error) {
         console.error('添加礼物失败:', error);
         showTemporaryMessage('添加礼物失败', 'error');
+    }
+}
+
+// 设置预设行为
+function setPresetBehavior(description, points) {
+    const descInput = document.getElementById('behavior-desc');
+    const pointsInput = document.getElementById('points-change');
+    
+    if (descInput && pointsInput) {
+        descInput.value = description;
+        pointsInput.value = points;
+        
+        // 给输入框添加视觉反馈
+        descInput.style.borderColor = '#4CAF50';
+        pointsInput.style.borderColor = '#4CAF50';
+        
+        // 2秒后恢复正常边框颜色
+        setTimeout(() => {
+            descInput.style.borderColor = '';
+            pointsInput.style.borderColor = '';
+        }, 2000);
     }
 }
 
@@ -670,6 +949,10 @@ async function redeemGift(giftId) {
         redeemedGifts.push({
             name: gift.name,
             points: gift.points,
+            description: gift.description || '',
+            description_html: gift.description_html || '', // 保留HTML格式的描述（包含可点击链接）
+            image_url: gift.image_url || '',
+            original_url: gift.original_url || '', // 添加原始电商URL
             redeem_date: localRedeemDate
         });
         
@@ -698,6 +981,7 @@ async function redeemGift(giftId) {
             gift_id_param: gift.id,
             gift_name_param: gift.name,
             gift_points_param: gift.points,
+            gift_description_param: gift.description || '',
             redeem_date_param: now,
             current_points_param: currentPoints
         });
@@ -916,14 +1200,14 @@ async function loadDataFromCloud() {
             // 加载礼物列表
             supabase
                 .from('gifts')
-                .select('id, name, points, created_at')
+                .select('id, name, points, description, created_at')
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false }),
             
             // 加载已兑换礼物
             supabase
                 .from('redeemed_gifts')
-                .select('name, points, redeem_date')
+                .select('name, points, description, redeem_date')
                 .eq('user_id', user.id)
                 .order('redeem_date', { ascending: false })
         ]);
@@ -946,8 +1230,24 @@ async function loadDataFromCloud() {
             totalPoints = profile.total_points || 0;
         }
         behaviors = behaviorsData;
-        gifts = giftsData;
-        redeemedGifts = redeemedGiftsData;
+        
+        // 处理礼物数据，添加description_html字段
+        gifts = giftsData.map(gift => ({
+            ...gift,
+            description_html: gift.description ? textToHtmlWithLinks(gift.description) : '',
+            // 添加其他必要的本地字段，使用默认值
+            image_url: gift.image_url || '',
+            original_url: gift.original_url || ''
+        }));
+        
+        // 处理已兑换礼物数据，添加description_html字段
+        redeemedGifts = redeemedGiftsData.map(gift => ({
+            ...gift,
+            description_html: gift.description ? textToHtmlWithLinks(gift.description) : '',
+            // 添加其他必要的本地字段，使用默认值
+            image_url: gift.image_url || '',
+            original_url: gift.original_url || ''
+        }));
         
         console.log('Script.js: 云端数据加载完成');
         return true;
@@ -1062,3 +1362,32 @@ document.addEventListener('DOMContentLoaded', async function() {
         await initializeApp();
     }
 });
+
+// Tab 切换功能
+function switchTab(tabId) {
+    // 隐藏所有标签页内容
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // 移除所有标签按钮的激活状态
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // 显示选中的标签页
+    const selectedTab = document.getElementById(tabId);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    // 激活对应的标签按钮
+    const selectedButton = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
+    if (selectedButton) {
+        selectedButton.classList.add('active');
+    }
+    
+    console.log('切换到标签页:', tabId);
+}

@@ -26,6 +26,7 @@ CREATE TABLE public.gifts (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   points INT NOT NULL,
+  description TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -36,6 +37,7 @@ CREATE TABLE public.redeemed_gifts (
   gift_id BIGINT,
   name TEXT NOT NULL,
   points INT NOT NULL,
+  description TEXT,
   redeem_date TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -78,6 +80,7 @@ CREATE OR REPLACE FUNCTION public.execute_transaction(
   gift_id_param BIGINT,
   gift_name_param TEXT,
   gift_points_param INT,
+  gift_description_param TEXT,
   redeem_date_param TIMESTAMPTZ,
   current_points_param INT
 )
@@ -88,8 +91,8 @@ BEGIN
   WHERE id = gift_id_param AND user_id = user_id_param;
 
   -- 添加到redeemed_gifts表
-  INSERT INTO public.redeemed_gifts (user_id, gift_id, name, points, redeem_date)
-  VALUES (user_id_param, gift_id_param, gift_name_param, gift_points_param, redeem_date_param);
+  INSERT INTO public.redeemed_gifts (user_id, gift_id, name, points, description, redeem_date)
+  VALUES (user_id_param, gift_id_param, gift_name_param, gift_points_param, gift_description_param, redeem_date_param);
 
   -- 更新profiles表中的积分
   UPDATE public.profiles 
