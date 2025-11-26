@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌟 卷娃小能手 - 宝贝成长激励系统</title>
+    <link rel="stylesheet" href="style_juanwa.css">
+    <!-- Supabase SDK -->
+    <script src="supabase.min.js"></script>
+    <script>
+        console.log('卷娃小能手页面开始加载...');
+        window.addEventListener('load', function() {
+            console.log('卷娃小能手页面加载完成');
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>🌟 卷娃小能手</h1>
+        <div class="subtitle">让宝贝快乐成长，每天都有小进步！</div>
+        
+        <!-- 用户认证状态卡片 -->
+        <div id="auth-status-card" style="margin-bottom: 15px;">
+            <!-- 已登录状态 -->
+            <div id="logged-in-state" style="display: none; background: linear-gradient(135deg, #fff9c4 0%, #ffecb3 100%); padding: 12px; border-radius: 16px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.9rem; color: #ff6f00; font-weight: 500;">欢迎回来，<span id="user-email"></span></span>
+                    <button onclick="signOut()" style="padding: 6px 12px; font-size: 0.8rem; background: #ff6f00; color: white; border: none; border-radius: 12px; cursor: pointer;">退出</button>
+                </div>
+            </div>
+            
+            <!-- 未登录状态 -->
+            <div id="not-logged-in-state" style="display: none; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 12px; border-radius: 16px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.9rem; color: #1976d2;">需要登录才能陪宝贝一起成长哦~</span>
+                    <button onclick="window.location.href='login.html'" style="padding: 6px 12px; font-size: 0.8rem; background: #1976d2; color: white; border: none; border-radius: 12px; cursor: pointer;">登录</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab 导航 -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('points-tab')">
+                <span class="tab-icon">🌈</span>
+                <span class="tab-text">成长积分</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('gifts-tab')">
+                <span class="tab-icon">🎁</span>
+                <span class="tab-text">宝贝愿望</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('history-tab')">
+                <span class="tab-icon">📚</span>
+                <span class="tab-text">成长日记</span>
+            </button>
+        </div>
+
+        <!-- 成长积分标签页 -->
+        <div id="points-tab" class="tab-content active">
+            <div class="points-display">
+                <div class="points-card star-card">
+                    <div class="points-value" id="current-points">0</div>
+                    <div class="points-label">小星星积分</div>
+                </div>
+                <div class="points-card trophy-card">
+                    <div class="points-value" id="total-points">0</div>
+                    <div class="points-label">累计获得</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <h3>🌟 记录宝贝的成长瞬间</h3>
+                <div class="form-row">
+                    <input type="text" id="behavior-desc" placeholder="宝贝今天做了什么棒的事情呢？">
+                    <input type="number" id="points-change" placeholder="奖励小星星（1-10颗）">
+                </div>
+                <div class="preset-behaviors" id="preset-behaviors">
+                    <span>快速记录:</span>
+                    <button class="preset-btn" onclick="setPresetBehavior('自己整理玩具', 3)">整理玩具 ⭐3</button>
+                    <button class="preset-btn" onclick="setPresetBehavior('主动刷牙洗脸', 2)">洗漱自理 ⭐2</button>
+                    <button class="preset-btn" onclick="setPresetBehavior('认真完成作业', 5)">认真学习 ⭐5</button>
+                    <button class="preset-btn" onclick="setPresetBehavior('帮助爸爸妈妈', 4)">助人为乐 ⭐4</button>
+                    <button class="preset-btn" onclick="setPresetBehavior('早睡早起', 2)">作息规律 ⭐2</button>
+                    <button class="preset-btn" onclick="setPresetBehavior('主动阅读', 4)">爱阅读 ⭐4</button>
+                </div>
+                <div class="button-group">
+                    <button class="add-points-btn" onclick="addPoints()">✨ 给小星星</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 宝贝愿望标签页 -->
+        <div id="gifts-tab" class="tab-content">
+            <div class="form-group">
+                <h3>🎁 添加宝贝的小愿望</h3>
+                <div class="form-row">
+                    <input type="text" id="gift-name" placeholder="宝贝想要的奖励是什么？">
+                    <input type="number" id="gift-points" placeholder="需要多少小星星？">
+                </div>
+                <div class="form-row">
+                    <input type="text" id="gift-description" placeholder="这个奖励有什么特别之处？">
+                </div>
+                <div class="form-row">
+                    <input type="text" id="gift-image" placeholder="奖励图片地址（可选）">
+                </div>
+                <button class="add-gift-btn" onclick="addGift()">🌟 添加到愿望清单</button>
+            </div>
+            
+            <h3>🎉 宝贝的愿望清单</h3>
+            <div class="gift-list-container" id="gift-list"></div>
+        </div>
+
+        <!-- 成长日记标签页 -->
+        <div id="history-tab" class="tab-content">
+            <div class="history-container">
+                <!-- 成长足迹区块 -->
+                <div class="history-section behavior-section">
+                    <div class="section-header">
+                        <h3>📚 成长足迹</h3>
+                        <div class="section-badge" id="behavior-count">0</div>
+                    </div>
+                    <div id="behavior-log"></div>
+                </div>
+                
+                <!-- 愿望达成区块 -->
+                <div class="history-section redeemed-section">
+                    <div class="section-header">
+                        <h3>🏆 愿望达成</h3>
+                        <div class="section-badge" id="redeemed-count">0</div>
+                    </div>
+                    <div id="redeemed-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script_juanwa.js"></script>
+</body>
+</html>
