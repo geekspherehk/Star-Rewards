@@ -1,4 +1,120 @@
-# Star-Rewards
+# Star-Rewards - 积分奖励系统
+
+一个功能完整的积分奖励管理系统，支持多主题切换，适用于个人成长、儿童激励等不同场景。
+
+## 🌟 功能特色
+
+- **经典版** - 简洁实用的积分奖励系统
+- **卷娃模式** - 专为儿童设计的成长激励系统  
+- **卷自己模式** - 个人成长专用的能量值驱动系统
+
+## 🚀 快速开始
+
+### 本地运行
+```bash
+# 使用Python启动本地服务器
+python -m http.server 8000
+
+# 或使用Node.js
+npx serve .
+```
+
+### GitHub Pages 部署
+
+1. **Fork 这个仓库**
+2. **启用 GitHub Pages** 
+   - 进入仓库 Settings → Pages
+   - Source 选择 "Deploy from a branch"
+   - Branch 选择 "main" 和 "/ (root)"
+   - 点击 Save
+3. **访问应用**
+   - 主题选择页：`https://[你的用户名].github.io/Star-Rewards/theme-selector.html`
+   - 经典版：`https://[你的用户名].github.io/Star-Rewards/index.html`
+   - 卷娃模式：`https://[你的用户名].github.io/Star-Rewards/theme_juanwa.html`
+   - 卷自己模式：`https://[你的用户名].github.io/Star-Rewards/theme_juanziji.html`
+
+## 📱 主题介绍
+
+### 🌈 卷娃模式
+专为儿童设计的成长激励系统：
+- 🎨 温暖明亮的界面设计
+- 🏆 宝贝愿望和成长日记
+- 💝 亲子互动体验
+- 🌟 成长积分系统
+
+### 💪 卷自己模式
+个人成长专用的自律打卡系统：
+- ⚡ 能量值概念替代积分
+- 🎯 目标奖励和成就系统
+- 📊 成长轨迹记录
+- 🔥 自律任务打卡
+
+### ⭐ 经典版
+简洁实用的积分管理系统：
+- ✨ 优雅的界面设计
+- 📊 完整的积分管理
+- 🎁 灵活的礼物兑换
+- 📈 详细的历史记录
+
+## 🛠️ 技术栈
+
+- HTML5 + CSS3
+- Vanilla JavaScript
+- Supabase (后端数据库)
+- 响应式设计
+
+## 📁 文件结构
+
+```
+Star-Rewards/
+├── index.html              # 经典版主页面
+├── theme-selector.html     # 主题选择页面
+├── theme_juanwa.html       # 卷娃主题页面
+├── theme_juanziji.html     # 卷自己主题页面
+├── style.css              # 经典版样式
+├── style_juanwa.css       # 卷娃主题样式
+├── style_juanziji.css     # 卷自己主题样式
+├── script.js              # 经典版脚本
+├── script_juanziji.js     # 卷自己主题脚本
+├── login.html             # 登录页面
+├── login.js               # 登录脚本
+├── supabase.min.js        # Supabase客户端
+└── README.md              # 项目说明
+```
+
+## 🔧 配置说明
+
+### Supabase 配置
+1. 在 [Supabase](https://supabase.com) 注册账号
+2. 创建新项目
+3. 在 `script.js` 和 `script_juanziji.js` 中更新以下配置：
+   ```javascript
+   const SUPABASE_URL = '你的Supabase项目URL';
+   const SUPABASE_ANON_KEY = '你的匿名访问密钥';
+   ```
+
+### 数据库结构
+详见 `sql.txt` 文件中的数据库表结构定义。
+
+## 🎯 使用场景
+
+- **家庭教育** - 使用卷娃模式激励孩子成长
+- **个人成长** - 使用卷自己模式提升自律能力
+- **团队管理** - 使用经典版进行积分奖励管理
+- **习惯养成** - 各种模式都支持习惯打卡和奖励机制
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request 来改进这个项目！
+
+## 📄 许可证
+
+MIT License - 详见 LICENSE 文件
+
+---
+
+## 原版说明
+
 小朋友行为奖励app，小朋友的奖励园
 
 
