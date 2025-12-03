@@ -123,6 +123,7 @@ let totalPoints = 0;
 let behaviors = [];
 let gifts = [];
 let redeemedGifts = [];
+let diaryEntries = [];
 
 // 当前登录用户信息
 let currentUser = null;
@@ -309,6 +310,13 @@ function updateBehaviorLog() {
 
 function updateGiftList() {
     const giftList = document.getElementById('gift-list');
+    
+    // 如果元素不存在，直接返回
+    if (!giftList) {
+        console.log('gift-list元素不存在，跳过更新');
+        return;
+    }
+    
     giftList.innerHTML = '';
     gifts.forEach((gift, index) => {
         const li = document.createElement('li');
@@ -425,6 +433,12 @@ function updateGiftList() {
 function updateRedeemedList() {
     const redeemedList = document.getElementById('redeemed-list');
     const redeemedCount = document.getElementById('redeemed-count');
+    
+    // 如果元素不存在，直接返回
+    if (!redeemedList) {
+        console.log('redeemed-list元素不存在，跳过更新');
+        return;
+    }
     
     // 更新计数徽章
     if (redeemedCount) {
@@ -1058,7 +1072,10 @@ function escapeHtml(text) {
 function showNotLoggedInState() {
     console.log('Script.js: 显示未登录状态');
     
-    // 隐藏所有需要登录的内容
+    // 从sessionStorage加载本地数据
+    loadDataFromSessionStorage();
+    
+    // 隐藏所有需要登录的内容，但保留成长日记模块可见
     const pointsSection = document.getElementById('points-section');
     const giftsSection = document.getElementById('gifts-section');
     const redeemedSection = document.getElementById('redeemed-section');
@@ -1074,6 +1091,9 @@ function showNotLoggedInState() {
     if (notLoggedInState) {
         notLoggedInState.style.display = 'block';
     }
+    
+    // 即使在未登录状态下也显示成长日记
+    updateDiaryList();
     
     console.log('Script.js: 未登录状态UI已显示');
 }
@@ -1143,6 +1163,7 @@ async function initializeApp() {
         updateBehaviorLog();
         updateGiftList();
         updateRedeemedList();
+        updateDiaryList();
         
         console.log('Script.js: 应用初始化完成');
         
@@ -1348,6 +1369,8 @@ async function saveDataToCloud() {
 // 移除复杂的Supabase初始化逻辑 - 认证逻辑全部移至login页面
 
 
+
+
 // 页面加载完成后的初始化 - 简化版本
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('=== Script.js: 页面加载完成，开始初始化应用 ===');
@@ -1363,31 +1386,147 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
-// Tab 切换功能
-function switchTab(tabId) {
-    // 隐藏所有标签页内容
-    const tabContents = document.querySelectorAll('.tab-content');
-    tabContents.forEach(content => {
+// 模块切换功能
+function showModule(moduleId) {
+    // 隐藏所有模块内容
+    const moduleContents = document.querySelectorAll('.module-content');
+    moduleContents.forEach(content => {
         content.classList.remove('active');
     });
     
-    // 移除所有标签按钮的激活状态
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    tabButtons.forEach(button => {
-        button.classList.remove('active');
+    // 移除所有模块卡片的激活状态
+    const moduleCards = document.querySelectorAll('.module-card');
+    moduleCards.forEach(card => {
+        card.classList.remove('active');
     });
     
-    // 显示选中的标签页
-    const selectedTab = document.getElementById(tabId);
-    if (selectedTab) {
-        selectedTab.classList.add('active');
+    // 显示选中的模块
+    const selectedModule = document.getElementById(moduleId);
+    if (selectedModule) {
+        selectedModule.classList.add('active');
     }
     
-    // 激活对应的标签按钮
-    const selectedButton = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
-    if (selectedButton) {
-        selectedButton.classList.add('active');
+    // 激活对应的模块卡片
+    const selectedCard = document.querySelector(`[onclick="showModule('${moduleId}')"]`);
+    if (selectedCard) {
+        selectedCard.classList.add('active');
     }
     
-    console.log('切换到标签页:', tabId);
+    console.log('切换到模块:', moduleId);
+}
+
+// 更新成长日记列表
+function updateDiaryList() {
+    const diaryList = document.getElementById('diary-list');
+    if (!diaryList) {
+        console.log('updateDiaryList: diary-list 元素未找到');
+        return;
+    }
+    
+    console.log('updateDiaryList: 开始更新成长日记');
+    console.log('updateDiaryList: 行为记录数量:', behaviors ? behaviors.length : 0);
+    console.log('updateDiaryList: 已兑换礼物数量:', redeemedGifts ? redeemedGifts.length : 0);
+    
+    if ((!behaviors || behaviors.length === 0) && (!redeemedGifts || redeemedGifts.length === 0)) {
+        diaryList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">还没有成长记录，快来记录第一次积分吧！</p>';
+        return;
+    }
+    
+    let html = '';
+    
+    // 创建响应式容器
+    html += '<div style="display: flex; gap: 20px; flex-wrap: wrap;">';
+    
+    // 行为记录列表
+    if (behaviors && behaviors.length > 0) {
+        // 按日期分组行为记录
+        const behaviorsByDate = {};
+        behaviors.forEach(behavior => {
+            const date = new Date(behavior.timestamp).toLocaleDateString('zh-CN');
+            if (!behaviorsByDate[date]) {
+                behaviorsByDate[date] = [];
+            }
+            behaviorsByDate[date].push(behavior);
+        });
+        
+        // 按日期排序
+        const sortedBehaviorDates = Object.keys(behaviorsByDate).sort((a, b) => new Date(b) - new Date(a));
+        
+        html += '<div class="diary-section" style="flex: 1; min-width: 300px;">';
+        html += '<h3 style="color: #4CAF50; margin-bottom: 15px; font-size: 18px;">📋 行为记录</h3>';
+        
+        sortedBehaviorDates.forEach(date => {
+            const dayBehaviors = behaviorsByDate[date];
+            const dayPoints = dayBehaviors.reduce((sum, b) => sum + b.points, 0);
+            
+            html += `
+                <div class="diary-entry">
+                    <div class="diary-date">${date} <span class="diary-points">+${dayPoints} 积分</span></div>
+                    <div class="diary-content">
+            `;
+            
+            dayBehaviors.forEach(behavior => {
+                html += `
+                    <div style="margin-bottom: 8px; padding: 8px; background: #f8fff8; border-left: 3px solid #4CAF50; border-radius: 4px;">
+                        <span style="color: #4CAF50; font-weight: bold;">+${behavior.points}</span>
+                        - ${behavior.description}
+                        <small style="color: #666; display: block; margin-top: 2px;">${new Date(behavior.timestamp).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}</small>
+                    </div>
+                `;
+            });
+            
+            html += '</div></div>';
+        });
+        
+        html += '</div>';
+    }
+    
+    // 已兑换礼物列表
+    if (redeemedGifts && redeemedGifts.length > 0) {
+        // 按日期分组已兑换礼物
+        const giftsByDate = {};
+        redeemedGifts.forEach(gift => {
+            const date = new Date(gift.redeem_date).toLocaleDateString('zh-CN');
+            if (!giftsByDate[date]) {
+                giftsByDate[date] = [];
+            }
+            giftsByDate[date].push(gift);
+        });
+        
+        // 按日期排序
+        const sortedGiftDates = Object.keys(giftsByDate).sort((a, b) => new Date(b) - new Date(a));
+        
+        html += '<div class="diary-section" style="flex: 1; min-width: 300px;">';
+        html += '<h3 style="color: #ff9800; margin-bottom: 15px; font-size: 18px;">🎁 愿望达成</h3>';
+        
+        sortedGiftDates.forEach(date => {
+            const dayGifts = giftsByDate[date];
+            const dayPoints = dayGifts.reduce((sum, g) => sum + g.points, 0);
+            
+            html += `
+                <div class="diary-entry">
+                    <div class="diary-date">${date} <span class="diary-points">-${dayPoints} 积分</span></div>
+                    <div class="diary-content">
+            `;
+            
+            dayGifts.forEach(gift => {
+                html += `
+                    <div style="margin-bottom: 8px; padding: 8px; background: #fff8f0; border-left: 3px solid #ff9800; border-radius: 4px;">
+                        <span style="color: #ff5722; font-weight: bold;">-${gift.points}</span>
+                        - 🏆 ${gift.name}
+                        <small style="color: #666; display: block; margin-top: 2px;">${new Date(gift.redeem_date).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}</small>
+                    </div>
+                `;
+            });
+            
+            html += '</div></div>';
+        });
+        
+        html += '</div>';
+    }
+    
+    html += '</div>'; // 关闭响应式容器
+    
+    console.log('updateDiaryList: 生成的HTML长度:', html.length);
+    diaryList.innerHTML = html;
 }

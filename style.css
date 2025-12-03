@@ -149,6 +149,115 @@ h3 {
 
 
 
+/* 模块卡片导航样式 */
+.module-cards {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.module-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #dee2e6;
+    border-radius: 15px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    min-width: 200px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.module-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    border-color: #667eea;
+}
+
+.module-card.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+    transform: translateY(-3px);
+}
+
+.module-card h3 {
+    margin: 0 0 10px 0;
+    color: inherit;
+    font-size: 1.2rem;
+}
+
+.module-card p {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.module-card.active h3,
+.module-card.active p {
+    color: white;
+}
+
+/* 模块内容区域 */
+.module-content {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.module-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 成长日记样式 */
+.diary-container {
+    background: #f9f9f9;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.diary-list {
+    display: grid;
+    gap: 15px;
+}
+
+.diary-entry {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border-left: 4px solid #667eea;
+}
+
+.diary-date {
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.diary-content {
+    color: #555;
+    line-height: 1.5;
+}
+
+.diary-points {
+    display: inline-block;
+    background: #667eea;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin-left: 10px;
+}
+
 /* 用户认证区域样式 */
 #auth-section {
     background: linear-gradient(135deg, #f0f4ff 0%, #e3e9ff 100%);

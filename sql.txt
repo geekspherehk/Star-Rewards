@@ -12,6 +12,11 @@ RETURNS TRIGGER AS $
 BEGIN
   INSERT INTO public.profiles (id, total_points)
   VALUES (new.id, 0);
+  
+  -- 同时创建 user_configs 记录，默认主题为 classic
+  INSERT INTO public.user_configs (user_id, selected_theme)
+  VALUES (new.id, 'classic');
+  
   RETURN new;
 END;
 $ LANGUAGE plpgsql SECURITY DEFINER;
@@ -51,13 +56,23 @@ CREATE TABLE public.behaviors (
   timestamp TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. 为新表启用行级安全 (RLS - Row Level Security)
+-- 5. 创建 user_configs 表，用于存储用户配置信息（包括主题选择）
+CREATE TABLE public.user_configs (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  selected_theme TEXT DEFAULT 'classic',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. 为新表启用行级安全 (RLS - Row Level Security)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gifts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.redeemed_gifts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.behaviors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_configs ENABLE ROW LEVEL SECURITY;
 
--- 5. 创建 RLS 策略，确保用户只能访问自己的数据
+-- 7. 创建 RLS 策略，确保用户只能访问自己的数据
 -- For profiles table
 CREATE POLICY "用户可以查看和修改自己的 profile" ON public.profiles
   FOR ALL USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
@@ -74,7 +89,11 @@ CREATE POLICY "用户可以管理自己的 redeemed_gifts" ON public.redeemed_gi
 CREATE POLICY "用户可以管理自己的 behaviors" ON public.behaviors
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- 6. 创建存储过程处理兑换礼物的事务
+-- For user_configs table
+CREATE POLICY "用户可以管理自己的 user_configs" ON public.user_configs
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- 8. 创建存储过程处理兑换礼物的事务
 CREATE OR REPLACE FUNCTION public.execute_transaction(
   user_id_param UUID,
   gift_id_param BIGINT,

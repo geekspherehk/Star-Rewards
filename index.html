@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人积分奖励系统</title>
+    <title>Best Me</title>
     <link rel="stylesheet" href="style.css">
     <!-- Supabase SDK -->
     <script src="supabase.min.js"></script>
@@ -17,7 +17,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🌟 个人积分奖励系统</h1>
+        <h1>🌟 Best Me</h1>
         
         <!-- 用户认证状态卡片 -->
         <div id="auth-status-card" style="margin-bottom: 15px;">
@@ -38,94 +38,85 @@
             </div>
         </div>
         
-        <!-- Tab 导航 -->
-        <div class="tab-navigation">
-            <button class="tab-btn active" onclick="switchTab('points-tab')">
-                <span class="tab-icon">⭐</span>
-                <span class="tab-text">积分管理</span>
-            </button>
-            <button class="tab-btn" onclick="switchTab('gifts-tab')">
-                <span class="tab-icon">🎁</span>
-                <span class="tab-text">礼物管理</span>
-            </button>
-            <button class="tab-btn" onclick="switchTab('history-tab')">
-                <span class="tab-icon">📋</span>
-                <span class="tab-text">历史记录</span>
-            </button>
-        </div>
-
-        <!-- 积分管理标签页 -->
-        <div id="points-tab" class="tab-content active">
-            <div class="points-display">
-                <div class="points-card">
-                    <div class="points-value" id="current-points">0</div>
-                    <div class="points-label">当前积分</div>
-                </div>
-                <div class="points-card">
-                    <div class="points-value" id="total-points">0</div>
-                    <div class="points-label">累计总积分</div>
-                </div>
+        <!-- 功能模块导航 -->
+        <div class="module-cards">
+            <div class="module-card active" onclick="showModule('points-module')">
+                <div style="font-size: 2.5rem; margin-bottom: 10px;">🌟</div>
+                <h3>成长积分</h3>
+                <p>记录成长，积累积分</p>
             </div>
-            
-            <div class="form-group">
-                <h3>📝 记录行为积分</h3>
-                <div class="form-row">
-                    <input type="text" id="behavior-desc" placeholder="描述行为（例如：完成作业）">
-                    <input type="number" id="points-change" placeholder="积分变化（正加负扣）">
-                </div>
-                <div class="preset-behaviors" id="preset-behaviors">
-                    <span>快速选择:</span>
-                    <button class="preset-btn" onclick="setPresetBehavior('完成学习任务', 10)">学习 +10</button>
-                    <button class="preset-btn" onclick="setPresetBehavior('锻炼', 5)">锻炼 +5</button>
-                    <button class="preset-btn" onclick="setPresetBehavior('早睡早起', 8)">早睡早起 +8</button>
-                    <button class="preset-btn" onclick="setPresetBehavior('按时完成工作', 15)">工作 +15</button>
-                </div>
-                <div class="button-group">
-                    <button class="add-points-btn" onclick="addPoints()">➕ 记录积分</button>
-                </div>
+            <div class="module-card" onclick="showModule('gifts-module')">
+                <div style="font-size: 2.5rem; margin-bottom: 10px;">🎁</div>
+                <h3>宝贝愿望</h3>
+                <p>记录愿望，激励成长</p>
+            </div>
+            <div class="module-card" onclick="showModule('diary-module')">
+                <div style="font-size: 2.5rem; margin-bottom: 10px;">📖</div>
+                <h3>成长日记</h3>
+                <p>回顾足迹，见证成长</p>
             </div>
         </div>
 
-        <!-- 礼物管理标签页 -->
-        <div id="gifts-tab" class="tab-content">
-            <div class="form-group">
-                <h3>🎁 添加礼物</h3>
-                <div class="form-row">
-                    <input type="text" id="gift-name" placeholder="礼物名称">
-                    <input type="number" id="gift-points" placeholder="所需积分">
-                </div>
-                <div class="form-row">
-                    <input type="text" id="gift-description" placeholder="礼物描述">
-                </div>
-                <div class="form-row">
-                    <input type="text" id="gift-image" placeholder="图片URL（可选）">
-                </div>
-                <button class="add-gift-btn" onclick="addGift()">➕ 添加礼物</button>
-            </div>
-            
-            <h3>🎉 礼物列表</h3>
-            <ul id="gift-list"></ul>
-        </div>
-
-        <!-- 历史记录标签页 -->
-        <div id="history-tab" class="tab-content">
-            <div class="history-container">
-                <!-- 行为日志区块 -->
-                <div class="history-section behavior-section">
-                    <div class="section-header">
-                        <h3>📋 行为日志</h3>
-                        <div class="section-badge" id="behavior-count">0</div>
+        <!-- 功能模块内容区域 -->
+        <div id="module-container">
+            <!-- 成长积分模块（默认显示） -->
+            <div id="points-module" class="module-content active">
+                <div class="points-display">
+                    <div class="points-card">
+                        <div class="points-value" id="current-points">0</div>
+                        <div class="points-label">当前积分</div>
                     </div>
-                    <div id="behavior-log"></div>
+                    <div class="points-card">
+                        <div class="points-value" id="total-points">0</div>
+                        <div class="points-label">累计总积分</div>
+                    </div>
                 </div>
                 
-                <!-- 已兑换礼物区块 -->
-                <div class="history-section redeemed-section">
-                    <div class="section-header">
-                        <h3>🏆 已兑换礼物</h3>
-                        <div class="section-badge" id="redeemed-count">0</div>
+                <div class="form-group">
+                    <h3>📝 记录行为积分</h3>
+                    <div class="form-row">
+                        <input type="text" id="behavior-desc" placeholder="描述行为（例如：完成作业）">
+                        <input type="number" id="points-change" placeholder="积分变化（正加负扣）">
                     </div>
-                    <div id="redeemed-list"></div>
+                    <div class="preset-behaviors" id="preset-behaviors">
+                        <span>快速选择:</span>
+                        <button class="preset-btn" onclick="setPresetBehavior('完成学习任务', 10)">学习 +10</button>
+                        <button class="preset-btn" onclick="setPresetBehavior('锻炼', 5)">锻炼 +5</button>
+                        <button class="preset-btn" onclick="setPresetBehavior('早睡早起', 8)">早睡早起 +8</button>
+                        <button class="preset-btn" onclick="setPresetBehavior('按时完成工作', 15)">工作 +15</button>
+                    </div>
+                    <div class="button-group">
+                        <button class="add-points-btn" onclick="addPoints()">➕ 记录积分</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 宝贝愿望模块 -->
+            <div id="gifts-module" class="module-content">
+                <div class="form-group">
+                    <h3>🎁 添加愿望</h3>
+                    <div class="form-row">
+                        <input type="text" id="gift-name" placeholder="愿望名称">
+                        <input type="number" id="gift-points" placeholder="所需积分">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="gift-description" placeholder="愿望描述">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="gift-image" placeholder="图片URL（可选）">
+                    </div>
+                    <button class="add-gift-btn" onclick="addGift()">➕ 添加愿望</button>
+                </div>
+                
+                <h3>🎉 愿望清单</h3>
+                <ul id="gift-list"></ul>
+            </div>
+
+            <!-- 成长日记模块 -->
+            <div id="diary-module" class="module-content">
+                <div class="diary-container">
+                    <h3>📖 成长足迹</h3>
+                    <div id="diary-list" class="diary-list"></div>
                 </div>
             </div>
         </div>

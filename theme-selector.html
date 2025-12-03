@@ -347,6 +347,110 @@
     </div>
 
     <script>
+        // Supabase配置
+        const supabaseUrl = 'https://pjxpyppafaxepdzqgume.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqeHB5cHBhZmF4ZXBkenFndW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NDk5NzgsImV4cCI6MjA3NTIyNTk3OH0.RmAMBhVeJ-bWHqjdrnHaRMvidR9Jvk5s7TyTPZN3GMM';
+        
+        // 初始化Supabase客户端
+        function initializeSupabase() {
+            if (typeof window.supabase === 'undefined') {
+                console.warn('Supabase SDK 未加载');
+                return null;
+            }
+            return window.supabase.createClient(supabaseUrl, supabaseKey);
+        }
+
+        // 获取当前用户信息
+        async function getCurrentUser() {
+            if (!supabase) return null;
+            
+            try {
+                const { data: { user }, error } = await supabase.auth.getUser();
+                if (error) {
+                    console.error('获取用户信息失败:', error);
+                    return null;
+                }
+                return user;
+            } catch (error) {
+                console.error('获取用户信息时出错:', error);
+                return null;
+            }
+        }
+
+        // 记录用户选择的主题
+        async function recordUserTheme(themeName) {
+            const user = await getCurrentUser();
+            if (!user) {
+                console.warn('用户未登录，无法记录主题选择');
+                return false;
+            }
+
+            try {
+                // 检查是否已存在用户配置记录
+                const { data: existingConfig } = await supabase
+                    .from('user_configs')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .single();
+
+                const now = new Date().toISOString();
+                
+                if (existingConfig) {
+                    // 更新现有记录
+                    const { error } = await supabase
+                        .from('user_configs')
+                        .update({
+                            selected_theme: themeName,
+                            updated_at: now
+                        })
+                        .eq('id', existingConfig.id);
+                    
+                    if (error) throw error;
+                    console.log('主题选择已更新:', themeName);
+                } else {
+                    // 创建新记录
+                    const { error } = await supabase
+                        .from('user_configs')
+                        .insert({
+                            user_id: user.id,
+                            selected_theme: themeName,
+                            created_at: now,
+                            updated_at: now
+                        });
+                    
+                    if (error) throw error;
+                    console.log('主题选择已记录:', themeName);
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('记录主题选择失败:', error);
+                return false;
+            }
+        }
+
+        // 处理主题选择
+        async function handleThemeSelection(themeName, targetUrl) {
+            console.log('用户选择主题:', themeName);
+            
+            // 记录主题选择
+            const recorded = await recordUserTheme(themeName);
+            if (recorded) {
+                console.log('主题选择记录成功');
+            } else {
+                console.warn('主题选择记录失败，但仍继续跳转');
+            }
+            
+            // 保存主题选择到localStorage作为备用
+            localStorage.setItem('selectedTheme', themeName);
+            
+            // 跳转到对应主题页面
+            window.location.href = targetUrl;
+        }
+
+        // 初始化Supabase
+        const supabase = initializeSupabase();
+
         // 添加页面加载动画
         document.addEventListener('DOMContentLoaded', function() {
             const cards = document.querySelectorAll('.theme-card');
@@ -358,6 +462,30 @@
                     card.style.opacity = '1';
                     card.style.transform = 'translateY(0)';
                 }, index * 200);
+            });
+
+            // 为每个主题卡片添加点击事件处理
+            document.querySelectorAll('.theme-card').forEach(card => {
+                card.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    
+                    let themeName, targetUrl;
+                    
+                    if (card.classList.contains('original')) {
+                        themeName = 'classic';
+                        targetUrl = 'index.html';
+                    } else if (card.classList.contains('juanwa')) {
+                        themeName = 'juanwa';
+                        targetUrl = 'theme_juanwa.html';
+                    } else if (card.classList.contains('juanziji')) {
+                        themeName = 'juanziji';
+                        targetUrl = 'theme_juanziji.html';
+                    }
+                    
+                    if (themeName && targetUrl) {
+                        await handleThemeSelection(themeName, targetUrl);
+                    }
+                });
             });
         });
 
