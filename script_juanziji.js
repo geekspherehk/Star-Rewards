@@ -390,6 +390,12 @@ function updatePointsDisplay() {
 function addBehaviorToList(behaviorLog) {
     const behaviorLogContainer = document.getElementById('behavior-log');
     
+    // 如果元素不存在，直接返回
+    if (!behaviorLogContainer) {
+        console.log('behavior-log元素不存在，跳过添加行为记录');
+        return;
+    }
+    
     const behaviorElement = document.createElement('div');
     behaviorElement.className = 'behavior-item';
     behaviorElement.style.cssText = `
@@ -431,6 +437,12 @@ function addBehaviorToList(behaviorLog) {
 function addGiftToList(gift) {
     const giftListContainer = document.getElementById('gift-list');
     
+    // 如果元素不存在，直接返回
+    if (!giftListContainer) {
+        console.log('gift-list元素不存在，跳过添加礼物');
+        return;
+    }
+    
     const giftElement = document.createElement('div');
     giftElement.className = 'gift-item';
     giftElement.style.cssText = `
@@ -468,6 +480,12 @@ function addGiftToList(gift) {
 // 添加已兑换礼物到列表
 function addRedeemedToList(redeemLog) {
     const redeemedListContainer = document.getElementById('redeemed-list');
+    
+    // 如果元素不存在，直接返回
+    if (!redeemedListContainer) {
+        console.log('redeemed-list元素不存在，跳过添加兑换记录');
+        return;
+    }
     
     const redeemedElement = document.createElement('div');
     redeemedElement.className = 'redeemed-item';
@@ -565,10 +583,15 @@ function loadData() {
 
 // 加载列表数据
 function loadLists() {
-    // 清空现有列表
-    document.getElementById('behavior-log').innerHTML = '';
-    document.getElementById('gift-list').innerHTML = '';
-    document.getElementById('redeemed-list').innerHTML = '';
+    // 获取所有列表元素
+    const behaviorLogElement = document.getElementById('behavior-log');
+    const giftListElement = document.getElementById('gift-list');
+    const redeemedListElement = document.getElementById('redeemed-list');
+    
+    // 清空现有列表（如果元素存在）
+    if (behaviorLogElement) behaviorLogElement.innerHTML = '';
+    if (giftListElement) giftListElement.innerHTML = '';
+    if (redeemedListElement) redeemedListElement.innerHTML = '';
     
     // 加载行为日志
     behaviorLogs.slice(0, 20).forEach(log => addBehaviorToList(log));
@@ -585,8 +608,11 @@ function loadLists() {
 
 // 更新计数
 function updateCounts() {
-    document.getElementById('behavior-count').textContent = behaviorLogs.length;
-    document.getElementById('redeemed-count').textContent = redeemedGifts.length;
+    const behaviorCountElement = document.getElementById('behavior-count');
+    const redeemedCountElement = document.getElementById('redeemed-count');
+    
+    if (behaviorCountElement) behaviorCountElement.textContent = behaviorLogs.length;
+    if (redeemedCountElement) redeemedCountElement.textContent = redeemedGifts.length;
 }
 
 // 加载历史数据

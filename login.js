@@ -375,9 +375,9 @@ async function handleSignIn() {
         const sessionCheck = localStorage.getItem('supabase_session');
         console.log('Login.js: 跳转前localStorage检查:', !!sessionCheck);
         
-        // 准备重定向到主页
-        console.log('准备重定向到主页...');
-        window.location.href = 'index.html';
+        // 准备重定向到主题选择页面
+        console.log('准备重定向到主题选择页面...');
+        window.location.href = 'theme-selector.html';
         
     } catch (error) {
         console.error('登录过程中发生错误:', error);
@@ -462,8 +462,8 @@ async function handleLoginSuccess(user) {
     // 短暂延迟确保保存完成
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    // 跳转到主页（数据加载将在主页进行）
-    window.location.href = 'index.html';
+    // 跳转到主题选择页面（数据加载将在对应主题页面进行）
+    window.location.href = 'theme-selector.html';
 }
 
 // 初始化认证状态 - 简化版本
@@ -502,10 +502,10 @@ async function initAuth() {
             // 显示提示信息
             showTemporaryMessage('✅ 检测到已登录状态，正在跳转...', 'success');
             
-            // 跳转到主页（数据加载将在主页进行）
-            console.log('Login.js: 用户已登录，跳转到主页...');
+            // 跳转到主题选择页面（数据加载将在对应主题页面进行）
+            console.log('Login.js: 用户已登录，跳转到主题选择页面...');
             setTimeout(() => {
-                window.location.href = 'index.html';
+                window.location.href = 'theme-selector.html';
             }, 1000);
         } else {
             console.log('Login.js: 用户未登录，显示登录表单');
