@@ -85,6 +85,10 @@
                         <button class="preset-btn" onclick="setPresetBehavior('早睡早起', 8)">早睡早起 +8</button>
                         <button class="preset-btn" onclick="setPresetBehavior('按时完成工作', 15)">工作 +15</button>
                     </div>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <a href="behavior-templates.html" class="template-link" style="display: inline-block; background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); transition: transform 0.3s ease; margin-right: 10px;">✨ 查看更多模板</a>
+                        <a href="rewards-for-her.html" class="template-link" style="display: inline-block; background: linear-gradient(45deg, #ff6b6b, #ffa8a8); color: white; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3); transition: transform 0.3s ease;">🌸 女性专属奖励</a>
+                    </div>
                     <div class="button-group">
                         <button class="add-points-btn" onclick="addPoints()">➕ 记录积分</button>
                     </div>
@@ -122,6 +126,38 @@
         </div>
     </div>
     
+    <script>
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            
+            // 检查是否有从模板页面传递过来的行为数据
+            const selectedBehavior = sessionStorage.getItem('selectedBehavior');
+            if (selectedBehavior) {
+                const behaviorData = JSON.parse(selectedBehavior);
+                sessionStorage.removeItem('selectedBehavior');
+                
+                // 自动填充行为描述和积分
+                document.getElementById('behavior-desc').value = behaviorData.description;
+                document.getElementById('points-change').value = behaviorData.points;
+                
+                // 显示提示信息
+                showTemporaryMessage(`已选择：${behaviorData.description} (+${behaviorData.points}积分)`, 'success');
+            }
+            
+            // 添加一些动画效果
+            setTimeout(() => {
+                document.querySelector('.container').style.opacity = '1';
+                document.querySelector('.container').style.transform = 'translateY(0)';
+            }, 100);
+        });
+    </script>
     <script src="script.js"></script>
+    <script>
+        // 确保script.js加载完成后再执行初始化
+        window.addEventListener('load', function() {
+            console.log('所有脚本加载完成，开始初始化...');
+        });
+    </script>
 </body>
 </html>

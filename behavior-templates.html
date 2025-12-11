@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>儿童行为奖励模板 - Best Me</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .category {
+            margin-bottom: 40px;
+        }
+        
+        .category-title {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+        }
+        
+        .category-title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+        
+        .behavior-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .behavior-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 5px solid #28a745;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .behavior-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .behavior-emoji {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .behavior-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .behavior-desc {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .points-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, #ffc107, #ff9800);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+        }
+        
+        .rewards-section {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 40px;
+        }
+        
+        .rewards-title {
+            font-size: 2rem;
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .rewards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .reward-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .reward-points {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #e91e63;
+            margin-bottom: 15px;
+        }
+        
+        .reward-examples {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+        .tips-section {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 40px;
+        }
+        
+        .tips-title {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .tips-list {
+            list-style: none;
+        }
+        
+        .tips-list li {
+            background: rgba(255, 255, 255, 0.7);
+            margin-bottom: 15px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            border-left: 4px solid #4caf50;
+            backdrop-filter: blur(5px);
+        }
+        
+        .back-btn {
+            display: inline-block;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 30px;
+            transition: transform 0.3s ease;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .quick-actions {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .quick-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+            transition: transform 0.3s ease;
+        }
+        
+        .quick-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .behavior-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .rewards-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .quick-actions {
+                bottom: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌟 行为奖励模板库</h1>
+            <p>为成长之路提供正向激励，培养良好习惯 • 卷自己专区为精致女性量身打造</p>
+        </div>
+        
+        <div class="content">
+            <!-- 日常生活类 -->
+            <div class="category">
+                <h2 class="category-title">🏠 日常生活好习惯</h2>
+                <div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('早晨自己起床', 3)">
+                        <span class="behavior-emoji">🌅</span>
+                        <div class="behavior-title">自己起床</div>
+                        <div class="behavior-desc">早上自己起床，不需要妈妈叫</div>
+                        <span class="points-badge">+3 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('主动刷牙洗脸', 2)">
+                        <span class="behavior-emoji">🦷</span>
+                        <div class="behavior-title">个人卫生</div>
+                        <div class="behavior-desc">主动刷牙洗脸，保持个人卫生</div>
+                        <span class="points-badge">+2 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('整理床铺', 3)">
+                        <span class="behavior-emoji">🛏️</span>
+                        <div class="behavior-title">整理床铺</div>
+                        <div class="behavior-desc">自己整理床铺，叠好被子</div>
+                        <span class="points-badge">+3 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('按时吃早餐', 2)">
+                        <span class="behavior-emoji">🥛</span>
+                        <div class="behavior-title">营养早餐</div>
+                        <div class="behavior-desc">按时吃早餐，不挑食</div>
+                        <span class="points-badge">+2 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('帮忙摆放餐具', 3)">
+                        <span class="behavior-emoji">🍽️</span>
+                        <div class="behavior-title">餐前准备</div>
+                        <div class="behavior-desc">用餐前主动帮忙摆放餐具</div>
+                        <span class="points-badge">+3 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('收拾餐具', 3)">
+                        <span class="behavior-emoji">🧽</span>
+                        <div class="behavior-title">餐后整理</div>
+                        <div class="behavior-desc">饭后主动收拾自己的餐具</div>
+                        <span class="points-badge">+3 积分</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 学习成长类 -->
+            <div class="category">
+                <h2 class="category-title">📚 学习成长好表现</h2>
+                <div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('按时完成作业', 5)">
+                        <span class="behavior-emoji">✏️</span>
+                        <div class="behavior-title">完成作业</div>
+                        <div class="behavior-desc">按时完成作业，不拖延</div>
+                        <span class="points-badge">+5 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('作业认真完成', 4)">
+                        <span class="behavior-emoji">📝</span>
+                        <div class="behavior-title">认真作业</div>
+                        <div class="behavior-desc">作业字迹工整，认真完成</div>
+                        <span class="points-badge">+4 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('主动复习', 4)">
+                        <span class="behavior-emoji">📖</span>
+                        <div class="behavior-title">主动复习</div>
+                        <div class="behavior-desc">主动复习当天学习内容</div>
+                        <span class="points-badge">+4 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('每天阅读30分钟', 4)">
+                        <span class="behavior-emoji">📚</span>
+                        <div class="behavior-title">每日阅读</div>
+                        <div class="behavior-desc">每天阅读30分钟以上</div>
+                        <span class="points-badge">+4 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('分享阅读内容', 3)">
+                        <span class="behavior-emoji">📖</span>
+                        <div class="behavior-title">阅读分享</div>
+                        <div class="behavior-desc">阅读后分享故事内容</div>
+                        <span class="points-badge">+3 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('写读书笔记', 5)">
+                        <span class="behavior-emoji">✍️</span>
+                        <div class="behavior-title">读书笔记</div>
+                        <div class="behavior-desc">写读书笔记或感想</div>
+                        <span class="points-badge">+5 积分</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 社交行为类 -->
+            <div class="category">
+                <h2 class="category-title">🤝 社交礼貌好行为</h2>
+                <div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('主动打招呼', 2)">
+                        <span class="behavior-emoji">👋</span>
+                        <div class="behavior-title">礼貌问候</div>
+                        <div class="behavior-desc">主动和家人朋友打招呼</div>
+                        <span class="points-badge">+2 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('常说礼貌用语', 2)">
+                        <span class="behavior-emoji">🙏</span>
+                        <div class="behavior-title">礼貌用语</div>
+                        <div class="behavior-desc">常说"请"、"谢谢"、"对不起"</div>
+                        <span class="points-badge">+2 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('帮助弟弟妹妹', 4)">
+                        <span class="behavior-emoji">🤗</span>
+                        <div class="behavior-title">乐于助人</div>
+                        <div class="behavior-desc">帮助弟弟妹妹或其他小朋友</div>
+                        <span class="points-badge">+4 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('友好微笑', 2)">
+                        <span class="behavior-emoji">😊</span>
+                        <div class="behavior-title">友善待人</div>
+                        <div class="behavior-desc">微笑面对他人，态度友好</div>
+                        <span class="points-badge">+2 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('团队合作', 4)">
+                        <span class="behavior-emoji">🤝</span>
+                        <div class="behavior-title">团队合作</div>
+                        <div class="behavior-desc">与同学友好合作完成任务</div>
+                        <span class="points-badge">+4 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('认真倾听', 3)">
+                        <span class="behavior-emoji">👂</span>
+                        <div class="behavior-title">认真倾听</div>
+                        <div class="behavior-desc">认真倾听他人说话</div>
+                        <span class="points-badge">+3 积分</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 个人品质类 -->
+            <div class="category">
+                <h2 class="category-title">💪 个人品质好表现</h2>
+                <div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('坚持运动30分钟', 4)">
+                        <span class="behavior-emoji">🏃‍♂️</span>
+                        <div class="behavior-title">坚持运动</div>
+                        <div class="behavior-desc">坚持运动30分钟以上</div>
+                        <span class="points-badge">+4 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('坚持练习技能', 5)">
+                        <span class="behavior-emoji">🎹</span>
+                        <div class="behavior-title">技能练习</div>
+                        <div class="behavior-desc">坚持练习乐器或技能</div>
+                        <span class="points-badge">+5 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('连续完成任务', 10)">
+                        <span class="behavior-emoji">📅</span>
+                        <div class="behavior-title">持之以恒</div>
+                        <div class="behavior-desc">连续一周完成所有任务</div>
+                        <span class="points-badge">+10 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('设定并实现目标', 6)">
+                        <span class="behavior-emoji">🎯</span>
+                        <div class="behavior-title">目标达成</div>
+                        <div class="behavior-desc">设定目标并努力实现</div>
+                        <span class="points-badge">+6 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('尝试新活动', 3)">
+                        <span class="behavior-emoji">🆕</span>
+                        <div class="behavior-title">勇于尝试</div>
+                        <div class="behavior-desc">尝试新的活动或游戏</div>
+                        <span class="points-badge">+3 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('主动解决问题', 4)">
+                        <span class="behavior-emoji">🤔</span>
+                        <div class="behavior-title">解决问题</div>
+                        <div class="behavior-desc">主动解决遇到的问题</div>
+                        <span class="points-badge">+4 积分</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 卷自己专区 - 适合20-45岁女性 -->
+            <div class="category">
+                <h2 class="category-title">💃 卷自己专区 • 精致女性养成</h2>
+                <div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('早起冥想10分钟', 8)">
+                        <span class="behavior-emoji">🧘‍♀️</span>
+                        <div class="behavior-title">晨间冥想</div>
+                        <div class="behavior-desc">早起进行10分钟冥想或正念练习</div>
+                        <span class="points-badge">+8 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('完整护肤流程', 6)">
+                        <span class="behavior-emoji">✨</span>
+                        <div class="behavior-title">精致护肤</div>
+                        <div class="behavior-desc">认真完成晨间/晚间护肤全流程</div>
+                        <span class="points-badge">+6 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('运动打卡30分钟', 10)">
+                        <span class="behavior-emoji">🏃‍♀️</span>
+                        <div class="behavior-title">活力运动</div>
+                        <div class="behavior-desc">完成30分钟以上运动（瑜伽/跑步/健身）</div>
+                        <span class="points-badge">+10 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('健康饮食计划', 8)">
+                        <span class="behavior-emoji">🥗</span>
+                        <div class="behavior-title">营养搭配</div>
+                        <div class="behavior-desc">按计划准备健康饮食，控制热量摄入</div>
+                        <span class="points-badge">+8 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('阅读自我提升书籍', 9)">
+                        <span class="behavior-emoji">📚</span>
+                        <div class="behavior-title">知识充电</div>
+                        <div class="behavior-desc">阅读女性成长/职场/心理类书籍30分钟</div>
+                        <span class="points-badge">+9 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('学习新技能', 12)">
+                        <span class="behavior-emoji">💻</span>
+                        <div class="behavior-title">技能提升</div>
+                        <div class="behavior-desc">学习新技能（编程/设计/语言等）1小时</div>
+                        <span class="points-badge">+12 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('整理生活空间', 7)">
+                        <span class="behavior-emoji">🏡</span>
+                        <div class="behavior-title">生活整理</div>
+                        <div class="behavior-desc">整理房间/衣柜，创造舒适生活环境</div>
+                        <span class="points-badge">+7 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('记录感恩日记', 6)">
+                        <span class="behavior-emoji">📝</span>
+                        <div class="behavior-title">感恩记录</div>
+                        <div class="behavior-desc">写感恩日记，记录生活中的美好</div>
+                        <span class="points-badge">+6 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('断舍离物品', 8)">
+                        <span class="behavior-emoji">🌱</span>
+                        <div class="behavior-title">极简生活</div>
+                        <div class="behavior-desc">清理不需要的物品，践行断舍离</div>
+                        <span class="points-badge">+8 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('理财记账', 5)">
+                        <span class="behavior-emoji">💰</span>
+                        <div class="behavior-title">财务管理</div>
+                        <div class="behavior-desc">记录当日收支，做好财务规划</div>
+                        <span class="points-badge">+5 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('社交联系', 5)">
+                        <span class="behavior-emoji">👭</span>
+                        <div class="behavior-title">关系维护</div>
+                        <div class="behavior-desc">主动联系朋友/家人，维护重要关系</div>
+                        <span class="points-badge">+5 积分</span>
+                    </div>
+                    
+                    <div class="behavior-card" onclick="selectBehavior('早睡美容觉', 8)">
+                        <span class="behavior-emoji">😴</span>
+                        <div class="behavior-title">美容觉</div>
+                        <div class="behavior-desc">23点前睡觉，保证充足美容觉</div>
+                        <span class="points-badge">+8 积分</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 奖励建议 -->
+            <div class="rewards-section">
+                <h2 class="rewards-title">🎁 奖励建议</h2>
+                <div class="rewards-grid">
+                    <div class="reward-card">
+                        <div class="reward-points">10-20 积分</div>
+                        <div class="reward-examples">
+                            🍪 选择喜欢的零食<br>
+                            📺 多15分钟动画时间<br>
+                            🎮 游戏时间延长<br>
+                            📚 选择睡前故事
+                        </div>
+                    </div>
+                    
+                    <div class="reward-card">
+                        <div class="reward-points">30-50 积分</div>
+                        <div class="reward-examples">
+                            🎪 去公园游玩<br>
+                            🍕 选择周末晚餐<br>
+                            🎬 家庭电影之夜<br>
+                            🛍️ 选择小玩具
+                        </div>
+                    </div>
+                    
+                    <div class="reward-card">
+                        <div class="reward-points">60-100 积分</div>
+                        <div class="reward-examples">
+                            🎡 游乐园一日游<br>
+                            🎁 期待已久的礼物<br>
+                            🏖️ 特别的外出活动<br>
+                            👑 "今日小主人"特权
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 使用建议 -->
+            <div class="tips-section">
+                <h2 class="tips-title">💡 使用建议</h2>
+                <ul class="tips-list">
+                    <li><strong>个性化调整：</strong>根据孩子的年龄和兴趣调整积分值</li>
+                    <li><strong>可视化追踪：</strong>使用积分表或星星贴纸记录</li>
+                    <li><strong>定期回顾：</strong>每周回顾表现，调整目标和奖励</li>
+                    <li><strong>积极反馈：</strong>多给予正面鼓励，不仅关注结果</li>
+                    <li><strong>家庭参与：</strong>让全家都参与到奖励系统中</li>
+                </ul>
+            </div>
+            
+            <div style="text-align: center; margin-bottom: 20px;">
+                <a href="index.html" class="back-btn">🚪 返回主页面</a>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="rewards-for-her.html" class="back-btn" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e); margin-left: 20px;">🌸 精致女性专属奖励</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="quick-actions">
+        <button class="quick-btn" onclick="scrollToTop()" title="回到顶部">⬆️</button>
+        <button class="quick-btn" onclick="showRandomBehavior()" title="随机推荐">🎲</button>
+    </div>
+    
+    <script>
+        // 选择行为并返回主页记录
+        function selectBehavior(description, points) {
+            if (confirm(`要记录"${description}"并获得${points}积分吗？`)) {
+                // 保存到sessionStorage供主页使用
+                sessionStorage.setItem('selectedBehavior', JSON.stringify({
+                    description: description,
+                    points: points
+                }));
+                
+                // 返回主页
+                window.location.href = 'index.html';
+            }
+        }
+        
+        // 回到顶部
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // 显示随机推荐行为
+        function showRandomBehavior() {
+            const behaviors = document.querySelectorAll('.behavior-card');
+            const randomIndex = Math.floor(Math.random() * behaviors.length);
+            const randomBehavior = behaviors[randomIndex];
+            
+            // 高亮显示
+            randomBehavior.style.transform = 'scale(1.05)';
+            randomBehavior.style.boxShadow = '0 15px 30px rgba(255, 107, 107, 0.4)';
+            
+            // 滚动到该行为
+            randomBehavior.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // 3秒后恢复
+            setTimeout(() => {
+                randomBehavior.style.transform = '';
+                randomBehavior.style.boxShadow = '';
+            }, 3000);
+        }
+        
+        // 页面加载动画
+        window.addEventListener('load', function() {
+            const cards = document.querySelectorAll('.behavior-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'all 0.6s ease';
+                    
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>
