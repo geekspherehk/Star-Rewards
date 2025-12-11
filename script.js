@@ -1068,6 +1068,16 @@ function escapeHtml(text) {
 }
 
 
+// 更新UI显示
+function updateUI() {
+    console.log('Script.js: 更新UI显示');
+    updatePointsDisplay();
+    updateBehaviorLog();
+    updateGiftList();
+    updateRedeemedList();
+    updateDiaryList();
+}
+
 // 显示未登录状态
 function showNotLoggedInState() {
     console.log('Script.js: 显示未登录状态');
@@ -1159,11 +1169,7 @@ async function initializeApp() {
         showLoggedInState(currentUser);
         
         // 更新UI
-        updatePointsDisplay();
-        updateBehaviorLog();
-        updateGiftList();
-        updateRedeemedList();
-        updateDiaryList();
+        updateUI();
         
         console.log('Script.js: 应用初始化完成');
         

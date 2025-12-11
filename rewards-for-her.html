@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌸 精致女性专属奖励库</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ffa8a8);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="sakura" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="2" fill="rgba(255,255,255,0.3)"/></pattern></defs><rect width="100" height="100" fill="url(%23sakura)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .rewards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .reward-category {
+            background: linear-gradient(135deg, #fff5f5, #ffe8e8);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .reward-category:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            border-color: #ff6b6b;
+        }
+
+        .category-title {
+            font-size: 1.5em;
+            color: #d63384;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .reward-items {
+            display: grid;
+            gap: 15px;
+        }
+
+        .reward-item {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .reward-item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.2);
+        }
+
+        .reward-icon {
+            font-size: 2em;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .reward-content {
+            flex: 1;
+        }
+
+        .reward-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 1.1em;
+        }
+
+        .reward-desc {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .reward-points {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+            box-shadow: 0 3px 10px rgba(255, 107, 107, 0.3);
+        }
+
+        .tips-section {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+
+        .tips-title {
+            font-size: 1.4em;
+            color: #495057;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .tip-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .tip-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .tip-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .tip-desc {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .back-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 30px auto 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .section-title {
+            font-size: 2em;
+            color: #d63384;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .rewards-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .reward-category {
+                padding: 20px;
+            }
+        }
+
+        .floating-decoration {
+            position: fixed;
+            pointer-events: none;
+            opacity: 0.1;
+            z-index: -1;
+        }
+
+        .sakura-1 {
+            top: 10%;
+            right: 5%;
+            font-size: 3em;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .sakura-2 {
+            bottom: 20%;
+            left: 3%;
+            font-size: 2.5em;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        .sakura-3 {
+            top: 60%;
+            right: 8%;
+            font-size: 2em;
+            animation: float 7s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-decoration sakura-1">🌸</div>
+    <div class="floating-decoration sakura-2">🌺</div>
+    <div class="floating-decoration sakura-3">🌷</div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🌸 精致女性专属奖励库</h1>
+            <p>为20-45岁现代女性量身定制的奖励建议 • 宠爱自己，从每一个小目标开始</p>
+        </div>
+
+        <div class="content">
+            <h2 class="section-title">✨ 奖励分类</h2>
+            
+            <div class="rewards-grid">
+                <!-- 小确幸奖励 (10-30积分) -->
+                <div class="reward-category">
+                    <div class="category-title">🌟 小确幸奖励 (10-30积分)</div>
+                    <div class="reward-items">
+                        <div class="reward-item" onclick="selectReward('香薰蜡烛', 15)">
+                            <div class="reward-icon">🕯️</div>
+                            <div class="reward-content">
+                                <div class="reward-name">香薰蜡烛</div>
+                                <div class="reward-desc">营造温馨氛围，放松身心</div>
+                            </div>
+                            <div class="reward-points">15积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('精致下午茶', 20)">
+                            <div class="reward-icon">☕</div>
+                            <div class="reward-content">
+                                <div class="reward-name">精致下午茶</div>
+                                <div class="reward-desc">一杯好咖啡配甜点</div>
+                            </div>
+                            <div class="reward-points">20积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('面膜时间', 12)">
+                            <div class="reward-icon">✨</div>
+                            <div class="reward-content">
+                                <div class="reward-name">面膜时间</div>
+                                <div class="reward-desc">给肌肤一个深层护理</div>
+                            </div>
+                            <div class="reward-points">12积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('鲜花陪伴', 18)">
+                            <div class="reward-icon">💐</div>
+                            <div class="reward-content">
+                                <div class="reward-name">鲜花陪伴</div>
+                                <div class="reward-desc">一束小花，点亮心情</div>
+                            </div>
+                            <div class="reward-points">18积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('音乐疗愈', 10)">
+                            <div class="reward-icon">🎵</div>
+                            <div class="reward-content">
+                                <div class="reward-name">音乐疗愈</div>
+                                <div class="reward-desc">购买一首喜欢的歌曲</div>
+                            </div>
+                            <div class="reward-points">10积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('阅读时光', 15)">
+                            <div class="reward-icon">📖</div>
+                            <div class="reward-content">
+                                <div class="reward-name">阅读时光</div>
+                                <div class="reward-desc">购买一本电子书或杂志</div>
+                            </div>
+                            <div class="reward-points">15积分</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 品质生活奖励 (40-80积分) -->
+                <div class="reward-category">
+                    <div class="category-title">💎 品质生活奖励 (40-80积分)</div>
+                    <div class="reward-items">
+                        <div class="reward-item" onclick="selectReward('护肤好物', 50)">
+                            <div class="reward-icon">🧴</div>
+                            <div class="reward-content">
+                                <div class="reward-name">护肤好物</div>
+                                <div class="reward-desc">购买心仪的护肤品</div>
+                            </div>
+                            <div class="reward-points">50积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('瑜伽课程', 60)">
+                            <div class="reward-icon">🧘‍♀️</div>
+                            <div class="reward-content">
+                                <div class="reward-name">瑜伽课程</div>
+                                <div class="reward-desc">线上一对一瑜伽课</div>
+                            </div>
+                            <div class="reward-points">60积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('精致美甲', 45)">
+                            <div class="reward-icon">💅</div>
+                            <div class="reward-content">
+                                <div class="reward-name">精致美甲</div>
+                                <div class="reward-desc">给自己一次美甲体验</div>
+                            </div>
+                            <div class="reward-points">45积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('健身装备', 70)">
+                            <div class="reward-icon">👟</div>
+                            <div class="reward-content">
+                                <div class="reward-name">健身装备</div>
+                                <div class="reward-desc">运动服或瑜伽垫</div>
+                            </div>
+                            <div class="reward-points">70积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('烹饪课程', 55)">
+                            <div class="reward-icon">👩‍🍳</div>
+                            <div class="reward-content">
+                                <div class="reward-name">烹饪课程</div>
+                                <div class="reward-desc">学习健康料理制作</div>
+                            </div>
+                            <div class="reward-points">55积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('香氛礼盒', 40)">
+                            <div class="reward-icon">🌸</div>
+                            <div class="reward-content">
+                                <div class="reward-name">香氛礼盒</div>
+                                <div class="reward-desc">香水或室内香薰</div>
+                            </div>
+                            <div class="reward-points">40积分</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 奢华宠爱奖励 (90-150积分) -->
+                <div class="reward-category">
+                    <div class="category-title">👑 奢华宠爱奖励 (90-150积分)</div>
+                    <div class="reward-items">
+                        <div class="reward-item" onclick="selectReward('SPA体验', 100)">
+                            <div class="reward-icon">💆‍♀️</div>
+                            <div class="reward-content">
+                                <div class="reward-name">SPA体验</div>
+                                <div class="reward-desc">全身按摩放松护理</div>
+                            </div>
+                            <div class="reward-points">100积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('美发沙龙', 90)">
+                            <div class="reward-icon">💇‍♀️</div>
+                            <div class="reward-content">
+                                <div class="reward-name">美发沙龙</div>
+                                <div class="reward-desc">专业发型设计和护理</div>
+                            </div>
+                            <div class="reward-points">90积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('高端护肤', 120)">
+                            <div class="reward-icon">✨</div>
+                            <div class="reward-content">
+                                <div class="reward-name">高端护肤</div>
+                                <div class="reward-desc">美容院专业护肤疗程</div>
+                            </div>
+                            <div class="reward-points">120积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('精致晚餐', 80)">
+                            <div class="reward-icon">🍽️</div>
+                            <div class="reward-content">
+                                <div class="reward-name">精致晚餐</div>
+                                <div class="reward-desc">高级餐厅用餐体验</div>
+                            </div>
+                            <div class="reward-points">80积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('购物基金', 150)">
+                            <div class="reward-icon">🛍️</div>
+                            <div class="reward-content">
+                                <div class="reward-name">购物基金</div>
+                                <div class="reward-desc">购买心仪已久的物品</div>
+                            </div>
+                            <div class="reward-points">150积分</div>
+                        </div>
+                        
+                        <div class="reward-item" onclick="selectReward('周末度假', 130)">
+                            <div class="reward-icon">🏖️</div>
+                            <div class="reward-content">
+                                <div class="reward-name">周末度假</div>
+                                <div class="reward-desc">周边温泉酒店或民宿</div>
+                            </div>
+                            <div class="reward-points">130积分</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 使用建议 -->
+            <div class="tips-section">
+                <h2 class="tips-title">💡 宠爱自己小贴士</h2>
+                <div class="tips-grid">
+                    <div class="tip-card">
+                        <div class="tip-icon">🎯</div>
+                        <div class="tip-title">设定目标</div>
+                        <div class="tip-desc">为自己设定合理的积分目标，既有挑战又能达成</div>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <div class="tip-icon">📅</div>
+                        <div class="tip-title">定期奖励</div>
+                        <div class="tip-desc">每周或每月给自己一个小奖励，保持积极心态</div>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <div class="tip-icon">💝</div>
+                        <div class="tip-title">投资自己</div>
+                        <div class="tip-desc">选择能让自己变得更好的奖励，内外兼修</div>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <div class="tip-icon">🌟</div>
+                        <div class="tip-title">享受过程</div>
+                        <div class="tip-desc">不仅关注奖励，更要享受努力的过程</div>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <div class="tip-icon">👭</div>
+                        <div class="tip-title">闺蜜分享</div>
+                        <div class="tip-desc">和闺蜜一起使用，互相鼓励更有动力</div>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <div class="tip-icon">🌈</div>
+                        <div class="tip-title">保持平衡</div>
+                        <div class="tip-desc">奖励要与努力匹配，保持生活的平衡美</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 40px;">
+                <button class="back-btn" onclick="goBack()">🚪 返回主页面</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 选择奖励功能
+        function selectReward(rewardName, points) {
+            if (confirm(`确定要选择"${rewardName}"吗？\n这将消耗${points}积分。`)) {
+                // 这里可以添加积分扣除逻辑
+                alert(`🎉 恭喜！您已选择"${rewardName}"！\n请记得好好宠爱自己～ 💕`);
+            }
+        }
+
+        // 返回主页
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+
+        // 页面加载动画
+        window.addEventListener('load', function() {
+            const rewardItems = document.querySelectorAll('.reward-item');
+            rewardItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateY(20px)';
+                    item.style.transition = 'all 0.6s ease';
+                    
+                    setTimeout(() => {
+                        item.style.opacity = '1';
+                        item.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 100);
+            });
+        });
+
+        // 添加滚动到顶部功能
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                if (!document.querySelector('.scroll-top')) {
+                    const scrollBtn = document.createElement('button');
+                    scrollBtn.innerHTML = '⬆️';
+                    scrollBtn.className = 'scroll-top';
+                    scrollBtn.style.cssText = `
+                        position: fixed;
+                        bottom: 30px;
+                        right: 30px;
+                        width: 50px;
+                        height: 50px;
+                        border-radius: 50%;
+                        background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+                        color: white;
+                        border: none;
+                        font-size: 20px;
+                        cursor: pointer;
+                        box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+                        z-index: 1000;
+                        transition: all 0.3s ease;
+                    `;
+                    scrollBtn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+                    document.body.appendChild(scrollBtn);
+                }
+            } else {
+                const scrollBtn = document.querySelector('.scroll-top');
+                if (scrollBtn) scrollBtn.remove();
+            }
+        });
+    </script>
+</body>
+</html>
