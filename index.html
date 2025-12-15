@@ -129,7 +129,8 @@
     <script>
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', function() {
-            initializeApp();
+            // 检查用户登录状态
+            checkAuthStatus();
             
             // 检查是否有从模板页面传递过来的行为数据
             const selectedBehavior = sessionStorage.getItem('selectedBehavior');
@@ -151,12 +152,81 @@
                 document.querySelector('.container').style.transform = 'translateY(0)';
             }, 100);
         });
+        
+        // 检查用户认证状态
+        async function checkAuthStatus() {
+            const user = await getCurrentUser();
+            if (user) {
+                // 用户已登录，显示用户信息
+                document.getElementById('user-email').textContent = user.email;
+                document.getElementById('logged-in-state').style.display = 'block';
+                document.getElementById('not-logged-in-state').style.display = 'none';
+                
+                // 如果initializeApp函数可用，则初始化应用数据
+                if (typeof initializeApp === 'function') {
+                    await initializeApp();
+                } else {
+                    console.log('initializeApp函数尚未加载，等待script.js加载完成...');
+                }
+            } else {
+                // 用户未登录
+                document.getElementById('logged-in-state').style.display = 'none';
+                document.getElementById('not-logged-in-state').style.display = 'block';
+            }
+        }
+        
+        // 获取当前用户
+        async function getCurrentUser() {
+            try {
+                if (typeof supabase === 'undefined') {
+                    console.warn('Supabase 未初始化');
+                    return null;
+                }
+                
+                const { data: { user }, error } = await supabase.auth.getUser();
+                if (error) {
+                    console.error('获取用户信息失败:', error);
+                    return null;
+                }
+                return user;
+            } catch (error) {
+                console.error('获取用户信息时出错:', error);
+                return null;
+            }
+        }
+        
+        // 退出登录
+        async function signOut() {
+            try {
+                if (typeof supabase === 'undefined') {
+                    console.warn('Supabase 未初始化');
+                    return;
+                }
+                
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    console.error('退出失败:', error);
+                    return;
+                }
+                
+                // 刷新页面
+                window.location.reload();
+            } catch (error) {
+                console.error('退出时出错:', error);
+            }
+        }
     </script>
     <script src="script.js"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
             console.log('所有脚本加载完成，开始初始化...');
+            
+            // script.js加载完成后，重新检查用户状态以确保邮箱显示
+            if (typeof initializeApp === 'function') {
+                console.log('initializeApp函数已可用，重新检查用户状态...');
+                checkAuthStatus();
+            }
         });
     </script>
 </body>
