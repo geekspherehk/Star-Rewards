@@ -433,6 +433,14 @@
         async function handleThemeSelection(themeName, targetUrl) {
             console.log('用户选择主题:', themeName);
             
+            // 对于"卷自己"模式，我们不强制要求用户登录后再跳转
+            if (themeName === 'juanziji') {
+                // 直接跳转到卷自己页面，让页面自己处理未登录状态
+                window.location.href = targetUrl;
+                return;
+            }
+            
+            // 其他主题保持原来的逻辑
             // 记录主题选择
             const recorded = await recordUserTheme(themeName);
             if (recorded) {
