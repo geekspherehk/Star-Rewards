@@ -40,15 +40,15 @@
         
         <!-- Tab 导航 -->
         <div class="tab-navigation">
-            <button class="tab-btn active" onclick="switchTab('points-tab')">
+            <button class="tab-btn active" data-tab="points-tab">
                 <span class="tab-icon">⚡</span>
                 <span class="tab-text">能量值</span>
             </button>
-            <button class="tab-btn" onclick="switchTab('gifts-tab')">
+            <button class="tab-btn" data-tab="gifts-tab">
                 <span class="tab-icon">🎯</span>
                 <span class="tab-text">目标奖励</span>
             </button>
-            <button class="tab-btn" onclick="switchTab('history-tab')">
+            <button class="tab-btn" data-tab="history-tab">
                 <span class="tab-icon">📈</span>
                 <span class="tab-text">成长轨迹</span>
             </button>
@@ -69,24 +69,26 @@
             
             <div class="form-group">
                 <h3>⚡ 完成自律任务获得能量</h3>
-                <div class="form-row">
-                    <input type="text" id="behavior-desc" placeholder="今天完成了什么自律任务？">
-                    <input type="number" id="points-change" placeholder="获得能量值（正加负扣）">
-                </div>
-                <div class="preset-behaviors" id="preset-behaviors">
-                    <span>快速打卡:</span>
-                    <button class="preset-btn" onclick="setPresetBehavior('早起打卡', 10)">早起 ⚡10</button>
-                    <button class="preset-btn" onclick="setPresetBehavior('运动健身', 15)">运动 ⚡15</button>
-                    <button class="preset-btn" onclick="setPresetBehavior('阅读学习', 12)">学习 ⚡12</button>
-                    <button class="preset-btn" onclick="setPresetBehavior('冥想静心', 8)">冥想 ⚡8</button>
-                    <button class="preset-btn" onclick="setPresetBehavior('健康饮食', 10)">健康饮食 ⚡10</button>
-                    <button class="preset-btn" onclick="setPresetBehavior('早睡打卡', 8)">早睡 ⚡8</button>
-                    <button class="preset-btn" onclick="setPresetBehavior('戒手机一小时', 12)">专注 ⚡12</button>
-                    <button class="preset-btn" onclick="setPresetBehavior('完成重要任务', 20)">任务完成 ⚡20</button>
-                </div>
-                <div class="button-group">
-                    <button class="add-points-btn" onclick="addPoints()">⚡ 打卡获得能量</button>
-                </div>
+                <form id="add-behavior-form">
+                    <div class="form-row">
+                        <input type="text" id="behavior-desc" placeholder="今天完成了什么自律任务？">
+                        <input type="number" id="points-change" placeholder="获得能量值（正加负扣）">
+                    </div>
+                    <div class="preset-behaviors" id="preset-behaviors">
+                        <span>快速打卡:</span>
+                        <button type="button" class="preset-btn" data-behavior="早起打卡" data-points="10">早起 ⚡10</button>
+                        <button type="button" class="preset-btn" data-behavior="运动健身" data-points="15">运动 ⚡15</button>
+                        <button type="button" class="preset-btn" data-behavior="阅读学习" data-points="12">学习 ⚡12</button>
+                        <button type="button" class="preset-btn" data-behavior="冥想静心" data-points="8">冥想 ⚡8</button>
+                        <button type="button" class="preset-btn" data-behavior="健康饮食" data-points="10">健康饮食 ⚡10</button>
+                        <button type="button" class="preset-btn" data-behavior="早睡打卡" data-points="8">早睡 ⚡8</button>
+                        <button type="button" class="preset-btn" data-behavior="戒手机一小时" data-points="12">专注 ⚡12</button>
+                        <button type="button" class="preset-btn" data-behavior="完成重要任务" data-points="20">任务完成 ⚡20</button>
+                    </div>
+                    <div class="button-group">
+                        <button type="submit" class="add-points-btn">⚡ 打卡获得能量</button>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -94,17 +96,23 @@
         <div id="gifts-tab" class="tab-content">
             <div class="form-group">
                 <h3>🎯 设置自律目标奖励</h3>
-                <div class="form-row">
-                    <input type="text" id="gift-name" placeholder="达成目标后想奖励自己什么？">
-                    <input type="number" id="gift-points" placeholder="需要多少能量值？">
-                </div>
-                <div class="form-row">
-                    <input type="text" id="gift-description" placeholder="这个奖励有什么特别意义？">
-                </div>
-                <div class="form-row">
-                    <input type="text" id="gift-image" placeholder="奖励图片链接（可选）">
-                </div>
-                <button class="add-gift-btn" onclick="addGift()">🎯 添加目标奖励</button>
+                <form id="add-gift-form">
+                    <div class="form-row">
+                        <input type="text" id="gift-name" placeholder="达成目标后想奖励自己什么？">
+                        <input type="number" id="gift-points" placeholder="需要多少能量值？">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="gift-description" placeholder="这个奖励有什么特别意义？">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="gift-link" placeholder="奖励链接（可选）">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="gift-image" placeholder="奖励图片链接（可选）">
+                    </div>
+                    <div id="image-preview"></div>
+                    <button type="submit" class="add-gift-btn">🎯 添加目标奖励</button>
+                </form>
             </div>
             
             <h3>🏆 我的目标奖励清单</h3>
