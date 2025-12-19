@@ -121,7 +121,13 @@ async function signUp(email, password) {
     if (!email || !password) throw new Error('邮箱和密码不能为空');
     if (password.length < 6) throw new Error('密码长度至少为6位');
     
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+            emailRedirectTo: window.location.origin + '/confirm-email.html'
+        }
+    });
     if (error) throw error;
     return data;
 }
@@ -287,7 +293,14 @@ async function handleSignIn() {
         console.log('邮箱:', email);
         let { data, error } = await signIn(email, password);
         
-        if (error) throw error;
+        if (error) {
+            // 检查是否为邮箱未确认错误
+            if (error.message && error.message.toLowerCase().includes('email not confirmed')) {
+                showTemporaryMessage('📧 请先确认您的邮箱！我们已向您的邮箱发送了确认邮件，请点击邮件中的链接完成确认。', 'warning');
+                return;
+            }
+            throw error;
+        }
         
         // 如果data为undefined，尝试从Supabase客户端获取当前会话
         if (!data) {
@@ -317,6 +330,13 @@ async function handleSignIn() {
             sessionData: data && data.session,
             dataString: JSON.stringify(data, null, 2)
         });
+        
+        // 检查用户邮箱是否已确认
+        if (data.user && !data.user.email_confirmed_at) {
+            console.log('用户邮箱未确认:', data.user.email);
+            showTemporaryMessage('📧 您的邮箱尚未确认！请检查邮箱并点击确认链接。如未收到邮件，请检查垃圾邮件箱或重新注册。', 'warning');
+            return;
+        }
         
         // 登录成功后清空表单
         document.getElementById('login-email').value = '';
@@ -633,3 +653,48 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化认证状态（包含数据加载和自动跳转）
     initAuth();
 });
+
+// 重新发送确认邮件
+async function resendConfirmationEmail(email) {
+    if (!supabase) throw new Error('Supabase 未初始化');
+    if (!email) throw new Error('邮箱不能为空');
+    
+    try {
+        const { data, error } = await supabase.auth.resend({
+            type: 'signup',
+            email: email,
+            options: {
+                emailRedirectTo: window.location.origin + '/confirm-email.html'
+            }
+        });
+        
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('重新发送确认邮件失败:', error);
+        throw error;
+    }
+}
+
+// 处理重新发送确认邮件
+async function handleResendConfirmation() {
+    const email = document.getElementById('login-email').value.trim();
+    
+    if (!email) {
+        showTemporaryMessage('⚠️ 请先输入您的邮箱地址', 'warning');
+        return;
+    }
+    
+    try {
+        showTemporaryMessage('📧 正在重新发送确认邮件...', 'info');
+        await resendConfirmationEmail(email);
+        showTemporaryMessage('✅ 确认邮件已重新发送！请检查您的邮箱（包括垃圾邮件箱）', 'success');
+    } catch (error) {
+        console.error('重新发送确认邮件失败:', error);
+        if (error.message && error.message.toLowerCase().includes('user already registered')) {
+            showTemporaryMessage('📧 该邮箱已注册！如果无法登录，请尝试重置密码或联系支持。', 'warning');
+        } else {
+            showTemporaryMessage(`❌ 重新发送失败: ${escapeHtml(error.message)}`, 'error');
+        }
+    }
+}

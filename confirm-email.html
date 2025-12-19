@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邮箱确认 - Star Rewards</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 400px;
+        }
+        .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .loading { color: #2196F3; }
+        h1 { color: #333; margin-bottom: 15px; }
+        p { color: #666; margin-bottom: 25px; line-height: 1.6; }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loading" class="icon loading">
+            <div class="spinner"></div>
+        </div>
+        <div id="success" class="icon success" style="display: none;">
+            ✓
+        </div>
+        <div id="error" class="icon error" style="display: none;">
+            ✗
+        </div>
+        
+        <h1 id="title">正在确认您的邮箱...</h1>
+        <p id="message">请稍候，我们正在处理您的邮箱确认请求。</p>
+        
+        <div id="actions" style="display: none;">
+            <a href="login.html" class="btn">前往登录</a>
+        </div>
+    </div>
+
+    <script type="module">
+        // Supabase 配置
+        const supabaseUrl = 'https://pjxpyppafaxepdzqgume.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqeHB5cHBhZmF4ZXBkenFndW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NDk5NzgsImV4cCI6MjA3NTIyNTk3OH0.RmAMBhVeJ-bWHqjdrnHaRMvidR9Jvk5s7TyTPZN3GMM';
+        
+        // 初始化Supabase客户端
+        let supabase;
+        if (typeof window.supabase !== 'undefined') {
+            supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
+                auth: {
+                    storage: localStorage,
+                    autoRefreshToken: true,
+                    persistSession: true
+                }
+            });
+        }
+
+        async function handleEmailConfirmation() {
+            const loadingEl = document.getElementById('loading');
+            const successEl = document.getElementById('success');
+            const errorEl = document.getElementById('error');
+            const titleEl = document.getElementById('title');
+            const messageEl = document.getElementById('message');
+            const actionsEl = document.getElementById('actions');
+
+            try {
+                // 从URL参数中获取确认信息
+                const urlParams = new URLSearchParams(window.location.search);
+                const accessToken = urlParams.get('access_token');
+                const refreshToken = urlParams.get('refresh_token');
+                const type = urlParams.get('type');
+
+                console.log('邮箱确认参数:', { accessToken: !!accessToken, refreshToken: !!refreshToken, type });
+
+                if (!accessToken || !refreshToken) {
+                    throw new Error('缺少必要的确认参数');
+                }
+
+                if (type !== 'signup' && type !== 'recovery') {
+                    throw new Error('无效的确认类型');
+                }
+
+                if (!supabase) {
+                    throw new Error('Supabase客户端未初始化');
+                }
+
+                // 使用token交换会话
+                const { data, error } = await supabase.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                if (!data.user) {
+                    throw new Error('无法获取用户信息');
+                }
+
+                // 检查邮箱是否已确认
+                if (!data.user.email_confirmed_at) {
+                    throw new Error('邮箱确认失败，请重试');
+                }
+
+                console.log('邮箱确认成功:', data.user.email);
+
+                // 显示成功消息
+                loadingEl.style.display = 'none';
+                successEl.style.display = 'block';
+                titleEl.textContent = '邮箱确认成功！';
+                messageEl.textContent = '您的邮箱已成功确认，现在可以登录并使用Star Rewards了。';
+                actionsEl.style.display = 'block';
+
+                // 保存会话信息
+                localStorage.setItem('supabase_session', JSON.stringify(data.session));
+                localStorage.setItem('supabase.user', JSON.stringify(data.user));
+                localStorage.setItem('supabase.userEmail', data.user.email);
+                localStorage.setItem('supabase.userId', data.user.id);
+
+            } catch (error) {
+                console.error('邮箱确认失败:', error);
+                
+                // 显示错误消息
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+                titleEl.textContent = '邮箱确认失败';
+                messageEl.textContent = error.message || '邮箱确认过程中发生错误，请重试或联系支持。';
+                actionsEl.style.display = 'block';
+            }
+        }
+
+        // 页面加载完成后处理确认
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', handleEmailConfirmation);
+        } else {
+            handleEmailConfirmation();
+        }
+    </script>
+    
+    <!-- 加载Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body>
+</html>
