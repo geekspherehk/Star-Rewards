@@ -1,0 +1,442 @@
+/* PWA 移动端专用样式 */
+
+/* 应用主容器 */
+#app-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* 状态栏填充 */
+.status-bar-padding {
+    height: env(safe-area-inset-top, 0px);
+    background: transparent;
+}
+
+/* 应用头部 */
+.app-header {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+}
+
+.app-header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-info span {
+    color: #666;
+    font-size: 14px;
+}
+
+.user-info button {
+    background: #ff4757;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* 主内容区域 */
+.app-main {
+    padding: 20px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+}
+
+/* 卡片样式 */
+.card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+/* 积分显示 */
+.points-display {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.current-points, .total-points {
+    text-align: center;
+    padding: 16px;
+}
+
+.points-label {
+    display: block;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.points-value {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    color: #4CAF50;
+}
+
+.total-points .points-value {
+    color: #2196F3;
+}
+
+/* 模块导航 */
+.module-nav {
+    display: flex;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.module-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 16px 8px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.module-btn .icon {
+    font-size: 24px;
+}
+
+.module-btn span:last-child {
+    font-size: 12px;
+    color: #666;
+}
+
+.module-btn.active {
+    background: #4CAF50;
+    color: white;
+}
+
+.module-btn.active span:last-child {
+    color: white;
+}
+
+/* 模块内容 */
+.module-content {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.module {
+    display: none;
+}
+
+.module.active {
+    display: block;
+}
+
+.section {
+    margin-bottom: 32px;
+}
+
+.section:last-child {
+    margin-bottom: 0;
+}
+
+.section h3 {
+    margin: 0 0 16px 0;
+    color: #333;
+    font-size: 18px;
+}
+
+/* 表单样式 */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.form-input {
+    padding: 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 16px;
+    background: white;
+    transition: border-color 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+/* 按钮样式 */
+.btn-primary {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 16px 24px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.btn-primary:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+/* 行为记录列表 */
+.behavior-log {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.behavior-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+
+.behavior-text {
+    flex: 1;
+    margin-right: 12px;
+}
+
+.behavior-points {
+    background: #4CAF50;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-weight: 600;
+    min-width: 40px;
+    text-align: center;
+}
+
+/* 愿望列表 */
+.gift-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+
+.gift-info {
+    flex: 1;
+}
+
+.gift-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.gift-points {
+    color: #ff6b6b;
+    font-size: 14px;
+}
+
+.gift-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-small {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-redeem {
+    background: #ff6b6b;
+    color: white;
+}
+
+.btn-delete {
+    background: #ddd;
+    color: #666;
+}
+
+/* 日记列表 */
+.diary-date {
+    background: #e3f2fd;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+
+.date-header {
+    font-weight: 600;
+    color: #1976d2;
+    margin-bottom: 8px;
+}
+
+.date-summary {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #666;
+}
+
+.diary-item {
+    padding: 12px 16px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border-left: 4px solid #4CAF50;
+}
+
+/* 底部安全区域 */
+.safe-area-bottom {
+    height: env(safe-area-inset-bottom, 0px);
+    background: transparent;
+}
+
+/* 安装按钮 */
+#installButton {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 12px 24px;
+    font-size: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    cursor: pointer;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+#installButton:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+/* 触摸反馈优化 */
+.touch-feedback {
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s ease;
+}
+
+.touch-feedback:active {
+    transform: scale(0.95);
+}
+
+/* 滚动优化 */
+.module-content {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* 暗黑模式支持 */
+@media (prefers-color-scheme: dark) {
+    #app-container {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+    
+    .card, .module-content {
+        background: rgba(30, 30, 30, 0.95);
+        color: white;
+    }
+    
+    .app-header {
+        background: rgba(30, 30, 30, 0.95);
+    }
+    
+    .app-header h1 {
+        color: white;
+    }
+    
+    .module-nav {
+        background: rgba(30, 30, 30, 0.95);
+    }
+    
+    .form-input {
+        background: #2a2a2a;
+        border-color: #444;
+        color: white;
+    }
+    
+    .behavior-item, .gift-item {
+        background: #2a2a2a;
+    }
+    
+    .diary-date {
+        background: #1e3a5f;
+    }
+}
+
+/* 响应式优化 */
+@media (max-width: 375px) {
+    .app-main {
+        padding: 16px;
+    }
+    
+    .card, .module-content {
+        padding: 20px;
+    }
+    
+    .points-value {
+        font-size: 28px;
+    }
+    
+    .module-btn {
+        padding: 12px 6px;
+    }
+    
+    .module-btn .icon {
+        font-size: 20px;
+    }
+}
+
+/* 加载动画 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card, .module-content {
+    animation: fadeIn 0.5s ease-out;
+}

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Star Rewards">
+    
+    <!-- PWA 配置 -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
+    
+    <title>Star Rewards - 儿童积分奖励系统</title>
+    
+    <!-- 原有CSS文件 -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- PWA 移动端专用样式 -->
+    <link rel="stylesheet" href="pwa-styles.css">
+    
+    <!-- 移动端优化样式 -->
+    <style>
+        /* 移动端适配 */
+        body {
+            -webkit-touch-callout: none;
+            -webkit-text-size-adjust: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        /* 防止输入框缩放 */
+        input, textarea, select {
+            font-size: 16px !important;
+        }
+        
+        /* 状态栏适配 */
+        .status-bar-padding {
+            padding-top: env(safe-area-inset-top);
+        }
+        
+        /* 底部安全区域 */
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* 触摸反馈 */
+        .touch-feedback {
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.1s ease;
+        }
+        
+        .touch-feedback:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <!-- 应用主容器 -->
+    <div id="app-container">
+        <!-- 状态栏填充 -->
+        <div class="status-bar-padding"></div>
+        
+        <!-- 头部导航 -->
+        <header class="app-header">
+            <h1>⭐ Star Rewards</h1>
+            <div class="user-info">
+                <span id="user-email">未登录</span>
+                <button id="logout-btn" style="display:none;">退出</button>
+            </div>
+        </header>
+        
+        <!-- 主要内容区域 -->
+        <main class="app-main">
+            <!-- 登录状态卡片 -->
+            <div id="login-status-card" class="card">
+                <div id="not-logged-in" class="status-section">
+                    <p>请先登录以使用完整功能</p>
+                    <button onclick="window.location.href='login.html'" class="btn-primary">立即登录</button>
+                </div>
+                <div id="logged-in" class="status-section" style="display:none;">
+                    <div class="points-display">
+                        <div class="current-points">
+                            <span class="points-label">当前积分</span>
+                            <span id="current-points-value" class="points-value">0</span>
+                        </div>
+                        <div class="total-points">
+                            <span class="points-label">累计积分</span>
+                            <span id="total-points-value" class="points-value">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 功能模块导航 -->
+            <nav class="module-nav">
+                <button class="module-btn active" data-module="points">
+                    <span class="icon">⭐</span>
+                    <span>成长积分</span>
+                </button>
+                <button class="module-btn" data-module="wishes">
+                    <span class="icon">🎁</span>
+                    <span>宝贝愿望</span>
+                </button>
+                <button class="module-btn" data-module="diary">
+                    <span class="icon">📖</span>
+                    <span>成长日记</span>
+                </button>
+            </nav>
+            
+            <!-- 功能模块内容 -->
+            <div class="module-content">
+                <!-- 成长积分模块 -->
+                <div id="points-module" class="module active">
+                    <div class="section">
+                        <h3>记录新行为</h3>
+                        <div class="form-group">
+                            <input type="text" id="behavior-input" placeholder="描述孩子的好行为..." class="form-input">
+                            <input type="number" id="points-input" placeholder="积分" class="form-input" min="1" max="100">
+                            <button onclick="addBehavior()" class="btn-primary">添加记录</button>
+                        </div>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>最近记录</h3>
+                        <div id="behavior-log" class="behavior-log">
+                            <p>暂无记录</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 宝贝愿望模块 -->
+                <div id="wishes-module" class="module">
+                    <div class="section">
+                        <h3>添加愿望礼物</h3>
+                        <div class="form-group">
+                            <input type="text" id="gift-name-input" placeholder="礼物名称" class="form-input">
+                            <input type="number" id="gift-points-input" placeholder="所需积分" class="form-input" min="1">
+                            <input type="url" id="gift-link-input" placeholder="商品链接（可选）" class="form-input">
+                            <textarea id="gift-description-input" placeholder="礼物描述" class="form-input" rows="3"></textarea>
+                            <button onclick="addGift()" class="btn-primary">添加愿望</button>
+                        </div>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>愿望清单</h3>
+                        <div id="gift-list" class="gift-list">
+                            <p>暂无愿望</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 成长日记模块 -->
+                <div id="diary-module" class="module">
+                    <div class="section">
+                        <h3>成长记录</h3>
+                        <div id="diary-list" class="diary-list">
+                            <p>暂无记录</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- 底部安全区域 -->
+        <div class="safe-area-bottom"></div>
+    </div>
+    
+    <!-- PWA 安装按钮 -->
+    <button id="installButton" style="display:none;">安装应用</button>
+    
+    <!-- PWA 管理器 -->
+    <script type="module" src="pwa-manager.js"></script>
+    
+    <!-- 移动端应用脚本 -->
+    <script src="mobile-app.js"></script>
+    
+    <!-- Supabase 脚本 -->
+    <script type="module" src="supabase.min.js"></script>
+</body>
+</html>

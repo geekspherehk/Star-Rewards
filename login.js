@@ -115,17 +115,65 @@ async function checkUserLoggedIn() {
     }
 }
 
+// 智能URL构建器 - 支持多种部署环境
+function buildConfirmEmailUrl() {
+    const origin = window.location.origin;
+    const pathname = window.location.pathname;
+    const search = window.location.search;
+    
+    console.log('URL构建器 - 原始信息:', {
+        origin: origin,
+        pathname: pathname,
+        search: search,
+        fullUrl: window.location.href
+    });
+    
+    // 获取基础路径（处理子目录部署）
+    let basePath = '';
+    
+    // 情况1: GitHub Pages (路径包含项目名)
+    if (pathname.includes('/Star-Rewards/')) {
+        basePath = '/Star-Rewards';
+    }
+    // 情况2: 其他子目录部署
+    else if (pathname.includes('/rewards/') || pathname.includes('/app/')) {
+        const pathParts = pathname.split('/');
+        const projectIndex = pathParts.findIndex(part => 
+            part === 'rewards' || part === 'app' || part === 'Star-Rewards'
+        );
+        if (projectIndex !== -1) {
+            basePath = '/' + pathParts.slice(0, projectIndex + 1).join('/');
+        }
+    }
+    // 情况3: 本地开发或根目录部署
+    else {
+        basePath = '';
+    }
+    
+    const finalUrl = origin + basePath + '/confirm-email.html';
+    
+    console.log('URL构建器 - 构建结果:', {
+        basePath: basePath,
+        finalUrl: finalUrl
+    });
+    
+    return finalUrl;
+}
+
 // 用户注册
 async function signUp(email, password) {
     if (!supabase) throw new Error('Supabase 未初始化');
     if (!email || !password) throw new Error('邮箱和密码不能为空');
     if (password.length < 6) throw new Error('密码长度至少为6位');
     
+    const confirmEmailUrl = buildConfirmEmailUrl();
+    console.log('SignUp: 确认邮件跳转URL:', confirmEmailUrl);
+    
     const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
-            emailRedirectTo: window.location.origin + '/confirm-email.html'
+            emailRedirectTo: confirmEmailUrl
         }
     });
     if (error) throw error;
