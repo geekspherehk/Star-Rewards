@@ -6,10 +6,7 @@ const urlsToCache = [
   '/login.html',
   '/style.css',
   '/script.js',
-  '/supabase.min.js',
-  '/pwa-manager.js',
-  '/manifest.json',
-  '/mobile-wrapper.html'
+  '/supabase.min.js'
 ];
 
 // 安装Service Worker
@@ -19,6 +16,10 @@ self.addEventListener('install', (event) => {
       .then((cache) => {
         console.log('✅ 缓存已打开');
         return cache.addAll(urlsToCache);
+      })
+      .catch(error => {
+        console.log('⚠️ 缓存部分资源失败:', error);
+        // 继续安装，即使某些资源无法缓存
       })
   );
 });
@@ -48,25 +49,14 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
-
-        // 克隆请求
-        const fetchRequest = event.request.clone();
-
-        return fetch(fetchRequest).then((response) => {
-          // 检查是否收到有效的响应
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
+        
+        // 缓存未命中 - 尝试从网络获取
+        return fetch(event.request).catch(error => {
+          console.log('❌ 网络请求失败:', error);
+          // 如果是HTML页面，返回首页
+          if (event.request.headers.get('accept').includes('text/html')) {
+            return caches.match('/');
           }
-
-          // 克隆响应
-          const responseToCache = response.clone();
-
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-
-          return response;
         });
       })
   );
@@ -83,8 +73,6 @@ self.addEventListener('sync', (event) => {
 self.addEventListener('push', (event) => {
   const options = {
     body: event.data ? event.data.text() : '您有新的奖励消息！',
-    icon: '/assets/icons/icon-192x192.png',
-    badge: '/assets/icons/icon-72x72.png',
     vibrate: [200, 100, 200],
     data: {
       dateOfArrival: Date.now(),
@@ -93,13 +81,11 @@ self.addEventListener('push', (event) => {
     actions: [
       {
         action: 'view',
-        title: '查看详情',
-        icon: '/assets/icons/view.png'
+        title: '查看详情'
       },
       {
         action: 'close',
-        title: '关闭',
-        icon: '/assets/icons/close.png'
+        title: '关闭'
       }
     ]
   };
