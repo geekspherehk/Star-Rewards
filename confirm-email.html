@@ -105,59 +105,67 @@
             const actionsEl = document.getElementById('actions');
 
             try {
-                // 从URL参数中获取确认信息
-                const urlParams = new URLSearchParams(window.location.search);
-                const accessToken = urlParams.get('access_token');
-                const refreshToken = urlParams.get('refresh_token');
-                const type = urlParams.get('type');
+                // 从URL hash中获取确认信息（Supabase 使用 hash 格式）
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                const accessToken = hashParams.get('access_token');
+                const refreshToken = hashParams.get('refresh_token');
+                const type = hashParams.get('type');
+                const next = hashParams.get('next');
 
-                console.log('邮箱确认参数:', { accessToken: !!accessToken, refreshToken: !!refreshToken, type });
+                console.log('邮箱确认参数 (from hash):', { 
+                    accessToken: !!accessToken, 
+                    refreshToken: !!refreshToken, 
+                    type, 
+                    next,
+                    hash: window.location.hash 
+                });
 
-                if (!accessToken || !refreshToken) {
-                    throw new Error('缺少必要的确认参数');
+                // 如果没有在 hash 中找到，尝试从 URL 参数获取
+                if (!accessToken) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const urlAccessToken = urlParams.get('access_token');
+                    const urlRefreshToken = urlParams.get('refresh_token');
+                    const urlType = urlParams.get('type');
+                    
+                    console.log('邮箱确认参数 (from URL):', { 
+                        accessToken: !!urlAccessToken, 
+                        refreshToken: !!urlRefreshToken, 
+                        type: urlType 
+                    });
+
+                    if (urlAccessToken && urlRefreshToken) {
+                        // 使用 URL 参数中的值
+                        await processConfirmation(urlAccessToken, urlRefreshToken, urlType, loadingEl, successEl, errorEl, titleEl, messageEl, actionsEl);
+                        return;
+                    }
+                } else {
+                    // 使用 hash 中的值
+                    await processConfirmation(accessToken, refreshToken, type, loadingEl, successEl, errorEl, titleEl, messageEl, actionsEl);
+                    return;
                 }
 
-                if (type !== 'signup' && type !== 'recovery') {
-                    throw new Error('无效的确认类型');
-                }
-
+                // 如果没有找到任何参数，检查是否已经有活跃的会话
                 if (!supabase) {
                     throw new Error('Supabase客户端未初始化');
                 }
 
-                // 使用token交换会话
-                const { data, error } = await supabase.auth.setSession({
-                    access_token: accessToken,
-                    refresh_token: refreshToken
-                });
-
-                if (error) {
-                    throw error;
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                
+                if (userError) {
+                    throw new Error('无法获取用户信息: ' + userError.message);
                 }
 
-                if (!data.user) {
-                    throw new Error('无法获取用户信息');
+                if (user && user.email_confirmed_at) {
+                    // 用户已经确认过邮箱
+                    loadingEl.style.display = 'none';
+                    successEl.style.display = 'block';
+                    titleEl.textContent = '邮箱已确认！';
+                    messageEl.textContent = '您的邮箱已经确认过了，现在可以登录并使用Star Rewards了。';
+                    actionsEl.style.display = 'block';
+                    return;
                 }
 
-                // 检查邮箱是否已确认
-                if (!data.user.email_confirmed_at) {
-                    throw new Error('邮箱确认失败，请重试');
-                }
-
-                console.log('邮箱确认成功:', data.user.email);
-
-                // 显示成功消息
-                loadingEl.style.display = 'none';
-                successEl.style.display = 'block';
-                titleEl.textContent = '邮箱确认成功！';
-                messageEl.textContent = '您的邮箱已成功确认，现在可以登录并使用Star Rewards了。';
-                actionsEl.style.display = 'block';
-
-                // 保存会话信息
-                localStorage.setItem('supabase_session', JSON.stringify(data.session));
-                localStorage.setItem('supabase.user', JSON.stringify(data.user));
-                localStorage.setItem('supabase.userEmail', data.user.email);
-                localStorage.setItem('supabase.userId', data.user.id);
+                throw new Error('缺少必要的确认参数，请确保您点击了邮件中的完整链接');
 
             } catch (error) {
                 console.error('邮箱确认失败:', error);
@@ -169,6 +177,57 @@
                 messageEl.textContent = error.message || '邮箱确认过程中发生错误，请重试或联系支持。';
                 actionsEl.style.display = 'block';
             }
+        }
+
+        // 处理确认流程的独立函数
+        async function processConfirmation(accessToken, refreshToken, type, loadingEl, successEl, errorEl, titleEl, messageEl, actionsEl) {
+            if (!accessToken || !refreshToken) {
+                throw new Error('缺少必要的确认参数');
+            }
+
+            if (type !== 'signup' && type !== 'recovery' && type !== 'email') {
+                throw new Error('无效的确认类型: ' + type);
+            }
+
+            if (!supabase) {
+                throw new Error('Supabase客户端未初始化');
+            }
+
+            console.log('正在处理确认流程...', { type, hasToken: !!accessToken });
+
+            // 使用token交换会话
+            const { data, error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken
+            });
+
+            if (error) {
+                throw error;
+            }
+
+            if (!data.user) {
+                throw new Error('无法获取用户信息');
+            }
+
+            // 检查邮箱是否已确认
+            if (!data.user.email_confirmed_at) {
+                throw new Error('邮箱确认失败，请重试');
+            }
+
+            console.log('邮箱确认成功:', data.user.email);
+
+            // 显示成功消息
+            loadingEl.style.display = 'none';
+            successEl.style.display = 'block';
+            titleEl.textContent = '邮箱确认成功！';
+            messageEl.textContent = '您的邮箱已成功确认，现在可以登录并使用Star Rewards了。';
+            actionsEl.style.display = 'block';
+
+            // 保存会话信息
+            localStorage.setItem('supabase_session', JSON.stringify(data.session));
+            localStorage.setItem('supabase.user', JSON.stringify(data.user));
+            localStorage.setItem('supabase.userEmail', data.user.email);
+            localStorage.setItem('supabase.userId', data.user.id);
         }
 
         // 页面加载完成后处理确认
