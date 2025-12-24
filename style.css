@@ -773,23 +773,153 @@ li:hover {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-    .container {
-        padding: 20px;
-        margin: 10px;
+    body {
+        padding: 10px;
+        font-size: 14px;
     }
     
-    .points-display {
+    .container {
+        padding: 15px;
+        margin: 5px;
+        border-radius: 12px;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+        margin-bottom: 20px;
+    }
+    
+    h1::after {
+        width: 60px;
+        height: 3px;
+    }
+    
+    /* 模块卡片移动端优化 */
+    .module-cards {
         flex-direction: column;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    
+    .module-card {
+        min-width: auto;
+        padding: 15px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
         gap: 15px;
+        text-align: left;
+    }
+    
+    .module-card > div:first-child {
+        font-size: 2rem !important;
+        margin-bottom: 0 !important;
+    }
+    
+    .module-card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 5px !important;
+    }
+    
+    .module-card p {
+        font-size: 0.85rem;
+    }
+    
+    /* 认证状态卡片优化 */
+    #auth-status-card > div {
+        padding: 10px !important;
+        border-radius: 6px !important;
+    }
+    
+    #auth-status-card .points-card {
+        min-width: auto;
+        padding: 10px !important;
+    }
+    
+    #auth-status-card button {
+        padding: 4px 8px !important;
+        font-size: 0.7rem !important;
+        min-width: 40px;
+        width: auto;
+    }
+    
+    /* 积分显示区域优化 */
+    .points-display {
+        flex-direction: row;
+        gap: 10px;
+        padding: 12px;
+        margin-bottom: 15px;
+        justify-content: space-between;
+    }
+    
+    .points-card {
+        min-width: auto;
+        padding: 10px 8px;
+        flex: 1;
+        text-align: center;
+    }
+    
+    .points-value {
+        font-size: 1.3rem;
+    }
+    
+    .points-label {
+        font-size: 0.8rem;
+        margin-top: 3px;
+    }
+    
+    /* 表单区域优化 */
+    .form-group {
+        padding: 15px;
+        margin-bottom: 15px;
     }
     
     .form-row {
         flex-direction: column;
-        align-items: stretch;
+        gap: 10px;
+        margin-bottom: 12px;
     }
     
     input {
         min-width: auto;
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+    
+    /* 预设行为按钮优化 */
+    .preset-behaviors {
+        padding: 8px;
+        gap: 8px;
+        margin: 10px 0 15px 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+    }
+    
+    .preset-btn {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+        min-height: 32px;
+        width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        border-radius: 4px;
+        text-align: center;
+    }
+    
+    /* 按钮组优化 */
+    .button-group {
+        gap: 8px;
+        margin-top: 15px;
+    }
+    
+    button,
+    .add-points-btn,
+    .add-gift-btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
         width: 100%;
     }
     
@@ -798,105 +928,192 @@ li:hover {
         flex-direction: column;
     }
     
-    button,
     #cloud-section button {
         width: 100%;
+        padding: 10px 15px;
+        font-size: 0.9rem;
     }
     
+    /* 模板链接优化 */
+    .template-link {
+        padding: 5px 10px !important;
+        font-size: 0.75rem !important;
+        margin-right: 4px !important;
+        margin-bottom: 6px;
+        display: inline-block;
+        min-height: 28px;
+        line-height: 1.1;
+        max-width: 130px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* 列表项优化 */
     li {
         flex-direction: column;
         align-items: flex-start;
-        gap: 10px;
+        gap: 8px;
+        padding: 12px;
+        margin: 8px 0;
     }
     
     .redeem-btn {
-        align-self: flex-end;
+        align-self: stretch;
         width: 100%;
-        margin-top: 10px;
+        margin-top: 8px;
+        padding: 8px 16px;
+        font-size: 0.9rem;
     }
     
     /* 礼物列表移动端优化 */
     .gift-image-container {
-        width: 60px;
-        height: 60px;
+        width: 50px;
+        height: 50px;
         margin-right: 10px;
     }
     
     .gift-image-placeholder {
-        font-size: 2rem;
+        font-size: 1.5rem;
     }
     
     .gift-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 5px;
+        gap: 4px;
+    }
+    
+    .gift-description {
+        font-size: 0.8rem;
     }
     
     /* 已兑换礼物列表移动端优化 */
     .redeemed-stats {
         flex-direction: column;
-        gap: 15px;
-        padding: 15px;
+        gap: 12px;
+        padding: 12px;
     }
     
     .stat-item {
         flex-direction: row;
-        gap: 10px;
+        gap: 8px;
     }
     
     .stat-icon {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
         margin-bottom: 0;
     }
     
     .redeemed-item {
         flex-direction: column;
         text-align: center;
-        padding: 20px 15px;
+        padding: 15px 12px;
     }
     
     .redeemed-icon {
         margin-right: 0;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
+        font-size: 1.8rem;
     }
     
     .redeemed-info {
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
         text-align: center;
     }
     
     .redeemed-date {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
     }
     
     /* 行为日志移动端优化 */
     .behavior-stats {
         flex-direction: column;
-        gap: 15px;
-        padding: 15px;
+        gap: 12px;
+        padding: 12px;
     }
     
     .behavior-item {
         flex-direction: column;
         text-align: center;
-        padding: 20px 15px;
+        padding: 15px 12px;
     }
     
     .behavior-icon {
         margin-right: 0;
-        margin-bottom: 10px;
-        font-size: 2rem;
+        margin-bottom: 8px;
+        font-size: 1.8rem;
     }
     
     .behavior-meta {
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
         text-align: center;
     }
     
     .behavior-date {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+    }
+    
+    /* 历史记录页面移动端优化 */
+    .history-container {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .history-section {
+        padding: 15px;
+    }
+    
+    .history-section .section-header {
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+    }
+    
+    .history-section .section-header h3 {
+        font-size: 1.2rem;
+    }
+    
+    /* 日记容器优化 */
+    .diary-container {
+        padding: 15px;
+        margin-top: 15px;
+    }
+    
+    .diary-entry {
+        padding: 12px;
+        margin-bottom: 10px;
+    }
+    
+    .diary-date {
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+    }
+    
+    .diary-content {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    
+    /* 认证表单优化 */
+    .auth-form {
+        padding: 20px;
+        min-width: auto;
+    }
+    
+    #auth-forms {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    /* 云备份区域优化 */
+    #cloud-section {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    #cloud-section h3 {
+        font-size: 1.1rem;
     }
 }
 
