@@ -290,7 +290,7 @@ function updateBehaviorLog() {
             <div class="behavior-content">
                 <div class="behavior-description">${escapeHtml(behavior.description)}</div>
                 <div class="behavior-meta">
-                    <span class="behavior-points ${pointsClass}">${behavior.points > 0 ? '+' : ''}${behavior.points}</span>
+                    <span class="behavior-points ${pointsClass}">${behavior.points}</span>
                     <span class="behavior-date">${formatBehaviorDate(behavior.timestamp)}</span>
                 </div>
             </div>
@@ -1467,14 +1467,14 @@ function updateDiaryList() {
             
             html += `
                 <div class="diary-entry">
-                    <div class="diary-date">${date} <span class="diary-points">+${dayPoints} 积分</span></div>
+                    <div class="diary-date">${date} <span class="diary-points">${dayPoints > 0 ? '+' : ''}${dayPoints} 积分</span></div>
                     <div class="diary-content">
             `;
             
             dayBehaviors.forEach(behavior => {
                 html += `
-                    <div style="margin-bottom: 8px; padding: 8px; background: #f8fff8; border-left: 3px solid #4CAF50; border-radius: 4px;">
-                        <span style="color: #4CAF50; font-weight: bold;">+${behavior.points}</span>
+                    <div style="margin-bottom: 8px; padding: 8px; background: ${behavior.points > 0 ? '#f8fff8' : '#fff8f8'}; border-left: 3px solid ${behavior.points > 0 ? '#4CAF50' : '#f44336'}; border-radius: 4px;">
+                        <span style="color: ${behavior.points > 0 ? '#4CAF50' : '#f44336'}; font-weight: bold;">${behavior.points > 0 ? '+' : ''}${behavior.points}</span>
                         - ${behavior.description}
                         <small style="color: #666; display: block; margin-top: 2px;">${new Date(behavior.timestamp).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}</small>
                     </div>

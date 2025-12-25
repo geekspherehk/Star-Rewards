@@ -84,7 +84,7 @@ function updateBehaviorLog(behavior) {
             <div>${behavior.description}</div>
             <small>${new Date(behavior.timestamp).toLocaleString()}</small>
         </div>
-        <div class="behavior-points">+${behavior.points}</div>
+        <div class="behavior-points">${behavior.points > 0 ? '+' : ''}${behavior.points}</div>
     `;
     
     behaviorLog.insertBefore(behaviorItem, behaviorLog.firstChild);
