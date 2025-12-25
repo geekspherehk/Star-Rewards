@@ -447,7 +447,7 @@ function addBehaviorToList(behaviorLog) {
                 </div>
             </div>
             <div style="color: ${behaviorLog.points > 0 ? '#4ade80' : '#ff6b6b'}; font-weight: bold; font-size: 1.3rem; text-shadow: 0 0 10px ${behaviorLog.points > 0 ? 'rgba(74, 222, 128, 0.5)' : 'rgba(255, 107, 107, 0.5)'};">
-                ${behaviorLog.points > 0 ? '+' : ''}${behaviorLog.points}
+                ${behaviorLog.points}
             </div>
         </div>
     `;

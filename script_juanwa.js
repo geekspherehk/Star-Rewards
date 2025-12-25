@@ -224,7 +224,7 @@ function updateBehaviorLog() {
                 <div class="behavior-content">
                     <div class="behavior-description">${escapeHtml(behavior.description)}</div>
                     <div class="behavior-meta">
-                        <span class="behavior-points ${pointsClass}">${behavior.points > 0 ? '+' : ''}${behavior.points}</span>
+                        <span class="behavior-points ${pointsClass}">${behavior.points}</span>
                         <span class="behavior-date">${formatBehaviorDate(behavior.timestamp)}</span>
                     </div>
                 </div>
