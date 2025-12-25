@@ -1,0 +1,79 @@
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景渐变 -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 星星渐变 -->
+    <linearGradient id="starGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 阴影效果 -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="4" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+    
+    <!-- 内发光效果 -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- 背景圆形 -->
+  <circle cx="96" cy="96" r="88" fill="url(#bgGradient)" filter="url(#shadow)"/>
+  
+  <!-- 装饰性圆环 -->
+  <circle cx="96" cy="96" r="75" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+  <circle cx="96" cy="96" r="65" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+  
+  <!-- 主星星 -->
+  <path d="M96 28 L104 60 L138 60 L112 80 L120 112 L96 92 L72 112 L80 80 L54 60 L88 60 Z" 
+        fill="url(#starGradient)" 
+        filter="url(#glow)"
+        transform="scale(0.9) translate(10, 15)"/>
+  
+  <!-- 小星星装饰 -->
+  <path d="M40 50 L42 56 L48 56 L43 60 L45 66 L40 62 L35 66 L37 60 L32 56 L38 56 Z" 
+        fill="#FFD700" 
+        opacity="0.8"/>
+  
+  <path d="M152 45 L154 51 L160 51 L155 55 L157 61 L152 57 L147 61 L149 55 L144 51 L150 51 Z" 
+        fill="#FFD700" 
+        opacity="0.6"/>
+  
+  <path d="M35 125 L37 131 L43 131 L38 135 L40 141 L35 137 L30 141 L32 135 L27 131 L33 131 Z" 
+        fill="#FFD700" 
+        opacity="0.7"/>
+  
+  <path d="M155 130 L157 136 L163 136 L158 140 L160 146 L155 142 L150 146 L152 140 L147 136 L153 136 Z" 
+        fill="#FFD700" 
+        opacity="0.5"/>
+  
+  <!-- 文字 "BEST" -->
+  <text x="96" y="130" text-anchor="middle" 
+        font-family="Arial, sans-serif" 
+        font-size="14" 
+        font-weight="bold" 
+        fill="white"
+        opacity="0.9">
+    BEST
+  </text>
+  
+  <!-- 文字 "ME" -->
+  <text x="96" y="145" text-anchor="middle" 
+        font-family="Arial, sans-serif" 
+        font-size="14" 
+        font-weight="bold" 
+        fill="white"
+        opacity="0.9">
+    ME
+  </text>
+</svg>
