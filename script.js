@@ -957,7 +957,31 @@ async function redeemGift(giftId) {
         const confirmed = confirm(`确定要兑换 "${escapeHtml(gift.name)}" 吗？这将消耗 ${gift.points} 分。`);
         if (!confirmed) return;
 
-        // 更新本地数据
+        // 先同步到云端
+        const now = new Date().toISOString();
+        
+        // 使用存储过程确保数据一致性
+        const { data, error } = await supabase.rpc('redeem_gift_transaction', {
+            user_id_param: user.user.id,
+            gift_id_param: gift.id,
+            gift_name_param: gift.name,
+            gift_points_param: gift.points,
+            gift_description_param: gift.description || '',
+            redeem_date_param: now,
+            current_points_param: currentPoints - gift.points
+        });
+        
+        if (error) {
+            console.error('存储过程执行失败:', error);
+            throw error;
+        }
+        
+        // 检查存储过程是否返回成功
+        if (!data) {
+            throw new Error('兑换失败，请检查积分和礼物状态');
+        }
+
+        // 云端同步成功后，再更新本地数据
         currentPoints -= gift.points;
         const localRedeemDate = new Date().toLocaleString('zh-CN');
         redeemedGifts.push({
@@ -981,26 +1005,11 @@ async function redeemGift(giftId) {
             }
         }
         
-        // 数据已保存在云端，无需本地存储
-        
         // 更新UI
         updatePointsDisplay();
         updateGiftList();
         updateRedeemedList();
         
-        // 同步到云端
-        const now = new Date().toISOString();
-        const { error: transactionError } = await supabase.rpc('execute_transaction', {
-            user_id_param: user.user.id,
-            gift_id_param: gift.id,
-            gift_name_param: gift.name,
-            gift_points_param: gift.points,
-            gift_description_param: gift.description || '',
-            redeem_date_param: now,
-            current_points_param: currentPoints
-        });
-
-        if (transactionError) throw transactionError;
         showTemporaryMessage('🎉 兑换成功！', 'success');
         
     } catch (error) {
