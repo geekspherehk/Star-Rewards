@@ -473,6 +473,7 @@ function addGiftToList(gift) {
     
     const giftElement = document.createElement('div');
     giftElement.className = 'gift-item';
+    giftElement.setAttribute('data-gift-id', gift.id);
     giftElement.style.cssText = `
         background: linear-gradient(135deg, rgba(123, 31, 162, 0.1), rgba(255, 255, 255, 0.05));
         border-radius: 12px;
@@ -506,6 +507,25 @@ function addGiftToList(gift) {
     `;
     
     giftList.appendChild(giftElement);
+}
+
+// 渲染礼物列表
+function renderGiftList() {
+    const giftList = document.getElementById('gift-list');
+    
+    // 如果元素不存在，直接返回
+    if (!giftList) {
+        console.log('gift-list元素不存在，跳过渲染礼物列表');
+        return;
+    }
+    
+    // 清空当前列表
+    giftList.innerHTML = '';
+    
+    // 重新添加所有礼物
+    gifts.forEach(gift => {
+        addGiftToList(gift);
+    });
 }
 
 // 添加已兑换到列表
@@ -702,28 +722,62 @@ async function redeemGift(giftId, giftName, pointsRequired) {
         timestamp: new Date().toISOString()
     };
     
-    // 更新本地数据
-    redeemedGifts.unshift(redeemLog);
-    currentPoints -= pointsRequired;
-    
-    // 保存到Supabase
-    await saveRedeemToSupabase(redeemLog);
-    
-    // 更新显示
-    updatePointsDisplay();
-    addRedeemedToList(redeemLog);
-    updateCounts();
-    
-    // 更新礼物列表中的按钮状态
-    document.querySelectorAll('.gift-item button').forEach(button => {
-        const giftPoints = parseInt(button.parentElement.querySelector('div').textContent);
-        if (currentPoints < giftPoints) {
-            button.disabled = true;
+    try {
+        const timestamp = new Date().toISOString();
+        
+        // 使用存储过程确保数据一致性
+        const { data, error } = await supabaseClient.rpc('redeem_gift_transaction', {
+            user_id_param: currentUser.id,
+            gift_id_param: giftId,
+            gift_name_param: giftName,
+            gift_points_param: pointsRequired,
+            gift_description_param: '', // 卷自己版可能没有描述字段
+            redeem_date_param: timestamp,
+            current_points_param: currentPoints - pointsRequired
+        });
+        
+        if (error) {
+            console.error('存储过程执行失败:', error);
+            throw error;
         }
-    });
-    
-    // 显示成功消息
-    showSuccessAnimation('兑换成功！奖励已发放 🎁');
+        
+        // 检查存储过程是否返回成功
+        if (!data) {
+            throw new Error('兑换失败，请检查积分和礼物状态');
+        }
+        
+        // 所有数据库操作成功后，再更新本地数据
+        redeemedGifts.unshift(redeemLog);
+        currentPoints -= pointsRequired;
+        
+        // 从礼物列表中移除已兑换的礼物
+        const indexToRemove = gifts.findIndex(g => g.id === giftId);
+        if (indexToRemove !== -1) {
+            gifts.splice(indexToRemove, 1);
+        }
+        
+        // 更新显示
+        updatePointsDisplay();
+        addRedeemedToList(redeemLog);
+        updateCounts();
+        
+        // 重新渲染礼物列表
+        renderGiftList();
+        
+        // 更新礼物列表中的按钮状态
+        document.querySelectorAll('.gift-item button').forEach(button => {
+            const giftPoints = parseInt(button.parentElement.querySelector('div').textContent);
+            if (currentPoints < giftPoints) {
+                button.disabled = true;
+            }
+        });
+        
+        // 显示成功消息
+        showSuccessAnimation('兑换成功！奖励已发放 🎁');
+    } catch (error) {
+        console.error('兑换失败:', error);
+        alert('兑换失败，请稍后重试');
+    }
 }
 
 // 检测礼物链接
@@ -921,11 +975,41 @@ async function saveRedeemToSupabase(redeemLog) {
         
         if (error) {
             console.error('保存兑换记录到Supabase失败:', error);
+            throw error;
         } else {
             console.log('兑换记录已保存到Supabase:', data);
         }
     } catch (error) {
         console.error('保存兑换记录时出错:', error);
+        throw error;
+    }
+}
+
+// 更新用户积分到数据库
+async function updateUserPoints(newPoints) {
+    if (!supabaseClient || !currentUser) {
+        console.log('Supabase客户端未初始化或用户未登录');
+        return;
+    }
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .update({
+                current_points: newPoints,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', currentUser.id);
+        
+        if (error) {
+            console.error('更新用户积分到Supabase失败:', error);
+            throw error;
+        } else {
+            console.log('用户积分已更新到Supabase:', data);
+        }
+    } catch (error) {
+        console.error('更新用户积分时出错:', error);
+        throw error;
     }
 }
 

@@ -433,6 +433,28 @@ async function redeemGift(giftIndex) {
     try {
         const timestamp = new Date().toISOString();
         
+        // 使用存储过程确保数据一致性
+        const { data, error } = await supabase.rpc('redeem_gift_transaction', {
+            user_id_param: currentUser.id,
+            gift_id_param: gift.id,
+            gift_name_param: gift.name,
+            gift_points_param: gift.points,
+            gift_description_param: gift.description || '',
+            redeem_date_param: timestamp,
+            current_points_param: currentPoints - gift.points
+        });
+        
+        if (error) {
+            console.error('存储过程执行失败:', error);
+            throw error;
+        }
+        
+        // 检查存储过程是否返回成功
+        if (!data) {
+            throw new Error('兑换失败，请检查积分和礼物状态');
+        }
+        
+        // 所有数据库操作成功后，再更新本地数据
         // 扣除积分
         currentPoints -= gift.points;
         
@@ -446,27 +468,6 @@ async function redeemGift(giftIndex) {
             description: gift.description,
             redeem_date: timestamp
         });
-        
-        // 保存到数据库
-        await Promise.all([
-            // 删除礼物
-            supabase.from('gifts').delete().eq('id', gift.id),
-            
-            // 添加兑换记录
-            supabase.from('redeemed_gifts').insert({
-                user_id: currentUser.id,
-                name: gift.name,
-                points: gift.points,
-                description: gift.description,
-                redeem_date: timestamp
-            }),
-            
-            // 更新用户积分
-            supabase.from('profiles').update({
-                current_points: currentPoints,
-                updated_at: timestamp
-            }).eq('id', currentUser.id)
-        ]);
         
         // 更新UI
         updateAllUI();
