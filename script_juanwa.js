@@ -53,6 +53,9 @@ async function initializeJuanwaPage() {
     try {
         console.log('开始初始化卷娃小能手页面...');
         
+        // 初始化多语言
+        initLanguage();
+        
         // 初始化Supabase
         supabase = initializeSupabase();
         if (!supabase) {

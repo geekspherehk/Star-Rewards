@@ -185,6 +185,9 @@ document.addEventListener('DOMContentLoaded', function() {
 async function initializeApp() {
     console.log('开始初始化应用...');
     
+    // 初始化多语言
+    initLanguage();
+    
     // 检查用户登录状态
     const userData = localStorage.getItem('supabase.user');
     console.log('从localStorage获取用户数据:', userData);

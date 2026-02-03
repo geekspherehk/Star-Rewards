@@ -179,16 +179,16 @@ async function signOut() {
         updateAuthUI(null);
         
         console.log('登出流程完成');
-        showTemporaryMessage('👋 已退出登录', 'success');
-        
+        showTemporaryMessage(t('common.logoutSuccess'), 'success');
+
         // 2秒后跳转到登录页面
         setTimeout(() => {
             window.location.href = 'login.html';
         }, 2000);
-        
+
     } catch (error) {
         console.error('登出过程中发生错误:', error);
-        showTemporaryMessage(`❌ 登出失败: ${escapeHtml(error.message)}`, 'error');
+        showTemporaryMessage(`${t('common.logoutFailed')}: ${escapeHtml(error.message)}`, 'error');
         throw error;
     }
 }
@@ -247,7 +247,7 @@ function updateBehaviorLog() {
     if (behaviors.length === 0) {
         const emptyMessage = document.createElement('div');
         emptyMessage.className = 'empty-behavior-message';
-        emptyMessage.innerHTML = '📋 暂无记录，开始记录您的行为吧！';
+        emptyMessage.innerHTML = t('common.noBehaviorRecords');
         logContainer.appendChild(emptyMessage);
         return;
     }
@@ -258,15 +258,15 @@ function updateBehaviorLog() {
     statsDiv.innerHTML = `
         <div class="stat-item">
             <div class="stat-icon">📊</div>
-            <div class="stat-text">总记录: ${totalBehaviors}</div>
+            <div class="stat-text">${t('common.totalRecords')}: ${totalBehaviors}</div>
         </div>
         <div class="stat-item">
             <div class="stat-icon">✅</div>
-            <div class="stat-text">获得积分: +${totalPointsGained}</div>
+            <div class="stat-text">${t('common.pointsEarned')}: +${totalPointsGained}</div>
         </div>
         <div class="stat-item">
             <div class="stat-icon">❌</div>
-            <div class="stat-text">扣除积分: ${totalPointsLost}</div>
+            <div class="stat-text">${t('common.pointsDeducted')}: ${totalPointsLost}</div>
         </div>
     `;
     logContainer.appendChild(statsDiv);
@@ -346,7 +346,7 @@ function updateGiftList() {
                 img.className = 'gift-image';
                 img.onerror = function() {
                     this.src = 'https://via.placeholder.com/80';
-                    this.alt = '礼物图片';
+                    this.alt = t('common.giftImage');
                 };
                 
                 link.appendChild(img);
@@ -365,7 +365,7 @@ function updateGiftList() {
         } else {
             const placeholder = document.createElement('div');
             placeholder.className = 'gift-image-placeholder';
-            placeholder.textContent = '🎁';
+            placeholder.textContent = t('common.gift');
             imageDiv.appendChild(placeholder);
         }
         
@@ -407,7 +407,7 @@ function updateGiftList() {
         // 礼物积分要求
         const pointsDiv = document.createElement('div');
         pointsDiv.className = 'item-details';
-        pointsDiv.textContent = `需要 ${gift.points} 分`;
+        pointsDiv.textContent = `${t('gifts.pointsRequired').replace('{points}', gift.points)}`;
         
         infoDiv.appendChild(headerDiv);
         infoDiv.appendChild(pointsDiv);
@@ -419,7 +419,7 @@ function updateGiftList() {
         // 兑换按钮
         const redeemBtn = document.createElement('button');
         redeemBtn.className = 'redeem-btn';
-        redeemBtn.textContent = '🎁 兑换';
+        redeemBtn.textContent = t('common.redeemButton');
         redeemBtn.disabled = currentPoints < gift.points;
         redeemBtn.onclick = async () => {
             await redeemGift(index);
@@ -453,7 +453,7 @@ function updateRedeemedList() {
     if (redeemedGifts.length === 0) {
         const emptyMessage = document.createElement('div');
         emptyMessage.className = 'empty-redeemed-message';
-        emptyMessage.innerHTML = '🎁 还没有兑换记录，快去兑换喜欢的奖励吧！';
+        emptyMessage.innerHTML = t('common.noRedeemedRecords');
         redeemedList.appendChild(emptyMessage);
         return;
     }
@@ -465,11 +465,11 @@ function updateRedeemedList() {
     statsDiv.innerHTML = `
         <div class="stat-item">
             <span class="stat-icon">🏆</span>
-            <span class="stat-text">共兑换 ${redeemedGifts.length} 件礼物</span>
+            <span class="stat-text">${t('common.totalRedeemed')} ${redeemedGifts.length} ${t('common.items')}</span>
         </div>
         <div class="stat-item">
             <span class="stat-icon">💎</span>
-            <span class="stat-text">总计消耗 ${totalRedeemedPoints} 积分</span>
+            <span class="stat-text">${t('common.totalPointsSpent')} ${totalRedeemedPoints} ${t('common.points')}</span>
         </div>
     `;
     redeemedList.appendChild(statsDiv);
@@ -503,7 +503,7 @@ function updateRedeemedList() {
                 img.className = 'redeemed-image';
                 img.onerror = function() {
                     this.src = 'https://via.placeholder.com/60';
-                    this.alt = '礼物图片';
+                    this.alt = t('common.giftImage');
                 };
                 
                 link.appendChild(img);
@@ -515,14 +515,14 @@ function updateRedeemedList() {
                 img.className = 'redeemed-image';
                 img.onerror = function() {
                     this.src = 'https://via.placeholder.com/60';
-                    this.alt = '礼物图片';
+                    this.alt = t('common.giftImage');
                 };
                 imageDiv.appendChild(img);
             }
         } else {
             const placeholder = document.createElement('div');
             placeholder.className = 'redeemed-image-placeholder';
-            placeholder.textContent = '🎁';
+            placeholder.textContent = t('common.gift');
             imageDiv.appendChild(placeholder);
         }
         
@@ -568,7 +568,7 @@ function updateRedeemedList() {
         // 积分信息
         const pointsSpan = document.createElement('span');
         pointsSpan.className = 'redeemed-points';
-        pointsSpan.innerHTML = `<span class="points-badge">-${item.points}</span> 积分`;
+        pointsSpan.innerHTML = `<span class="points-badge">-${item.points}</span> ${t('common.points')}`;
         
         // 时间信息
         const dateSpan = document.createElement('span');
@@ -592,8 +592,8 @@ function updateRedeemedList() {
 
 // 格式化兑换日期
 function formatRedeemDate(dateString) {
-    if (!dateString || dateString === '未知时间') return '刚刚';
-    
+    if (!dateString || dateString === t('common.unknownTime')) return t('common.justNow');
+
     try {
         const date = new Date(dateString);
         const now = new Date();
@@ -601,15 +601,15 @@ function formatRedeemDate(dateString) {
         const diffMins = Math.floor(diffMs / 60000);
         const diffHours = Math.floor(diffMs / 3600000);
         const diffDays = Math.floor(diffMs / 86400000);
-        
-        if (diffMins < 1) return '刚刚';
-        if (diffMins < 60) return `${diffMins} 分钟前`;
-        if (diffHours < 24) return `${diffHours} 小时前`;
-        if (diffDays < 7) return `${diffDays} 天前`;
-        
+
+        if (diffMins < 1) return t('common.justNow');
+        if (diffMins < 60) return t('common.minutesAgo').replace('{minutes}', diffMins);
+        if (diffHours < 24) return t('common.hoursAgo').replace('{hours}', diffHours);
+        if (diffDays < 7) return t('common.daysAgo').replace('{days}', diffDays);
+
         // 超过一周显示具体日期
-        return date.toLocaleDateString('zh-CN', { 
-            month: 'short', 
+        return date.toLocaleDateString('zh-CN', {
+            month: 'short',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
@@ -631,19 +631,19 @@ async function addPoints() {
     const change = parseInt(document.getElementById('points-change').value);
     
     if (!desc) {
-        alert('请输入行为描述！');
+        alert(t('common.enterBehaviorDesc'));
         document.getElementById('behavior-desc').focus();
         return;
     }
-    
+
     if (isNaN(change)) {
-        alert('请输入有效的积分变化值！');
+        alert(t('common.enterValidPoints'));
         document.getElementById('points-change').focus();
         return;
     }
-    
+
     if (change === 0) {
-        alert('积分变化不能为0！');
+        alert(t('common.pointsCannotBeZero'));
         document.getElementById('points-change').focus();
         return;
     }
@@ -716,10 +716,10 @@ async function addPoints() {
             `✅ 成功添加 ${change} 分！` : 
             `⚠️ 扣除 ${Math.abs(change)} 分`;
         showTemporaryMessage(message, 'success');
-        
+
     } catch (error) {
         console.error('添加积分失败:', error);
-        showTemporaryMessage('❌ 添加积分失败', 'error');
+        showTemporaryMessage(t('common.addPointsFailed'), 'error');
     }
 }
 
@@ -776,13 +776,13 @@ async function addGift() {
     }
     
     if (!name) {
-        alert('请输入礼物名称！');
+        alert(t('common.enterGiftName'));
         document.getElementById('gift-name').focus();
         return;
     }
-    
+
     if (isNaN(giftPoints) || giftPoints <= 0) {
-        alert('请输入有效的积分值（大于0）！');
+        alert(t('common.enterValidPointsPositive'));
         document.getElementById('gift-points').focus();
         return;
     }
@@ -846,12 +846,12 @@ async function addGift() {
         document.getElementById('gift-description').value = '';
         document.getElementById('gift-image').value = '';
         document.getElementById('gift-name').focus();
-        
-        showTemporaryMessage(`🎁 礼物 "${escapeHtml(name)}" 添加成功！`, 'success');
-        
+
+        showTemporaryMessage(t('common.addGiftSuccess').replace('{name}', escapeHtml(name)), 'success');
+
     } catch (error) {
         console.error('添加礼物失败:', error);
-        showTemporaryMessage('添加礼物失败', 'error');
+        showTemporaryMessage(t('common.addGiftFailed'), 'error');
     }
 }
 
@@ -944,17 +944,17 @@ async function redeemGift(giftId) {
         }
         
         if (!gift) {
-            showTemporaryMessage('❌ 礼物不存在！', 'error');
+            showTemporaryMessage(t('common.giftNotFound'), 'error');
             return;
         }
 
         if (currentPoints < gift.points) {
-            showTemporaryMessage('❌ 积分不足！', 'error');
+            showTemporaryMessage(t('common.insufficientPoints'), 'error');
             return;
         }
 
         // 确认兑换
-        const confirmed = confirm(`确定要兑换 "${escapeHtml(gift.name)}" 吗？这将消耗 ${gift.points} 分。`);
+        const confirmed = confirm(t('common.confirmRedeemMessage').replace('{name}', escapeHtml(gift.name)).replace('{points}', gift.points));
         if (!confirmed) return;
 
         // 先同步到云端
@@ -1009,12 +1009,12 @@ async function redeemGift(giftId) {
         updatePointsDisplay();
         updateGiftList();
         updateRedeemedList();
-        
-        showTemporaryMessage('🎉 兑换成功！', 'success');
-        
+
+        showTemporaryMessage(t('common.redeemSuccess'), 'success');
+
     } catch (error) {
         console.error('兑换礼物失败:', error);
-        showTemporaryMessage('兑换礼物失败', 'error');
+        showTemporaryMessage(t('common.redeemFailed'), 'error');
     }
 }
 
@@ -1146,13 +1146,16 @@ async function initializeApp() {
     try {
         console.log('Script.js: 开始初始化应用...');
         
+        // 初始化多语言
+        initLanguage();
+        
         // 确保Supabase客户端已初始化
         if (!supabase) {
             console.log('Script.js: 初始化Supabase客户端...');
             supabase = initializeSupabase();
             if (!supabase) {
                 console.error('Script.js: Supabase初始化失败');
-                showTemporaryMessage('❌ 数据库连接失败', 'error');
+                showTemporaryMessage(t('common.dbConnectionFailed'), 'error');
                 return;
             }
         }
@@ -1184,7 +1187,7 @@ async function initializeApp() {
         
     } catch (error) {
         console.error('Script.js: 应用初始化失败:', error);
-        showTemporaryMessage('❌ 应用初始化失败，请刷新页面重试', 'error');
+        showTemporaryMessage(t('common.initFailed'), 'error');
     }
 }
 
@@ -1443,7 +1446,7 @@ function updateDiaryList() {
     console.log('updateDiaryList: 已兑换礼物数量:', redeemedGifts ? redeemedGifts.length : 0);
     
     if ((!behaviors || behaviors.length === 0) && (!redeemedGifts || redeemedGifts.length === 0)) {
-        diaryList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">还没有成长记录，快来记录第一次积分吧！</p>';
+        diaryList.innerHTML = `<p style="text-align: center; color: #666; padding: 20px;">${t('common.noDiaryRecords')}</p>`;
         return;
     }
     
@@ -1468,7 +1471,7 @@ function updateDiaryList() {
         const sortedBehaviorDates = Object.keys(behaviorsByDate).sort((a, b) => new Date(b) - new Date(a));
         
         html += '<div class="diary-section" style="flex: 1; min-width: 300px;">';
-        html += '<h3 style="color: #4CAF50; margin-bottom: 15px; font-size: 18px;">📋 行为记录</h3>';
+        html += `<h3 style="color: #4CAF50; margin-bottom: 15px; font-size: 18px;">📋 ${t('behaviors.title')}</h3>`;
         
         sortedBehaviorDates.forEach(date => {
             const dayBehaviors = behaviorsByDate[date];
@@ -1476,7 +1479,7 @@ function updateDiaryList() {
             
             html += `
                 <div class="diary-entry">
-                    <div class="diary-date">${date} <span class="diary-points">${dayPoints > 0 ? '+' : ''}${dayPoints} 积分</span></div>
+                    <div class="diary-date">${date} <span class="diary-points">${dayPoints > 0 ? '+' : ''}${dayPoints} ${t('common.points')}</span></div>
                     <div class="diary-content">
             `;
             
@@ -1512,7 +1515,7 @@ function updateDiaryList() {
         const sortedGiftDates = Object.keys(giftsByDate).sort((a, b) => new Date(b) - new Date(a));
         
         html += '<div class="diary-section" style="flex: 1; min-width: 300px;">';
-        html += '<h3 style="color: #ff9800; margin-bottom: 15px; font-size: 18px;">🎁 愿望达成</h3>';
+        html += `<h3 style="color: #ff9800; margin-bottom: 15px; font-size: 18px;">🎁 ${t('redeemed.title')}</h3>`;
         
         sortedGiftDates.forEach(date => {
             const dayGifts = giftsByDate[date];
@@ -1520,7 +1523,7 @@ function updateDiaryList() {
             
             html += `
                 <div class="diary-entry">
-                    <div class="diary-date">${date} <span class="diary-points">-${dayPoints} 积分</span></div>
+                    <div class="diary-date">${date} <span class="diary-points">-${dayPoints} ${t('common.points')}</span></div>
                     <div class="diary-content">
             `;
             

@@ -9,8 +9,11 @@
     <link rel="apple-touch-icon" href="logo.svg">
     <meta name="theme-color" content="#667eea">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="i18n.css">
     <!-- Supabase SDK -->
     <script src="supabase.min.js"></script>
+    <!-- 多语言支持 -->
+    <script src="i18n.js?v=6"></script>
     <script>
         // 页面加载日志
         console.log('index.html页面开始加载...');
@@ -20,6 +23,13 @@
     </script>
 </head>
 <body>
+    <div class="language-selector">
+        <select id="language-selector" onchange="setLanguage(this.value)">
+            <option value="zh">中文</option>
+            <option value="en">English</option>
+        </select>
+    </div>
+    
     <div class="container">
         <h1>🌟 Best Me</h1>
         
@@ -28,16 +38,16 @@
             <!-- 已登录状态 -->
             <div id="logged-in-state" style="display: none; background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 0.9rem; color: #9C27B0; font-weight: 500;">欢迎，<span id="user-email"></span></span>
-                    <button onclick="signOut()" style="padding: 6px 12px; font-size: 0.8rem; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer;">退出</button>
+                    <span style="font-size: 0.9rem; color: #9C27B0; font-weight: 500;"><span data-i18n="home.welcome">欢迎</span>，<span id="user-email"></span></span>
+                    <button onclick="signOut()" style="padding: 6px 12px; font-size: 0.8rem; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer;" data-i18n="home.logout">退出</button>
                 </div>
             </div>
             
             <!-- 未登录状态 -->
             <div id="not-logged-in-state" style="display: none; background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 0.9rem; color: #ff9800;">需要登录才能使用</span>
-                    <button onclick="window.location.href='login.html'" style="padding: 6px 12px; font-size: 0.8rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">登录</button>
+                    <span style="font-size: 0.9rem; color: #ff9800;" data-i18n="home.needLogin">需要登录才能使用</span>
+                    <button onclick="window.location.href='login.html'" style="padding: 6px 12px; font-size: 0.8rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;" data-i18n="login.loginButton">登录</button>
                 </div>
             </div>
         </div>
@@ -46,18 +56,18 @@
         <div class="module-cards">
             <div class="module-card active" onclick="showModule('points-module')">
                 <div style="font-size: 2.5rem; margin-bottom: 10px;">🌟</div>
-                <h3>成长积分</h3>
-                <p>记录成长，积累积分</p>
+                <h3 data-i18n="home.addPoints">成长积分</h3>
+                <p data-i18n="home.pointsDesc">记录成长，积累积分</p>
             </div>
             <div class="module-card" onclick="showModule('gifts-module')">
                 <div style="font-size: 2.5rem; margin-bottom: 10px;">🎁</div>
-                <h3>宝贝愿望</h3>
-                <p>记录愿望，激励成长</p>
+                <h3 data-i18n="home.gifts">宝贝愿望</h3>
+                <p data-i18n="home.giftsDesc">记录愿望，激励成长</p>
             </div>
             <div class="module-card" onclick="showModule('diary-module')">
                 <div style="font-size: 2.5rem; margin-bottom: 10px;">📖</div>
-                <h3>成长日记</h3>
-                <p>回顾足迹，见证成长</p>
+                <h3 data-i18n="home.diary">成长日记</h3>
+                <p data-i18n="home.diaryDesc">回顾足迹，见证成长</p>
             </div>
         </div>
 
@@ -68,33 +78,33 @@
                 <div class="points-display">
                     <div class="points-card">
                         <div class="points-value" id="current-points">0</div>
-                        <div class="points-label">当前积分</div>
+                        <div class="points-label" data-i18n="home.currentPoints">当前积分</div>
                     </div>
                     <div class="points-card">
                         <div class="points-value" id="total-points">0</div>
-                        <div class="points-label">累计获得积分</div>
+                        <div class="points-label" data-i18n="home.totalPoints">累计获得积分</div>
                     </div>
                 </div>
                 
                 <div class="form-group">
-                    <h3>📝 记录行为积分</h3>
+                    <h3 data-i18n="behaviors.title">📝 记录行为积分</h3>
                     <div class="form-row">
-                        <input type="text" id="behavior-desc" placeholder="描述行为（例如：完成作业）">
-                        <input type="number" id="points-change" placeholder="积分变化（正加负扣）">
+                        <input type="text" id="behavior-desc" data-i18n-placeholder="behaviors.description" placeholder="描述行为（例如：完成作业）">
+                        <input type="number" id="points-change" data-i18n-placeholder="behaviors.points" placeholder="积分变化（正加负扣）">
                     </div>
                     <div class="preset-behaviors" id="preset-behaviors">
-                        <span style="grid-column: 1 / -1; font-weight: 500; color: #6c757d; margin-bottom: 4px;">快速选择:</span>
-                        <button class="preset-btn" onclick="setPresetBehavior('阅读15分钟', 1)">学习 +10</button>
-                        <button class="preset-btn" onclick="setPresetBehavior('锻炼身体', 1)">锻炼 +5</button>
-                        <button class="preset-btn" onclick="setPresetBehavior('早睡', 2)">早睡早起 +8</button>
-                        <button class="preset-btn" onclick="setPresetBehavior('数学思维', 2)">工作 +15</button>
+                        <span style="grid-column: 1 / -1; font-weight: 500; color: #6c757d; margin-bottom: 4px;" data-i18n="behaviors.quickSelect">快速选择:</span>
+                        <button class="preset-btn" onclick="setPresetBehavior('按时睡觉', 1)" data-i18n="behaviors.preset.sleep">按时睡觉 +1</button>
+                        <button class="preset-btn" onclick="setPresetBehavior('作业全对', 2)" data-i18n="behaviors.preset.homework">作业全对 +2</button>
+                        <button class="preset-btn" onclick="setPresetBehavior('早起锻炼', 5)" data-i18n="behaviors.preset.exercise">早起锻炼 +5</button>
+                        <button class="preset-btn" onclick="setPresetBehavior('小测满分', 20)" data-i18n="behaviors.preset.test">小测满分 +20</button>
                     </div>
                     <div style="text-align: center; margin-top: 15px;">
-                        <a href="behavior-templates.html" class="template-link" style="display: inline-block; background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); transition: transform 0.3s ease; margin-right: 10px;">✨ 查看更多模板</a>
-                        <a href="rewards-for-her.html" class="template-link" style="display: inline-block; background: linear-gradient(45deg, #ff6b6b, #ffa8a8); color: white; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3); transition: transform 0.3s ease;">🌸 女性专属奖励</a>
+                        <a href="behavior-templates.html" class="template-link" style="display: inline-block; background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); transition: transform 0.3s ease; margin-right: 10px;" data-i18n="behaviors.viewTemplates">✨ 查看更多模板</a>
+                        <a href="rewards-for-her.html" class="template-link" style="display: inline-block; background: linear-gradient(45deg, #ff6b6b, #ffa8a8); color: white; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3); transition: transform 0.3s ease;" data-i18n="behaviors.rewardsForHer">🌸 女性专属奖励</a>
                     </div>
                     <div class="button-group">
-                        <button class="add-points-btn" onclick="addPoints()">➕ 记录积分</button>
+                        <button class="add-points-btn" onclick="addPoints()" data-i18n="behaviors.addBehavior">➕ 记录积分</button>
                     </div>
                 </div>
             </div>
@@ -102,31 +112,31 @@
             <!-- 宝贝愿望模块 -->
             <div id="gifts-module" class="module-content">
                 <div class="form-group">
-                    <h3>🎁 添加愿望</h3>
+                    <h3 data-i18n="gifts.addGift">🎁 添加愿望</h3>
                     <div class="form-row">
-                        <input type="text" id="gift-name" placeholder="愿望名称">
-                        <input type="number" id="gift-points" placeholder="所需积分">
+                        <input type="text" id="gift-name" data-i18n-placeholder="gifts.name" placeholder="愿望名称">
+                        <input type="number" id="gift-points" data-i18n-placeholder="gifts.points" placeholder="所需积分">
                     </div>
                     <div class="form-row">
-                        <input type="text" id="gift-description" placeholder="愿望描述">
+                        <input type="text" id="gift-description" data-i18n-placeholder="gifts.description" placeholder="愿望描述">
                     </div>
                     <div class="form-row">
-                        <input type="text" id="gift-image" placeholder="图片URL（可选）">
+                        <input type="text" id="gift-image" data-i18n-placeholder="gifts.image" placeholder="图片URL（可选）">
                     </div>
-                    <button class="add-gift-btn" onclick="addGift()">➕ 添加愿望</button>
+                    <button class="add-gift-btn" onclick="addGift()" data-i18n="gifts.addGiftButton">➕ 添加愿望</button>
                 </div>
                 
-                <h3>🎉 愿望清单</h3>
+                <h3 data-i18n="gifts.title">🎉 愿望清单</h3>
                 <ul id="gift-list"></ul>
                 
-                <h3>🏆 兑换记录</h3>
+                <h3 data-i18n="redeemed.title">🏆 兑换记录</h3>
                 <div id="redeemed-list"></div>
             </div>
 
             <!-- 成长日记模块 -->
             <div id="diary-module" class="module-content">
                 <div class="diary-container">
-                    <h3>📖 成长足迹</h3>
+                    <h3 data-i18n="behaviors.title">📖 成长足迹</h3>
                     <div id="diary-list" class="diary-list"></div>
                 </div>
             </div>

@@ -1,0 +1,103 @@
+/* 多语言切换器样式 */
+.language-selector {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+/* 现代化的语言切换按钮 */
+.language-selector select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding: 10px 40px 10px 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 25px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.9), rgba(118, 75, 162, 0.9));
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+}
+
+.language-selector select:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.language-selector select:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2), 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* 选项样式 */
+.language-selector select option {
+    background: white;
+    color: #333;
+    padding: 10px;
+}
+
+/* 语言图标 */
+.language-selector::before {
+    content: '🌐';
+    position: absolute;
+    left: -35px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .language-selector {
+        top: 10px;
+        right: 10px;
+    }
+    
+    .language-selector select {
+        font-size: 13px;
+        min-width: 100px;
+        padding: 8px 35px 8px 14px;
+        border-radius: 20px;
+    }
+    
+    .language-selector::before {
+        display: none;
+    }
+}
+
+/* 深色主题适配 */
+@media (prefers-color-scheme: dark) {
+    .language-selector select {
+        background: linear-gradient(135deg, rgba(60, 60, 80, 0.95), rgba(40, 40, 60, 0.95));
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+}
+
+/* 动画效果 */
+@keyframes languagePulse {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 25px rgba(102, 126, 234, 0.5);
+    }
+}
+
+.language-selector select {
+    animation: languagePulse 3s ease-in-out infinite;
+}
+
+.language-selector select:hover {
+    animation: none;
+}
