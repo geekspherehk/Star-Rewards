@@ -10,8 +10,8 @@
     <meta name="theme-color" content="#667eea">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="i18n.css">
-    <!-- Supabase SDK -->
-    <script src="supabase.min.js"></script>
+    <!-- API Client for Hostinger MySQL -->
+    <script src="api/api-client.js"></script>
     <!-- 多语言支持 -->
     <script src="i18n.js?v=6"></script>
     <script>
@@ -39,7 +39,7 @@
             <div id="logged-in-state" style="display: none; background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-size: 0.9rem; color: #9C27B0; font-weight: 500;"><span data-i18n="home.welcome">欢迎</span>，<span id="user-email"></span></span>
-                    <button onclick="signOut()" style="padding: 6px 12px; font-size: 0.8rem; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer;" data-i18n="home.logout">退出</button>
+                    <button onclick="doSignOut()" style="padding: 6px 12px; font-size: 0.8rem; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer;" data-i18n="home.logout">退出</button>
                 </div>
             </div>
             
@@ -172,65 +172,36 @@
         
         // 检查用户认证状态
         async function checkAuthStatus() {
-            const user = await getCurrentUser();
-            if (user) {
-                // 用户已登录，显示用户信息
-                document.getElementById('user-email').textContent = user.email;
-                document.getElementById('logged-in-state').style.display = 'block';
-                document.getElementById('not-logged-in-state').style.display = 'none';
-                
-                // 如果initializeApp函数可用，则初始化应用数据
-                if (typeof initializeApp === 'function') {
-                    await initializeApp();
-                } else {
-                    console.log('initializeApp函数尚未加载，等待script.js加载完成...');
+            const token = api.getToken();
+            if (token) {
+                const email = localStorage.getItem('user_email');
+                if (email) {
+                    document.getElementById('user-email').textContent = email;
+                    document.getElementById('logged-in-state').style.display = 'block';
+                    document.getElementById('not-logged-in-state').style.display = 'none';
+                    
+                    if (typeof initializeApp === 'function') {
+                        await initializeApp();
+                    }
                 }
             } else {
-                // 用户未登录
                 document.getElementById('logged-in-state').style.display = 'none';
                 document.getElementById('not-logged-in-state').style.display = 'block';
             }
         }
         
         // 获取当前用户
-        async function getCurrentUser() {
-            try {
-                if (typeof supabase === 'undefined') {
-                    console.warn('Supabase 未初始化');
-                    return null;
-                }
-                
-                const { data: { user }, error } = await supabase.auth.getUser();
-                if (error) {
-                    console.error('获取用户信息失败:', error);
-                    return null;
-                }
-                return user;
-            } catch (error) {
-                console.error('获取用户信息时出错:', error);
-                return null;
+        function getCurrentUser() {
+            const token = api.getToken();
+            if (token) {
+                return { email: localStorage.getItem('user_email') };
             }
+            return null;
         }
         
-        // 退出登录
-        async function signOut() {
-            try {
-                if (typeof supabase === 'undefined') {
-                    console.warn('Supabase 未初始化');
-                    return;
-                }
-                
-                const { error } = await supabase.auth.signOut();
-                if (error) {
-                    console.error('退出失败:', error);
-                    return;
-                }
-                
-                // 刷新页面
-                window.location.reload();
-            } catch (error) {
-                console.error('退出时出错:', error);
-            }
+        // 退出登录 - 调用 script.js 中的全局函数
+        function doSignOut() {
+            signOut();
         }
     </script>
     <script src="script.js?v=2"></script>

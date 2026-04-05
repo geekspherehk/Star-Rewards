@@ -1,116 +1,31 @@
 // login.js - 登录页面专用JavaScript文件
 
-// Supabase 配置
-const supabaseUrl = 'https://pjxpyppafaxepdzqgume.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqeHB5cHBhZmF4ZXBkenFndW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NDk5NzgsImV4cCI6MjA3NTIyNTk3OH0.RmAMBhVeJ-bWHqjdrnHaRMvidR9Jvk5s7TyTPZN3GMM';
-let supabase;
+// 使用 Hostinger MySQL API Client
+let supabase = null;
 
-// 初始化Supabase客户端 - 与script.js保持一致的使用全局缓存机制
 function initializeSupabase() {
-    try {
-        // 检查是否已经存在初始化的客户端
-        if (window._supabaseClient) {
-            console.log('Login.js: 使用已存在的Supabase客户端实例');
-            console.log('Login.js: 已存在的实例信息:', {
-                url: window._supabaseClient.supabaseUrl,
-                hasAuth: !!window._supabaseClient.auth,
-                hasFrom: !!window._supabaseClient.from,
-                instanceId: window._supabaseClient.toString()
-            });
-            return window._supabaseClient;
-        }
-        
-        console.log('Login.js: 创建新的Supabase客户端实例');
-        if (typeof window.supabase === 'undefined') {
-            console.warn('Login.js: Supabase SDK 未加载');
-            return null;
-        }
-        
-        const client = window.supabase.createClient(supabaseUrl, supabaseKey, {
-            auth: {
-                storage: localStorage, // 使用localStorage存储会话信息
-                autoRefreshToken: true, // 启用自动刷新令牌
-                persistSession: true // 启用会话持久化
-            },
-            global: {
-                headers: {
-                    'apikey': supabaseKey
-                }
-            }
-        });
-        
-        // 保存客户端实例到全局变量，供所有页面共享
-        window._supabaseClient = client;
-        console.log('Login.js: Supabase客户端初始化成功', {
-            url: client.supabaseUrl,
-            hasAuth: !!client.auth,
-            hasFrom: !!client.from,
-            instanceId: client.toString()
-        });
-        return client;
-    } catch (error) {
-        console.error('Login.js: Supabase 初始化失败:', error);
-        return null;
-    }
+    console.log('Login.js: 使用 Hostinger MySQL API');
+    return null;
 }
 
-// 获取共享的Supabase实例
 if (window._supabaseClient) {
     supabase = window._supabaseClient;
-    console.log('Login页面: 使用已存在的Supabase实例');
 } else {
     supabase = initializeSupabase();
 }
 
-// 检查用户是否已登录 - 与script.js保持一致，返回{user, error}格式
 async function checkUserLoggedIn() {
     try {
         console.log('Login.js: 开始检查用户登录状态');
-        console.log('Login.js: Supabase实例信息:', {
-            url: supabase?.supabaseUrl,
-            hasAuth: !!supabase?.auth,
-            instanceId: supabase?.toString()
-        });
         
-        if (!supabase) {
-            console.warn('Login.js: Supabase 客户端未初始化');
-            return { user: null, error: new Error('Supabase 客户端未初始化') };
-        }
-        
-        // 首先检查是否有会话
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        
-        console.log('Login.js: 会话检查结果:', {
-            hasSession: !!sessionData?.session,
-            hasAccessToken: !!sessionData?.session?.access_token,
-            hasError: !!sessionError,
-            errorMessage: sessionError?.message
-        });
-        
-        // 如果没有会话，返回未登录状态（这不是错误）
-        if (!sessionData?.session) {
-            console.log('Login.js: 无活跃会话，用户未登录');
+        const token = api.getToken();
+        if (!token) {
             return { user: null, error: null };
         }
         
-        // 如果有会话，尝试获取用户信息
-        const { data, error } = await supabase.auth.getUser();
-        
-        console.log('Login.js: 获取用户信息结果:', {
-            hasUser: !!data?.user,
-            userId: data?.user?.id,
-            userEmail: data?.user?.email,
-            hasError: !!error,
-            errorMessage: error?.message
-        });
-        
-        if (error) {
-            return { user: null, error };
-        }
-        
-        return { user: data.user, error: null };
+        const profile = await api.getProfile();
+        return { user: { id: profile.user_id, email: localStorage.getItem('user_email') }, error: null };
     } catch (exception) {
-        console.log('Login.js: 检查登录状态时发生异常:', exception.message);
         return { user: null, error: exception };
     }
 }
@@ -162,19 +77,25 @@ function buildConfirmEmailUrl() {
 
 // 用户注册
 async function signUp(email, password) {
-    if (!supabase) throw new Error('Supabase 未初始化');
     if (!email || !password) throw new Error('邮箱和密码不能为空');
-    if (password.length < 6) throw new Error('密码长度至少为6位');
     
-    const confirmEmailUrl = buildConfirmEmailUrl();
-    console.log('SignUp: 确认邮件跳转URL:', confirmEmailUrl);
+    console.log('SignUp: 调用API注册...');
+    const result = await api.register(email, password);
     
-    const { data, error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-            emailRedirectTo: confirmEmailUrl
-        }
+    console.log('SignUp: API响应:', result);
+    return result;
+}
+
+// 用户登录
+async function signIn(email, password) {
+    if (!email || !password) throw new Error('邮箱和密码不能为空');
+    
+    console.log('SignIn: 调用API登录...');
+    const result = await api.login(email, password);
+    
+    console.log('SignIn: API响应:', result);
+    return { user: { id: result.user_id, email: result.email }, session: { access_token: result.token } };
+}
     });
     if (error) throw error;
     return data;
@@ -311,7 +232,7 @@ async function handleSignUp() {
     
     try {
         await signUp(email, password);
-        showTemporaryMessage('✅ 注册成功！请检查邮箱确认', 'success');
+        showTemporaryMessage('✅ 注册成功！请登录', 'success');
         toggleAuthForm('login');
         // 清空表单
         document.getElementById('register-email').value = '';
@@ -337,54 +258,15 @@ async function handleSignIn() {
     }
     
     try {
-        console.log('调用Supabase登录接口...');
+        console.log('调用API登录接口...');
         console.log('邮箱:', email);
-        let { data, error } = await signIn(email, password);
-        
-        if (error) {
-            // 检查是否为邮箱未确认错误
-            if (error.message && error.message.toLowerCase().includes('email not confirmed')) {
-                showTemporaryMessage('📧 请先确认您的邮箱！我们已向您的邮箱发送了确认邮件，请点击邮件中的链接完成确认。', 'warning');
-                return;
-            }
-            throw error;
-        }
-        
-        // 如果data为undefined，尝试从Supabase客户端获取当前会话
-        if (!data) {
-            console.log('警告: 登录返回data为undefined，尝试从Supabase客户端获取当前会话');
-            const { data: sessionData } = await supabase.auth.getSession();
-            console.log('从getSession获取的数据:', sessionData);
-            
-            if (sessionData && sessionData.session) {
-                data = {
-                    session: sessionData.session,
-                    user: sessionData.session.user
-                };
-                console.log('使用getSession数据重构data:', data);
-            } else {
-                console.error('无法获取会话数据');
-                throw new Error('登录成功但无法获取用户会话数据');
-            }
-        }
+        let data = await signIn(email, password);
         
         console.log('登录成功，返回数据:', data);
-        console.log('登录数据详细结构:', {
-            dataType: typeof data,
-            dataKeys: data ? Object.keys(data) : '无数据',
-            hasUser: !!(data && data.user),
-            hasSession: !!(data && data.session),
-            userData: data && data.user,
-            sessionData: data && data.session,
-            dataString: JSON.stringify(data, null, 2)
-        });
         
-        // 检查用户邮箱是否已确认
-        if (data.user && !data.user.email_confirmed_at) {
-            console.log('用户邮箱未确认:', data.user.email);
-            showTemporaryMessage('📧 您的邮箱尚未确认！请检查邮箱并点击确认链接。如未收到邮件，请检查垃圾邮件箱或重新注册。', 'warning');
-            return;
-        }
+        // 登录成功后清空表单
+        document.getElementById('login-email').value = '';
+        document.getElementById('login-password').value = '';
         
         // 登录成功后清空表单
         document.getElementById('login-email').value = '';
