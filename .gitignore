@@ -15,6 +15,9 @@ build/
 .env.test.local
 .env.production.local
 
+# Sensitive config
+api/config.php
+
 # IDE
 .vscode/
 .idea/
