@@ -14,6 +14,10 @@ if (window._supabaseClient) {
     supabase = initializeSupabase();
 }
 
+function isLoggedIn() {
+    return !!api.getToken();
+}
+
 async function checkUserLoggedIn() {
     try {
         console.log('Login.js: 开始检查用户登录状态');
@@ -95,111 +99,6 @@ async function signIn(email, password) {
     
     console.log('SignIn: API响应:', result);
     return { user: { id: result.user_id, email: result.email }, session: { access_token: result.token } };
-}
-    });
-    if (error) throw error;
-    return data;
-}
-
-// 用户登录
-async function signIn(email, password) {
-    if (!supabase) throw new Error('Supabase 未初始化');
-    if (!email || !password) throw new Error('邮箱和密码不能为空');
-    
-    console.log('SignIn: 调用supabase.auth.signInWithPassword...');
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    
-    console.log('SignIn: Supabase原始响应:', {
-        hasData: !!data,
-        hasError: !!error,
-        dataType: typeof data,
-        dataKeys: data ? Object.keys(data) : '无数据',
-        dataContent: data
-    });
-    
-    if (error) {
-        console.log('SignIn: 登录错误:', error);
-        throw error;
-    }
-    
-    // 确保返回的数据结构一致
-    if (!data) {
-        throw new Error('登录成功但未返回数据');
-    }
-    
-    console.log('SignIn: 返回数据成功');
-    return data;
-}
-
-// 恢复用户数据到sessionStorage
-async function restoreBasicData() {
-    if (!supabase) {
-        console.log('Supabase未初始化，无法恢复数据');
-        return;
-    }
-    
-    try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError || !user) {
-            console.log('无法获取用户信息:', userError);
-            return;
-        }
-        
-        console.log('获取到用户信息，开始恢复数据...');
-        
-        // 获取用户数据
-        const { data: profileData } = await supabase
-            .from('profiles')
-            .select('current_points, total_points')
-            .eq('id', user.id)
-            .single();
-        
-        const { data: behaviorsData } = await supabase
-            .from('behaviors')
-            .select('description, points, timestamp')
-            .eq('user_id', user.id)
-            .order('timestamp', { ascending: false })
-            .limit(5);
-        
-        const { data: giftsData } = await supabase
-            .from('gifts')
-            .select('id, name, points')
-            .eq('user_id', user.id)
-            .order('id', { ascending: false })
-            .limit(5);
-        
-        const { data: redeemedData } = await supabase
-            .from('redeemed_gifts')
-            .select('id, gift_id, name, points, redeem_date')
-            .eq('user_id', user.id)
-            .order('redeem_date', { ascending: false })
-            .limit(5);
-        
-        // 保存到sessionStorage
-        if (profileData) {
-            sessionStorage.setItem('currentPoints', profileData.current_points || 0);
-            sessionStorage.setItem('totalPoints', profileData.total_points || 0);
-            console.log('积分数据已保存到sessionStorage');
-        }
-        if (behaviorsData) {
-            sessionStorage.setItem('behaviors', JSON.stringify(behaviorsData));
-            console.log('行为数据已保存到sessionStorage');
-        }
-        if (giftsData) {
-            sessionStorage.setItem('gifts', JSON.stringify(giftsData));
-            console.log('礼物数据已保存到sessionStorage');
-        }
-        if (redeemedData) {
-            sessionStorage.setItem('redeemedGifts', JSON.stringify(redeemedData));
-            console.log('已兑换礼物数据已保存到sessionStorage');
-        }
-        
-        console.log('数据恢复完成');
-        
-    } catch (error) {
-        console.error('恢复数据失败:', error);
-    }
-}
 
 // 切换认证表单（登录/注册）
 function toggleAuthForm(formType) {
@@ -416,155 +315,28 @@ async function handleLoginSuccess(user) {
     window.location.href = 'index.html';
 }
 
-// 初始化认证状态 - 简化版本
+// 初始化认证状态 - 使用 Hostinger MySQL API
 async function initAuth() {
     console.log('Login.js: 初始化认证状态...');
     
     try {
-        // 确保Supabase客户端已初始化
-        if (!supabase) {
-            console.log('Login.js: Supabase客户端未初始化，开始初始化...');
-            supabase = initializeSupabase();
-            if (!supabase) {
-                console.error('Login.js: Supabase客户端初始化失败');
+        const token = api.getToken();
+        if (token) {
+            const profile = await api.getProfile();
+            if (profile) {
+                console.log('Login.js: 检测到已登录用户:', profile.email);
+                localStorage.setItem('supabase.userEmail', profile.email);
+                localStorage.setItem('supabase.userId', profile.user_id);
+                showTemporaryMessage('✅ 检测到已登录状态，正在跳转...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
                 return;
             }
         }
-        
-        // 检查当前认证状态
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error) {
-            console.log('Login.js: 获取用户信息失败:', error.message);
-            // 用户未登录，保持在登录页面
-            return;
-        }
-        
-        if (user) {
-            console.log('Login.js: 检测到已登录用户:', user.email);
-            // 用户已登录，直接跳转到主页
-            
-            // 保存用户信息
-            localStorage.setItem('supabase.user', JSON.stringify(user));
-            localStorage.setItem('supabase.userEmail', user.email);
-            localStorage.setItem('supabase.userId', user.id);
-            
-            // 显示提示信息
-            showTemporaryMessage('✅ 检测到已登录状态，正在跳转...', 'success');
-            
-            // 跳转到主应用页面（数据加载将在主页面进行）
-            console.log('Login.js: 用户已登录，跳转到主应用页面...');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1000);
-        } else {
-            console.log('Login.js: 用户未登录，显示登录表单');
-            // 用户未登录，保持在登录页面
-        }
-        
+        console.log('Login.js: 用户未登录，显示登录表单');
     } catch (error) {
         console.error('Login.js: 初始化认证状态失败:', error);
-        // 发生错误，保持在登录页面
-    }
-}
-
-// 初始化全局Supabase客户端的通用函数
-async function initializeGlobalSupabase() {
-    // 如果页面刚跳转，优先尝试从localStorage恢复客户端（优先级最高）
-    if (localStorage.getItem('supabase_session')) {
-        console.log('Login.js: 检测到localStorage中有session，尝试恢复Supabase客户端');
-        try {
-            const sessionData = JSON.parse(localStorage.getItem('supabase_session'));
-            console.log('Login.js: session数据解析:', {
-                hasSessionData: !!sessionData,
-                hasAccessToken: !!sessionData?.access_token,
-                hasRefreshToken: !!sessionData?.refresh_token,
-                accessTokenLength: sessionData?.access_token?.length || 0,
-                refreshTokenLength: sessionData?.refresh_token?.length || 0
-            });
-            
-            if (sessionData && sessionData.access_token && sessionData.refresh_token) {
-                console.log('Login.js: 开始初始化Supabase客户端');
-                supabase = initializeSupabase();
-                console.log('Login.js: Supabase客户端初始化完成:', !!supabase);
-                
-                // 恢复会话
-                console.log('Login.js: 开始调用setSession恢复会话...');
-                const { data, error } = await supabase.auth.setSession({
-                    access_token: sessionData.access_token,
-                    refresh_token: sessionData.refresh_token
-                });
-                
-                console.log('Login.js: setSession调用结果:', {
-                    hasData: !!data,
-                    hasError: !!error,
-                    errorMessage: error?.message,
-                    hasUser: !!data?.user,
-                    userId: data?.user?.id
-                });
-                
-                if (error) {
-                    console.log('Login.js: Session恢复失败:', error);
-                    localStorage.removeItem('supabase_session');
-                    // 清除可能存在的旧客户端
-                    window._supabaseClient = null;
-                } else {
-                    console.log('Login.js: Session恢复成功, 用户ID:', data?.user?.id);
-                    window._supabaseClient = supabase;
-                    // 清除localStorage，因为已经恢复
-                    localStorage.removeItem('supabase_session');
-                }
-                return supabase;
-            } else {
-                console.log('Login.js: session数据格式不完整，跳过恢复');
-                localStorage.removeItem('supabase_session');
-            }
-        } catch (e) {
-            console.error('Login.js: session恢复过程中发生错误:', e);
-            localStorage.removeItem('supabase_session');
-            window._supabaseClient = null;
-        }
-    }
-    
-    // 如果已经存在全局客户端，直接使用
-    if (window._supabaseClient) {
-        console.log('Login.js: 使用已存在的全局Supabase客户端');
-        supabase = window._supabaseClient;
-        return supabase;
-    }
-    
-    // 否则创建新的客户端并保存到全局
-    console.log('Login.js: 创建新的全局Supabase客户端');
-    supabase = initializeSupabase();
-    return supabase;
-}
-
-// 检查当前会话状态并提供更清晰的日志
-async function checkAndLogSessionStatus() {
-    if (!supabase) {
-        console.log('Login.js: Supabase客户端未初始化，无法检查会话状态');
-        return;
-    }
-    
-    try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        
-        console.log('Login.js: 当前会话状态检查:', {
-            hasSession: !!sessionData?.session,
-            hasAccessToken: !!sessionData?.session?.access_token,
-            hasRefreshToken: !!sessionData?.session?.refresh_token,
-            hasError: !!sessionError,
-            errorMessage: sessionError?.message,
-            sessionKeys: sessionData?.session ? Object.keys(sessionData.session) : []
-        });
-        
-        if (sessionData?.session) {
-            console.log('Login.js: 发现活跃会话，用户ID:', sessionData.session.user?.id);
-        } else {
-            console.log('Login.js: 无活跃会话，这是正常状态');
-        }
-    } catch (error) {
-        console.log('Login.js: 检查会话状态时出错:', error.message);
     }
 }
 
@@ -586,20 +358,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 重新发送确认邮件
 async function resendConfirmationEmail(email) {
-    if (!supabase) throw new Error('Supabase 未初始化');
     if (!email) throw new Error('邮箱不能为空');
     
     try {
-        const { data, error } = await supabase.auth.resend({
-            type: 'signup',
-            email: email,
-            options: {
-                emailRedirectTo: window.location.origin + '/confirm-email.html'
-            }
-        });
-        
-        if (error) throw error;
-        return data;
+        const result = await api.resendConfirmation(email);
+        return result;
     } catch (error) {
         console.error('重新发送确认邮件失败:', error);
         throw error;

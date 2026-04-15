@@ -107,6 +107,10 @@ class ApiClient {
     async getUserConfig() {
         return await this.request('getUserConfig');
     }
+
+    async resendConfirmation(email) {
+        return { success: true, message: 'Email confirmation is not required in this version' };
+    }
 }
 
 const api = new ApiClient();
