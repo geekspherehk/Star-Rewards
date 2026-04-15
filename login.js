@@ -99,6 +99,7 @@ async function signIn(email, password) {
     
     console.log('SignIn: API响应:', result);
     return { user: { id: result.user_id, email: result.email }, session: { access_token: result.token } };
+}
 
 // 切换认证表单（登录/注册）
 function toggleAuthForm(formType) {
