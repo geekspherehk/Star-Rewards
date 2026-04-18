@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Behavior Rewards Template - Best Me</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; padding: 15px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 15px; overflow: hidden; }
+        .header { background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 20px; text-align: center; }
+        .header h1 { font-size: 1.8rem; margin-bottom: 5px; }
+        .header p { font-size: 0.95rem; opacity: 0.9; }
+        .lang-switch { text-align: center; padding: 10px; background: #f5f5f5; }
+        .lang-switch a { color: #667eea; text-decoration: none; font-weight: 600; }
+        .tab-container { display: flex; padding: 15px; background: #f5f5f5; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .tab-btn { padding: 10px 20px; border: none; border-radius: 20px; font-size: 0.9rem; font-weight: 600; cursor: pointer; background: white; color: #666; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .tab-btn.active { color: white; }
+        .tab-btn.child { background: #667eea; color: white; }
+        .tab-btn.woman { background: #ff6b6b; color: white; }
+        .tab-btn.man { background: #4ecdc4; color: white; }
+        .tab-content { display: none; padding: 15px; }
+        .tab-content.active { display: block; }
+        .category { margin-bottom: 12px; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
+        .category-title { font-size: 1rem; padding: 10px 12px; background: #f0f0f0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .category-title:hover { background: #e8e8e8; }
+        .category-title .arrow { font-size: 0.8rem; transition: transform 0.3s; }
+        .category-title.collapsed .arrow { transform: rotate(-90deg); }
+        .category-content { max-height: 2000px; overflow: hidden; transition: max-height 0.3s; }
+        .category-content.collapsed { max-height: 0; }
+        .behavior-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 10px; }
+        .behavior-card { background: #f8f9fa; border-radius: 6px; padding: 8px 10px; border-left: 3px solid #28a745; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .behavior-card:hover { background: #e9ecef; }
+        .behavior-left { display: flex; align-items: center; min-width: 0; flex: 1; }
+        .behavior-emoji { font-size: 1.1rem; margin-right: 6px; flex-shrink: 0; }
+        .behavior-title { font-size: 0.8rem; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .points-badge { background: linear-gradient(45deg, #ffc107, #ff9800); color: white; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; flex-shrink: 0; }
+        .back-btn { display: inline-block; background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: 600; margin: 15px; }
+        @media (max-width: 768px) { .behavior-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Behavior Rewards Template</h1>
+            <p>Choose the category that suits you</p>
+        </div>
+        <div class="lang-switch">
+            <a href="behavior-templates.html">中文</a> | English
+        </div>
+        <div class="tab-container">
+            <button class="tab-btn child active" onclick="switchTab('child')">Child</button>
+            <button class="tab-btn woman" onclick="switchTab('woman')">Woman</button>
+            <button class="tab-btn man" onclick="switchTab('man')">Man</button>
+        </div>
+        <div id="child" class="tab-content active">
+            <div class="category">
+                <div class="category-title" onclick="toggleCategory(this)">Daily Life <span class="arrow">▼</span></div>
+                <div class="category-content"><div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('Wake up by myself',3)"><div class="behavior-left"><span class="behavior-emoji">🌅</span><div class="behavior-title">Wake up by myself</div></div><span class="points-badge">+3</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Personal hygiene',2)"><div class="behavior-left"><span class="behavior-emoji">🦷</span><div class="behavior-title">Personal hygiene</div></div><span class="points-badge">+2</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Make bed',3)"><div class="behavior-left"><span class="behavior-emoji">🛏️</span><div class="behavior-title">Make bed</div></div><span class="points-badge">+3</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Healthy breakfast',2)"><div class="behavior-left"><span class="behavior-emoji">🥛</span><div class="behavior-title">Healthy breakfast</div></div><span class="points-badge">+2</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Set table',3)"><div class="behavior-left"><span class="behavior-emoji">🍽️</span><div class="behavior-title">Set table</div></div><span class="points-badge">+3</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Clear table',3)"><div class="behavior-left"><span class="behavior-emoji">🧽</span><div class="behavior-title">Clear table</div></div><span class="points-badge">+3</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Dress myself',2)"><div class="behavior-left"><span class="behavior-emoji">👕</span><div class="behavior-title">Dress myself</div></div><span class="points-badge">+2</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Sleep on time',3)"><div class="behavior-left"><span class="behavior-emoji">😴</span><div class="behavior-title">Sleep on time</div></div><span class="points-badge">+3</span></div>
+                </div></div></div>
+            <div class="category">
+                <div class="category-title" onclick="toggleCategory(this)">Learning Growth <span class="arrow">▼</span></div>
+                <div class="category-content"><div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('Complete homework',5)"><div class="behavior-left"><span class="behavior-emoji">✏️</span><div class="behavior-title">Complete homework</div></div><span class="points-badge">+5</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Homework carefully',4)"><div class="behavior-left"><span class="behavior-emoji">📝</span><div class="behavior-title">Homework carefully</div></div><span class="points-badge">+4</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Review actively',4)"><div class="behavior-left"><span class="behavior-emoji">📖</span><div class="behavior-title">Review actively</div></div><span class="points-badge">+4</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Daily reading',4)"><div class="behavior-left"><span class="behavior-emoji">📚</span><div class="behavior-title">Daily reading</div></div><span class="points-badge">+4</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Preview lessons',4)"><div class="behavior-left"><span class="behavior-emoji">📚</span><div class="behavior-title">Preview lessons</div></div><span class="points-badge">+4</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Pay attention',5)"><div class="behavior-left"><span class="behavior-emoji">🎓</span><div class="behavior-title">Pay attention</div></div><span class="points-badge">+5</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Good grades',10)"><div class="behavior-left"><span class="behavior-emoji">💯</span><div class="behavior-title">Good grades</div></div><span class="points-badge">+10</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Check homework errors',5)"><div class="behavior-left"><span class="behavior-emoji">🔍</span><div class="behavior-title">Check homework errors</div></div><span class="points-badge">+5</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Correct mistakes',4)"><div class="behavior-left"><span class="behavior-emoji">✏️</span><div class="behavior-title">Correct mistakes</div></div><span class="points-badge">+4</span></div>
+                </div></div></div>
+            <div class="category">
+                <div class="category-title" onclick="toggleCategory(this)">Social Manners <span class="arrow">▼</span></div>
+                <div class="category-content"><div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('Greet politely',2)"><div class="behavior-left"><span class="behavior-emoji">👋</span><div class="behavior-title">Greet politely</div></div><span class="points-badge">+2</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Use polite words',2)"><div class="behavior-left"><span class="behavior-emoji">🙏</span><div class="behavior-title">Use polite words</div></div><span class="points-badge">+2</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Help others',4)"><div class="behavior-left"><span class="behavior-emoji">🤗</span><div class="behavior-title">Help others</div></div><span class="points-badge">+4</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Be kind',2)"><div class="behavior-left"><span class="behavior-emoji">😊</span><div class="behavior-title">Be kind</div></div><span class="points-badge">+2</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Teamwork',4)"><div class="behavior-left"><span class="behavior-emoji">🤝</span><div class="behavior-title">Teamwork</div></div><span class="points-badge">+4</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Listen carefully',3)"><div class="behavior-left"><span class="behavior-emoji">👂</span><div class="behavior-title">Listen carefully</div></div><span class="points-badge">+3</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Admit mistakes',3)"><div class="behavior-left"><span class="behavior-emoji">✅</span><div class="behavior-title">Admit mistakes</div></div><span class="points-badge">+3</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Humble apology',4)"><div class="behavior-left"><span class="behavior-emoji">🙇</span><div class="behavior-title">Humble apology</div></div><span class="points-badge">+4</span></div>
+                </div></div></div>
+            <div class="category">
+                <div class="category-title" onclick="toggleCategory(this)">Health <span class="arrow">▼</span></div>
+                <div class="category-content"><div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('Exercise regularly',4)"><div class="behavior-left"><span class="behavior-emoji">🏃</span><div class="behavior-title">Exercise regularly</div></div><span class="points-badge">+4</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Practice skills',5)"><div class="behavior-left"><span class="behavior-emoji">🎹</span><div class="behavior-title">Practice skills</div></div><span class="points-badge">+5</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Perseverance',10)"><div class="behavior-left"><span class="behavior-emoji">📅</span><div class="behavior-title">Perseverance</div></div><span class="points-badge">+10</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Goal achievement',6)"><div class="behavior-left"><span class="behavior-emoji">🎯</span><div class="behavior-title">Goal achievement</div></div><span class="points-badge">+6</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Try new things',3)"><div class="behavior-left"><span class="behavior-emoji">🆕</span><div class="behavior-title">Try new things</div></div><span class="points-badge">+3</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Emotion management',3)"><div class="behavior-left"><span class="behavior-emoji">🌈</span><div class="behavior-title">Emotion management</div></div><span class="points-badge">+3</span></div>
+                </div></div></div>
+        </div>
+        <div id="woman" class="tab-content">
+            <div class="category">
+                <div class="category-title" onclick="toggleCategory(this)">Health Management <span class="arrow">▼</span></div>
+                <div class="category-content"><div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('Morning meditation',8)"><div class="behavior-left"><span class="behavior-emoji">🧘‍♀️</span><div class="behavior-title">Morning meditation</div></div><span class="points-badge">+8</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Exercise',10)"><div class="behavior-left"><span class="behavior-emoji">🏃‍♀️</span><div class="behavior-title">Exercise</div></div><span class="points-badge">+10</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Skincare',6)"><div class="behavior-left"><span class="behavior-emoji">✨</span><div class="behavior-title">Skincare</div></div><span class="points-badge">+6</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Healthy diet',8)"><div class="behavior-left"><span class="behavior-emoji">🥗</span><div class="behavior-title">Healthy diet</div></div><span class="points-badge">+8</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Yoga',8)"><div class="behavior-left"><span class="behavior-emoji">🧘‍♀️</span><div class="behavior-title">Yoga</div></div><span class="points-badge">+8</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Beauty sleep',8)"><div class="behavior-left"><span class="behavior-emoji">😴</span><div class="behavior-title">Beauty sleep</div></div><span class="points-badge">+8</span></div>
+                </div></div></div>
+            <div class="category">
+                <div class="category-title" onclick="toggleCategory(this)">Self-Improvement <span class="arrow">▼</span></div>
+                <div class="category-content"><div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('Knowledge charging',9)"><div class="behavior-left"><span class="behavior-emoji">📚</span><div class="behavior-title">Knowledge charging</div></div><span class="points-badge">+9</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Skill improvement',12)"><div class="behavior-left"><span class="behavior-emoji">💻</span><div class="behavior-title">Skill improvement</div></div><span class="points-badge">+12</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Writing',6)"><div class="behavior-left"><span class="behavior-emoji">✍️</span><div class="behavior-title">Writing</div></div><span class="points-badge">+6</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Course learning',10)"><div class="behavior-left"><span class="behavior-emoji">🎓</span><div class="behavior-title">Course learning</div></div><span class="points-badge">+10</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Language learning',8)"><div class="behavior-left"><span class="behavior-emoji">🗣️</span><div class="behavior-title">Language learning</div></div><span class="points-badge">+8</span></div>
+                </div></div></div>
+            <div class="category">
+                <div class="category-title" onclick="toggleCategory(this)">Lifestyle <span class="arrow">▼</span></div>
+                <div class="category-content"><div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('Organize home',7)"><div class="behavior-left"><span class="behavior-emoji">🏡</span><div class="behavior-title">Organize home</div></div><span class="points-badge">+7</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Minimalist living',8)"><div class="behavior-left"><span class="behavior-emoji">🌱</span><div class="behavior-title">Minimalist living</div></div><span class="points-badge">+8</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Cook',8)"><div class="behavior-left"><span class="behavior-emoji">🍳</span><div class="behavior-title">Cook</div></div><span class="points-badge">+8</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Life aesthetics',6)"><div class="behavior-left"><span class="behavior-emoji">💐</span><div class="behavior-title">Life aesthetics</div></div><span class="points-badge">+6</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('DIY crafts',7)"><div class="behavior-left"><span class="behavior-emoji">🧶</span><div class="behavior-title">DIY crafts</div></div><span class="points-badge">+7</span></div>
+                </div></div></div>
+            <div class="category">
+                <div class="category-title" onclick="toggleCategory(this)">Finance & Relationships <span class="arrow">▼</span></div>
+                <div class="category-content"><div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('Financial management',5)"><div class="behavior-left"><span class="behavior-emoji">💰</span><div class="behavior-title">Financial management</div></div><span class="points-badge">+5</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Relationship maintenance',5)"><div class="behavior-left"><span class="behavior-emoji">👭</span><div class="behavior-title">Relationship maintenance</div></div><span class="points-badge">+5</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Gratitude journal',6)"><div class="behavior-left"><span class="behavior-emoji">📝</span><div class="behavior-title">Gratitude journal</div></div><span class="points-badge">+6</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Help others',6)"><div class="behavior-left"><span class="behavior-emoji">💕</span><div class="behavior-title">Help others</div></div><span class="points-badge">+6</span></div>
+                </div></div></div>
+        </div>
+        <div id="man" class="tab-content">
+            <div class="category">
+                <div class="category-title" onclick="toggleCategory(this)">Physical Health <span class="arrow">▼</span></div>
+                <div class="category-content"><div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('Morning run',8)"><div class="behavior-left"><span class="behavior-emoji">����</span><div class="behavior-title">Morning run</div></div><span class="points-badge">+8</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Gym',10)"><div class="behavior-left"><span class="behavior-emoji">🏋️</span><div class="behavior-title">Gym</div></div><span class="points-badge">+10</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Sports',8)"><div class="behavior-left"><span class="behavior-emoji">⚽</span><div class="behavior-title">Sports</div></div><span class="points-badge">+8</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Swimming',8)"><div class="behavior-left"><span class="behavior-emoji">🏊</span><div class="behavior-title">Swimming</div></div><span class="points-badge">+8</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Cycling',6)"><div class="behavior-left"><span class="behavior-emoji">🚴</span><div class="behavior-title">Cycling</div></div><span class="points-badge">+6</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Adequate sleep',5)"><div class="behavior-left"><span class="behavior-emoji">😴</span><div class="behavior-title">Adequate sleep</div></div><span class="points-badge">+5</span></div>
+                </div></div></div>
+            <div class="category">
+                <div class="category-title" onclick="toggleCategory(this)">Career Learning <span class="arrow">▼</span></div>
+                <div class="category-content"><div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('Professional reading',8)"><div class="behavior-left"><span class="behavior-emoji">📚</span><div class="behavior-title">Professional reading</div></div><span class="points-badge">+8</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Skill improvement',12)"><div class="behavior-left"><span class="behavior-emoji">💻</span><div class="behavior-title">Skill improvement</div></div><span class="points-badge">+12</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Course learning',10)"><div class="behavior-left"><span class="behavior-emoji">🎓</span><div class="behavior-title">Course learning</div></div><span class="points-badge">+10</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Language learning',8)"><div class="behavior-left"><span class="behavior-emoji">🗣️</span><div class="behavior-title">Language learning</div></div><span class="points-badge">+8</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Industry networking',6)"><div class="behavior-left"><span class="behavior-emoji">🤝</span><div class="behavior-title">Industry networking</div></div><span class="points-badge">+6</span></div>
+                </div></div></div>
+            <div class="category">
+                <div class="category-title" onclick="toggleCategory(this)">Hobbies <span class="arrow">▼</span></div>
+                <div class="category-content"><div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('Practice instrument',8)"><div class="behavior-left"><span class="behavior-emoji">🎸</span><div class="behavior-title">Practice instrument</div></div><span class="points-badge">+8</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Drawing',6)"><div class="behavior-left"><span class="behavior-emoji">🎨</span><div class="behavior-title">Drawing</div></div><span class="points-badge">+6</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Photography',6)"><div class="behavior-left"><span class="behavior-emoji">📷</span><div class="behavior-title">Photography</div></div><span class="points-badge">+6</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Game dev',10)"><div class="behavior-left"><span class="behavior-emoji">🎮</span><div class="behavior-title">Game dev</div></div><span class="points-badge">+10</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Chess',5)"><div class="behavior-left"><span class="behavior-emoji">♟️</span><div class="behavior-title">Chess</div></div><span class="points-badge">+5</span></div>
+                </div></div></div>
+            <div class="category">
+                <div class="category-title" onclick="toggleCategory(this)">Financial Planning <span class="arrow">▼</span></div>
+                <div class="category-content"><div class="behavior-grid">
+                    <div class="behavior-card" onclick="selectBehavior('Financial management',6)"><div class="behavior-left"><span class="behavior-emoji">💰</span><div class="behavior-title">Financial management</div></div><span class="points-badge">+6</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Investment',8)"><div class="behavior-left"><span class="behavior-emoji">📈</span><div class="behavior-title">Investment</div></div><span class="points-badge">+8</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Side business',10)"><div class="behavior-left"><span class="behavior-emoji">💼</span><div class="behavior-title">Side business</div></div><span class="points-badge">+10</span></div>
+                    <div class="behavior-card" onclick="selectBehavior('Save money',4)"><div class="behavior-left"><span class="behavior-emoji">💵</span><div class="behavior-title">Save money</div></div><span class="points-badge">+4</span></div>
+                </div></div></div>
+        </div>
+        <div style="text-align: center;">
+            <a href="index.html" class="back-btn">Back to Home</a>
+        </div>
+    </div>
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelector('.' + tabId).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+        function toggleCategory(title) {
+            title.classList.toggle('collapsed');
+            title.nextElementSibling.classList.toggle('collapsed');
+        }
+        function selectBehavior(description, points) {
+            if (confirm('Record "' + description + '" for ' + points + ' points?')) {
+                sessionStorage.setItem('selectedBehavior', JSON.stringify({description: description, points: points}));
+                window.location.href = 'index.html';
+            }
+        }
+    </script>
+</body>
+</html>
