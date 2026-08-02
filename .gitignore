@@ -14,9 +14,10 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.php
 
-# Sensitive config
-api/config.php
+# Sensitive config (only ignore env file, keep template)
+api/.env.php
 
 # IDE
 .vscode/

@@ -599,38 +599,21 @@ async function addPoints() {
     const timestamp = new Date().toISOString();
     
     try {
-        if (api.getToken()) {
-            await loadDataFromCloud();
-            
-            currentPoints += change;
-            if (change > 0) {
-                totalPoints += change;
-            }
-            behaviors.unshift({ description: desc, points: change, timestamp });
-            
-            await api.addBehavior(desc, change);
-            await api.getProfile();
-        } else {
-            currentPoints += change;
-            if (change > 0) {
-                totalPoints += change;
-            }
-            behaviors.unshift({ description: desc, points: change, timestamp });
+        if (!api.getToken()) {
+            throw new Error('用户未登录');
         }
+
+        await api.addBehavior(desc, change);
+        await loadDataFromCloud();
         
-        // 数据已保存在云端，无需本地存储
-        
-        // 更新显示
         updatePointsDisplay();
         updateBehaviorLog();
         updateGiftList();
         
-        // 清空输入并给出反馈
         document.getElementById('behavior-desc').value = '';
         document.getElementById('points-change').value = '';
         document.getElementById('behavior-desc').focus();
         
-        // 显示成功消息
         const message = change > 0 ? 
             `✅ 成功添加 ${change} 分！` : 
             `⚠️ 扣除 ${Math.abs(change)} 分`;
@@ -638,7 +621,7 @@ async function addPoints() {
 
     } catch (error) {
         console.error('添加积分失败:', error);
-        showTemporaryMessage(t('common.addPointsFailed'), 'error');
+        showTemporaryMessage(t('common.addPointsFailed') + (error.message ? `: ${escapeHtml(error.message)}` : ''), 'error');
     }
 }
 
@@ -710,12 +693,15 @@ async function addGift() {
             throw new Error('用户未登录');
         }
         
-        await loadDataFromCloud();
-        
         const originalInputUrl = document.getElementById('gift-image').value.trim();
         const descriptionHtml = textToHtmlWithLinks(description);
-        
-        const gift = {
+
+        const result = await api.addGift(name, giftPoints, description, imageUrl, originalInputUrl);
+
+        await loadDataFromCloud();
+
+        const newGift = {
+            id: result.id || Date.now(),
             name: name,
             points: giftPoints,
             description: description,
@@ -724,13 +710,8 @@ async function addGift() {
             original_url: originalInputUrl,
             created_at: new Date().toISOString()
         };
-        
-        gifts.unshift(gift);
-        
-        await api.addGift(name, giftPoints, description);
-        
-        console.log('礼物已添加到云端');
-        
+        gifts.unshift(newGift);
+
         updateGiftList();
         
         document.getElementById('gift-name').value = '';
@@ -743,7 +724,7 @@ async function addGift() {
 
     } catch (error) {
         console.error('添加礼物失败:', error);
-        showTemporaryMessage(t('common.addGiftFailed'), 'error');
+        showTemporaryMessage(t('common.addGiftFailed') + (error.message ? `: ${escapeHtml(error.message)}` : ''), 'error');
     }
 }
 
@@ -812,9 +793,7 @@ async function redeemGift(giftId) {
         if (!api.getToken()) {
             throw new Error('用户未登录');
         }
-        
-        await loadDataFromCloud();
-        
+
         const id = typeof giftId === 'string' ? parseInt(giftId) : giftId;
         
         let gift = gifts.find(g => g.id === id);
@@ -836,29 +815,8 @@ async function redeemGift(giftId) {
         if (!confirmed) return;
 
         await api.redeemGift(gift.id);
-        
-        currentPoints -= gift.points;
-        const localRedeemDate = new Date().toLocaleString('zh-CN');
-        redeemedGifts.push({
-            name: gift.name,
-            points: gift.points,
-            description: gift.description || '',
-            description_html: gift.description_html || '',
-            image_url: gift.image_url || '',
-            original_url: gift.original_url || '',
-            redeem_date: localRedeemDate
-        });
-        
-        const indexToRemove = gifts.findIndex(g => g.id === gift.id);
-        if (indexToRemove !== -1) {
-            gifts.splice(indexToRemove, 1);
-        } else {
-            const indexByPosition = gifts.indexOf(gift);
-            if (indexByPosition !== -1) {
-                gifts.splice(indexByPosition, 1);
-            }
-        }
-        
+        await loadDataFromCloud();
+
         updatePointsDisplay();
         updateGiftList();
         updateRedeemedList();
@@ -867,7 +825,7 @@ async function redeemGift(giftId) {
 
     } catch (error) {
         console.error('兑换礼物失败:', error);
-        showTemporaryMessage(t('common.redeemFailed'), 'error');
+        showTemporaryMessage(t('common.redeemFailed') + (error.message ? `: ${escapeHtml(error.message)}` : ''), 'error');
     }
 }
 
