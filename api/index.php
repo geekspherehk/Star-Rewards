@@ -13,9 +13,8 @@ if ($allowedOrigin) {
     $sameOrigin = $requestScheme . '://' . $requestHost;
     if ($origin && $origin === $sameOrigin) {
         header('Access-Control-Allow-Origin: ' . $origin);
-    } elseif (!$origin) {
-        header('Access-Control-Allow-Origin: *');
     }
+    // No wildcard fallback — strict origin policy
 }
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
@@ -92,6 +91,46 @@ function getRequestData() {
     if (!$raw) return [];
     $data = json_decode($raw, true);
     return is_array($data) ? $data : [];
+}
+
+// Simple file-based rate limiter
+function rateLimit($action, $maxAttempts, $windowSeconds) {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $key = $action . '_' . $ip;
+    $dir = sys_get_temp_dir() . '/star_ratelimit';
+    if (!is_dir($dir)) {
+        mkdir($dir, 0700, true);
+    }
+    $file = $dir . '/' . md5($key) . '.json';
+
+    $now = time();
+    $data = ['attempts' => [], 'blocked_until' => 0];
+
+    if (file_exists($file)) {
+        $content = @file_get_contents($file);
+        if ($content) {
+            $data = json_decode($content, true) ?: $data;
+        }
+    }
+
+    // Clean old attempts
+    $data['attempts'] = array_filter($data['attempts'], function($ts) use ($now, $windowSeconds) {
+        return $ts > ($now - $windowSeconds);
+    });
+
+    // Check if blocked
+    if ($data['blocked_until'] > $now) {
+        sendError('Too many requests. Please try again later.', 429);
+    }
+
+    if (count($data['attempts']) >= $maxAttempts) {
+        $data['blocked_until'] = $now + $windowSeconds;
+        @file_put_contents($file, json_encode($data), LOCK_EX);
+        sendError('Too many requests. Please try again in ' . $windowSeconds . ' seconds.', 429);
+    }
+
+    $data['attempts'][] = $now;
+    @file_put_contents($file, json_encode($data), LOCK_EX);
 }
 
 function getUserId() {
@@ -189,6 +228,7 @@ switch ($action) {
 }
 
 function handleRegister($pdo, $data) {
+    rateLimit('register', 5, 60); // 5 attempts per 60 seconds
     $email = validateEmail($data['email'] ?? '');
     $password = $data['password'] ?? '';
 
@@ -228,6 +268,7 @@ function handleRegister($pdo, $data) {
 }
 
 function handleLogin($pdo, $data) {
+    rateLimit('login', 10, 60); // 10 attempts per 60 seconds
     $email = validateEmail($data['email'] ?? '');
     $password = $data['password'] ?? '';
 

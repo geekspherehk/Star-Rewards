@@ -50,7 +50,7 @@ const translations = {
             },
             viewTemplates: '✨ 查看更多模板',
             rewardsForHer: '🌸 女性专属奖励',
-            addBehavior: '➕ 记录积分'
+            addBehaviorButton: '➕ 记录积分'
         },
         gifts: {
             title: '愿望清单',
@@ -298,7 +298,7 @@ const translations = {
             },
             viewTemplates: '✨ View More Templates',
             rewardsForHer: '🌸 Rewards for Her',
-            addBehavior: '➕ Add Points'
+            addBehaviorButton: '➕ Add Points'
         },
         gifts: {
             title: 'Wishlist',

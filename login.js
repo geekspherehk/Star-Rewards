@@ -1,18 +1,5 @@
 // login.js - 登录页面专用JavaScript文件
 
-let supabase = null;
-
-function initializeSupabase() {
-    console.log('Login.js: 使用 Hostinger MySQL API');
-    return null;
-}
-
-if (window._supabaseClient) {
-    supabase = window._supabaseClient;
-} else {
-    supabase = initializeSupabase();
-}
-
 function isLoggedIn() {
     return !!api.getToken();
 }
@@ -114,12 +101,8 @@ async function handleSignIn() {
         showTemporaryMessage('✅ 登录成功！正在跳转...', 'success');
         let userData = data.user;
         if (userData) {
-            localStorage.setItem('supabase.user', JSON.stringify(userData));
-            localStorage.setItem('supabase.userEmail', userData.email);
-            localStorage.setItem('supabase.userId', userData.id);
-            if (data.session) {
-                localStorage.setItem('supabase_session', JSON.stringify(data.session));
-            }
+            localStorage.setItem('user_email', userData.email);
+            localStorage.setItem('user_id', userData.id);
         }
         console.log('登录成功，保存用户信息...');
         await handleLoginSuccess(userData);
@@ -127,56 +110,6 @@ async function handleSignIn() {
         console.error('登录过程中发生错误:', error);
         showTemporaryMessage(`❌ 登录失败: ${escapeHtml(error.message)}`, 'error');
     }
-}
-
-function showTemporaryMessage(message, type = 'info') {
-    const existingMessage = document.querySelector('.temporary-message');
-    if (existingMessage) {
-        existingMessage.remove();
-    }
-    const messageElement = document.createElement('div');
-    messageElement.className = `temporary-message ${type}`;
-    messageElement.textContent = message;
-    messageElement.style.position = 'fixed';
-    messageElement.style.top = '20px';
-    messageElement.style.left = '50%';
-    messageElement.style.transform = 'translateX(-50%)';
-    messageElement.style.padding = '10px 20px';
-    messageElement.style.borderRadius = '5px';
-    messageElement.style.color = 'white';
-    messageElement.style.fontWeight = 'bold';
-    messageElement.style.zIndex = '1000';
-    messageElement.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-    switch(type) {
-        case 'success':
-            messageElement.style.backgroundColor = '#4CAF50';
-            break;
-        case 'error':
-            messageElement.style.backgroundColor = '#f44336';
-            break;
-        case 'warning':
-            messageElement.style.backgroundColor = '#ff9800';
-            break;
-        default:
-            messageElement.style.backgroundColor = '#2196F3';
-    }
-    document.body.appendChild(messageElement);
-    setTimeout(() => {
-        if (messageElement.parentNode) {
-            messageElement.parentNode.removeChild(messageElement);
-        }
-    }, 3000);
-}
-
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"]/g, function(m) { return map[m]; });
 }
 
 async function handleLoginSuccess(user) {
@@ -195,8 +128,6 @@ async function initAuth() {
             const profile = await api.getProfile();
             if (profile) {
                 console.log('Login.js: 检测到已登录用户:', profile.email);
-                localStorage.setItem('supabase.userEmail', profile.email);
-                localStorage.setItem('supabase.userId', profile.user_id);
                 showTemporaryMessage('✅ 检测到已登录状态，正在跳转...', 'success');
                 setTimeout(() => {
                     window.location.href = 'index.html';

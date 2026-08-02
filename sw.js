@@ -1,12 +1,16 @@
 // Service Worker 文件
-const CACHE_NAME = 'star-rewards-v1';
+const CACHE_NAME = 'star-rewards-v2';
 const urlsToCache = [
   '/',
   '/index.html',
   '/login.html',
   '/style.css',
+  '/i18n.css',
   '/script.js',
-  '/supabase.min.js'
+  '/login.js',
+  '/i18n.js',
+  '/utils.js',
+  '/api/api-client.js'
 ];
 
 // 安装Service Worker

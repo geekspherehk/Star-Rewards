@@ -65,20 +65,6 @@ async function extractProductImageFromUrl(url) {
     }
 }
 
-// 初始化Supabase客户端
-function initializeSupabase() {
-    try {
-        if (window._supabaseClient) {
-            return window._supabaseClient;
-        }
-        
-        console.log('Script.js: 使用 Hostinger MySQL API');
-        return null;
-    } catch (error) {
-        console.error('Script.js: API 初始化失败:', error);
-        return null;
-    }
-}
 
 // 移除checkUserLoggedIn函数 - 认证逻辑全部移至login页面
 
@@ -104,10 +90,6 @@ async function signOut() {
         
         sessionStorage.clear();
         
-        localStorage.removeItem('supabase.user');
-        localStorage.removeItem('supabase.userEmail');
-        localStorage.removeItem('supabase.userId');
-        localStorage.removeItem('supabase_session');
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_id');
         localStorage.removeItem('user_email');
@@ -656,7 +638,7 @@ function textToHtmlWithLinks(text) {
             return url;
         }
         
-        return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`;
     });
 }
 
@@ -749,44 +731,6 @@ function setPresetBehavior(description, points) {
     }
 }
 
-// 显示临时消息
-function showTemporaryMessage(message, type) {
-    // 创建消息元素
-    const messageEl = document.createElement('div');
-    messageEl.textContent = message;
-    messageEl.style.position = 'fixed';
-    messageEl.style.top = '20px';
-    messageEl.style.left = '50%';
-    messageEl.style.transform = 'translateX(-50%)';
-    messageEl.style.padding = '15px 25px';
-    messageEl.style.borderRadius = '8px';
-    messageEl.style.color = 'white';
-    messageEl.style.fontWeight = 'bold';
-    messageEl.style.zIndex = '1000';
-    messageEl.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-    
-    // 根据类型设置背景色
-    if (type === 'success') {
-        messageEl.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
-    } else {
-        messageEl.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
-    }
-    
-    // 添加到页面
-    document.body.appendChild(messageEl);
-    
-    // 3秒后移除
-    setTimeout(() => {
-        messageEl.style.transition = 'opacity 0.5s ease';
-        messageEl.style.opacity = '0';
-        setTimeout(() => {
-            if (messageEl.parentNode) {
-                messageEl.parentNode.removeChild(messageEl);
-            }
-        }, 500);
-    }, 3000);
-}
-
 // 兑换礼物
 async function redeemGift(giftId) {
     try {
@@ -847,45 +791,7 @@ function validateGiftPointsInput(inputElement) {
 }
 
 
-// 更新认证UI状态
-function updateAuthUI(user) {
-    // 检查当前页面
-    const currentPage = window.location.pathname.split('/').pop();
-    
-    // 如果在登录页面，只处理已登录用户的情况
-    if (currentPage === 'login.html') {
-        if (user) {
-            window.location.href = 'index.html';
-        }
-        return;
-    }
-    
-    // 在主页处理UI更新
-    const loggedIn = document.getElementById('logged-in');
-    const userEmail = document.getElementById('user-email');
-    
-    if (user) {
-        // 用户已登录，更新UI显示用户信息
-        if (loggedIn) loggedIn.style.display = 'block';
-        if (userEmail) userEmail.textContent = user.email;
-    } else {
-        // 用户未登录，显示登录状态
-        if (loggedIn) loggedIn.style.display = 'none';
-    }
-}
 
-// HTML 转义函数，防止 XSS 攻击
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    
-    return text.replace(/[&<>"]/g, function(m) { return map[m]; });
-}
 
 
 // 更新UI显示
@@ -1079,11 +985,6 @@ function loadDataFromSessionStorage() {
 
 // 移除loadDataFromCloud函数 - 数据加载逻辑全部移至login页面
 
-// 数据保存到云端 - 已迁移到 API
-async function saveDataToCloud() {
-    console.log('保存数据到云端...');
-    console.log('云端数据保存完成');
-}
 
 
 // 移除复杂的Supabase初始化逻辑 - 认证逻辑全部移至login页面
@@ -1186,10 +1087,11 @@ function updateDiaryList() {
             `;
             
             dayBehaviors.forEach(behavior => {
+                const escapedDesc = escapeHtml(behavior.description || '');
                 html += `
                     <div style="margin-bottom: 8px; padding: 8px; background: ${behavior.points > 0 ? '#f8fff8' : '#fff8f8'}; border-left: 3px solid ${behavior.points > 0 ? '#4CAF50' : '#f44336'}; border-radius: 4px;">
                         <span style="color: ${behavior.points > 0 ? '#4CAF50' : '#f44336'}; font-weight: bold;">${behavior.points > 0 ? '+' : ''}${behavior.points}</span>
-                        - ${behavior.description}
+                        - ${escapedDesc}
                         <small style="color: #666; display: block; margin-top: 2px;">${new Date(behavior.timestamp).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}</small>
                     </div>
                 `;
@@ -1230,10 +1132,11 @@ function updateDiaryList() {
             `;
             
             dayGifts.forEach(gift => {
+                const escapedName = escapeHtml(gift.name || '');
                 html += `
                     <div style="margin-bottom: 8px; padding: 8px; background: #fff8f0; border-left: 3px solid #ff9800; border-radius: 4px;">
                         <span style="color: #ff5722; font-weight: bold;">-${gift.points}</span>
-                        - 🏆 ${gift.name}
+                        - 🏆 ${escapedName}
                         <small style="color: #666; display: block; margin-top: 2px;">${new Date(gift.redeem_date).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}</small>
                     </div>
                 `;

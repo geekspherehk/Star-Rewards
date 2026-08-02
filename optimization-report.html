@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Star-Rewards 项目优化分析报告</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    background: #0f1117;
+    color: #e1e4ed;
+    line-height: 1.7;
+    padding: 0;
+  }
+  .hero {
+    background: linear-gradient(135deg, #1a1d29 0%, #252837 100%);
+    padding: 60px 40px 50px;
+    border-bottom: 1px solid #2a2d3a;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #7b8cff, #b66cff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  .hero .subtitle {
+    font-size: 1rem;
+    color: #8892b0;
+  }
+  .hero .meta {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+  }
+  .hero .meta-item { text-align: center; }
+  .hero .meta-num {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #7b8cff;
+  }
+  .hero .meta-label {
+    font-size: 0.8rem;
+    color: #5c6478;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  .section { margin-bottom: 48px; }
+  .section-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #2a2d3a;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .severity-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  .sev-critical { background: #ff4444; color: #fff; }
+  .sev-high { background: #ff8800; color: #fff; }
+  .sev-medium { background: #ffbb33; color: #1a1a1a; }
+  .sev-low { background: #66bb6a; color: #fff; }
+  .issue-card {
+    background: #1a1d29;
+    border: 1px solid #2a2d3a;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+  .issue-card:hover { border-color: #3a3d4a; }
+  .issue-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .issue-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e1e4ed;
+  }
+  .issue-body {
+    font-size: 0.9rem;
+    color: #95a0b8;
+    margin-bottom: 10px;
+  }
+  .issue-body code {
+    background: #0f1117;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.82rem;
+    color: #7b8cff;
+  }
+  .issue-fix {
+    font-size: 0.85rem;
+    color: #66bb6a;
+    padding: 8px 12px;
+    background: rgba(102, 187, 106, 0.08);
+    border-left: 3px solid #66bb6a;
+    border-radius: 0 6px 6px 0;
+  }
+  .issue-fix strong { color: #8fdd92; }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 30px;
+  }
+  .stat-card {
+    background: #1a1d29;
+    border: 1px solid #2a2d3a;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+  }
+  .stat-card .num {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #7b8cff;
+  }
+  .stat-card .label {
+    font-size: 0.85rem;
+    color: #5c6478;
+    margin-top: 4px;
+  }
+  .summary-box {
+    background: linear-gradient(135deg, rgba(123, 140, 255, 0.1), rgba(182, 108, 255, 0.1));
+    border: 1px solid #2a2d3a;
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 40px;
+  }
+  .summary-box h2 {
+    font-size: 1.1rem;
+    margin-bottom: 14px;
+    color: #7b8cff;
+  }
+  .summary-box p {
+    font-size: 0.9rem;
+    color: #b0b8d0;
+    margin-bottom: 8px;
+  }
+  .file-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+  }
+  .file-table th {
+    text-align: left;
+    padding: 10px 14px;
+    background: #1a1d29;
+    color: #8892b0;
+    border-bottom: 2px solid #2a2d3a;
+    font-weight: 600;
+  }
+  .file-table td {
+    padding: 8px 14px;
+    border-bottom: 1px solid #2a2d3a;
+    color: #b0b8d0;
+  }
+  .file-table tr:hover td { background: rgba(123, 140, 255, 0.04); }
+  .file-table .num-col { text-align: right; color: #7b8cff; font-weight: 600; }
+  .priority-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .priority-card {
+    background: #1a1d29;
+    border: 1px solid #2a2d3a;
+    border-radius: 10px;
+    padding: 22px;
+  }
+  .priority-card h3 {
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .priority-card ol {
+    padding-left: 20px;
+    font-size: 0.85rem;
+    color: #b0b8d0;
+  }
+  .priority-card ol li { margin-bottom: 6px; }
+  @media (max-width: 768px) {
+    .priority-section { grid-template-columns: 1fr; }
+    .hero { padding: 40px 20px; }
+    .hero h1 { font-size: 1.6rem; }
+    .container { padding: 24px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Star-Rewards 项目优化分析报告</h1>
+  <p class="subtitle">儿童行为激励管理网站 · 代码审计与优化建议</p>
+  <div class="meta">
+    <div class="meta-item">
+      <div class="meta-num">10,478</div>
+      <div class="meta-label">总代码行数</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-num">38</div>
+      <div class="meta-label">文件数</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-num">35</div>
+      <div class="meta-label">发现问题</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-num">6</div>
+      <div class="meta-label">审计维度</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 概览 -->
+  <div class="summary-box">
+    <h2>项目概览</h2>
+    <p><strong>技术栈：</strong>Vanilla JS + HTML + CSS（前端） / PHP + MySQL（后端，Hostinger 部署）/ Capacitor（移动端封装）</p>
+    <p><strong>核心功能：</strong>用户注册/登录（JWT）、行为积分记录、愿望清单管理、积分兑换、成长日记、多主题切换、中英双语</p>
+    <p><strong>架构特征：</strong>无构建工具、无框架、无模块系统，全靠全局函数 + &lt;script&gt; 标签串联，Service Worker 做 PWA 离线缓存</p>
+    <p style="margin-top:14px;"><strong>核心结论：</strong>项目功能完整、后端安全意识良好（PDO 预处理、JWT、bcrypt），但前端存在明显的架构债务（大量重复代码、Supabase 遗留）、安全漏洞（XSS）、性能瓶颈（全量刷新）和体验短板（无删除/编辑/加载态）。建议分三个阶段迭代优化。</p>
+  </div>
+
+  <!-- 统计卡片 -->
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="num" style="color:#ff4444">3</div>
+      <div class="label">严重问题 (Critical)</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" style="color:#ff8800">8</div>
+      <div class="label">高优先级 (High)</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" style="color:#ffbb33">14</div>
+      <div class="label">中优先级 (Medium)</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" style="color:#66bb6a">10</div>
+      <div class="label">低优先级 (Low)</div>
+    </div>
+  </div>
+
+  <!-- 文件统计 -->
+  <div class="section">
+    <div class="section-title">文件规模统计</div>
+    <table class="file-table">
+      <thead>
+        <tr><th>文件</th><th>类型</th><th class="num-col">行数</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>style.css</td><td>CSS</td><td class="num-col">1,484</td><td>主样式（含移动端）</td></tr>
+        <tr><td>script_juanziji.js</td><td>JS</td><td class="num-col">1,041</td><td>卷自己主题脚本（重复）</td></tr>
+        <tr><td>style_juanwa.css</td><td>CSS</td><td class="num-col">1,068</td><td>卷娃主题样式（重复）</td></tr>
+        <tr><td>script.js</td><td>JS</td><td class="num-col">1,251</td><td>主逻辑</td></tr>
+        <tr><td>rewards-for-her.html</td><td>HTML</td><td class="num-col">592</td><td>女性奖励模板页</td></tr>
+        <tr><td>script_juanwa.js</td><td>JS</td><td class="num-col">655</td><td>卷娃主题脚本（重复）</td></tr>
+        <tr><td>theme-selector.html</td><td>HTML</td><td class="num-col">528</td><td>主题选择页</td></tr>
+        <tr><td>style_juanziji.css</td><td>CSS</td><td class="num-col">538</td><td>卷自己主题样式（重复）</td></tr>
+        <tr><td>i18n.js</td><td>JS</td><td class="num-col">551</td><td>中英双语翻译</td></tr>
+        <tr><td>api/index.php</td><td>PHP</td><td class="num-col">476</td><td>后端 API</td></tr>
+        <tr><td>pwa-styles.css</td><td>CSS</td><td class="num-col">441</td><td>PWA 样式</td></tr>
+        <tr><td>api/api-client.js</td><td>JS</td><td class="num-col">221</td><td>API 客户端</td></tr>
+        <tr><td>index.html</td><td>HTML</td><td class="num-col">220</td><td>主页面</td></tr>
+        <tr><td>login.js</td><td>JS</td><td class="num-col">246</td><td>登录逻辑</td></tr>
+        <tr><td>其他 10+ 文件</td><td>-</td><td class="num-col">~2,827</td><td>模板页/PWA/移动端/配置</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.85rem; color:#5c6478;">三个主题（classic / juanwa / juanziji）各自有独立的 HTML + CSS + JS，总计约 3,300 行重复代码，是最大的维护负担。</p>
+  </div>
+
+  <!-- 1. 安全 -->
+  <div class="section">
+    <div class="section-title">1. 安全问题</div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">1.1 成长日记 XSS 漏洞</span>
+        <span class="severity-badge sev-critical">Critical</span>
+      </div>
+      <p class="issue-body">
+        <code>script.js</code> 第 1192 行，<code>updateDiaryList()</code> 使用 <code>innerHTML</code> 拼接 HTML 时，<code>behavior.description</code> 和 <code>gift.name</code> 未经过 <code>escapeHtml()</code> 处理直接插入。攻击者可通过注册账号输入恶意脚本（如 <code>&lt;img src=x onerror=alert(1)&gt;</code>），在其他用户查看日记时执行任意 JS。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>在拼接 HTML 前对所有用户输入字段调用 <code>escapeHtml()</code>，或改用 <code>textContent</code> + DOM API 构建元素。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">1.2 textToHtmlWithLinks 函数 URL 注入风险</span>
+        <span class="severity-badge sev-critical">Critical</span>
+      </div>
+      <p class="issue-body">
+        <code>script.js</code> 第 629-661 行，该函数将用户输入的文本转为带链接的 HTML，虽然做了协议白名单检查，但 URL 中的特殊字符（如 <code>"</code>）未转义，可闭合 <code>href</code> 属性注入 <code>onclick</code> 等事件处理器。该 HTML 通过 <code>innerHTML</code> 写入页面。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>在构建 <code>&lt;a href="..."&gt;</code> 之前，对 URL 做 <code>escapeHtml()</code> 处理，确保双引号被转义为 <code>&amp;quot;</code>。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">1.3 CORS 配置允许通配符</span>
+        <span class="severity-badge sev-high">High</span>
+      </div>
+      <p class="issue-body">
+        <code>api/index.php</code> 第 16-17 行，当请求不带 <code>Origin</code> 头时，<code>Access-Control-Allow-Origin: *</code> 被设置。某些工具或非浏览器客户端可不携带 Origin 头访问 API。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>移除通配符 fallback，严格限定 <code>ALLOWED_ORIGIN</code>，无 Origin 时返回 403。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">1.4 无 API 速率限制</span>
+        <span class="severity-badge sev-high">High</span>
+      </div>
+      <p class="issue-body">
+        <code>register</code> 和 <code>login</code> 接口无任何速率限制，可被暴力破解密码或批量注册。后端虽用了 bcrypt（cost=12），但无登录失败锁定 / IP 限频。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>在 PHP 层加入基于 IP + email 的速率限制（如 5 次/分钟），或使用 Hostinger 的 .htaccess 限频模块。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">1.5 JWT Token 存储在 localStorage</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        Token 存储在 <code>localStorage</code> 中，任何 XSS 漏洞都可直接窃取用户令牌。结合上述 XSS 漏洞，风险被放大。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>优先修复 XSS 漏洞。若条件允许，改为 <code>HttpOnly Cookie</code> + CSRF Token 方案。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">1.6 无 Token 吊销机制</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        JWT 是无状态的，<code>logout</code> 接口仅验证 token 有效性但不做任何服务端吊销。Token 在过期前（24小时）始终有效，即使用户已登出。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>增加 <code>token_blacklist</code> 表，logout 时将 token 的 jti 写入黑名单，verifyToken 时检查。</div>
+    </div>
+  </div>
+
+  <!-- 2. 架构 -->
+  <div class="section">
+    <div class="section-title">2. 架构问题</div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">2.1 三套主题完全独立，约 3,300 行重复代码</span>
+        <span class="severity-badge sev-critical">Critical</span>
+      </div>
+      <p class="issue-body">
+        <code>theme_juanwa.html</code> + <code>script_juanwa.js</code> + <code>style_juanwa.css</code>（约 1,870 行）<br>
+        <code>theme_juanziji.html</code> + <code>script_juanziji.js</code> + <code>style_juanziji.css</code>（约 1,736 行）<br>
+        与 <code>index.html</code> + <code>script.js</code> + <code>style.css</code> 功能几乎完全一致，仅文案和配色不同。任何 bug 修复或功能新增需要改三处。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>合并为单一入口，通过 CSS 变量 + i18n 切换主题。后端 <code>user_configs.selected_theme</code> 已支持，前端只需读取后动态加载样式。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">2.2 Supabase 遗留代码遍布全项目</span>
+        <span class="severity-badge sev-high">High</span>
+      </div>
+      <p class="issue-body">
+        项目已从 Supabase 迁移到自建 PHP+MySQL API，但遗留大量死代码：<br>
+        - <code>supabase.min.js</code> 仍在项目根目录（未被使用）<br>
+        - <code>sw.js</code> 缓存列表包含 <code>supabase.min.js</code><br>
+        - <code>script.js</code> 第 68-81 行 <code>initializeSupabase()</code> 返回 null<br>
+        - <code>login.js</code> supabase 变量声明<br>
+        - localStorage 中存 <code>supabase.user</code>、<code>supabase_session</code> 等废弃 key
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>删除 <code>supabase.min.js</code>，清理所有 supabase 引用和 localStorage key，更新 SW 缓存列表。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">2.3 updateAuthUI 函数重复定义</span>
+        <span class="severity-badge sev-high">High</span>
+      </div>
+      <p class="issue-body">
+        <code>script.js</code> 中 <code>updateAuthUI</code> 被定义了两次（第 145 行和第 851 行），第二个定义覆盖第一个。第一个版本引用 <code>showLoggedInState</code>/<code>showNotLoggedInState</code>，第二个版本引用 <code>logged-in</code> 元素（HTML 中不存在）。实际行为不可预测。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>删除第 851 行的重复定义，保留第 145 行版本并确保与 HTML 结构匹配。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">2.4 showTemporaryMessage / escapeHtml 在多处重复定义</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        <code>showTemporaryMessage</code> 在 <code>script.js</code> 和 <code>login.js</code> 各有一份，实现不同（一个用 inline style，一个用 class）。<code>escapeHtml</code> 同样在两文件各定义一次，且正则不同。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>提取到 <code>utils.js</code> 公共文件，所有页面统一引用。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">2.5 无模块系统 / 无构建工具</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        所有 JS 通过 <code>&lt;script&gt;</code> 标签全局加载，函数全部挂在 <code>window</code> 上。无 ES modules、无 bundler、无 tree-shaking、无 minification。文件版本管理靠 <code>?v=2</code> query string 手动维护。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>引入 Vite 或类似轻量构建工具，使用 ES modules，自动处理 minify / cache busting / tree-shaking。</div>
+    </div>
+  </div>
+
+  <!-- 3. 性能 -->
+  <div class="section">
+    <div class="section-title">3. 性能问题</div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">3.1 每次操作都全量拉取数据</span>
+        <span class="severity-badge sev-high">High</span>
+      </div>
+      <p class="issue-body">
+        <code>addPoints()</code>、<code>addGift()</code>、<code>redeemGift()</code> 每次操作后都调用 <code>loadDataFromCloud()</code>，该函数并发请求 4 个 API（profile + behaviors + gifts + redeemedGifts）。添加一条积分记录后，重新拉取所有历史数据，浪费带宽和渲染时间。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>操作成功后做增量更新 - 本地 push 新记录 + 更新积分显示，不再全量 reload。仅在页面加载时全量拉取。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">3.2 Google Fonts @import 阻塞渲染</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        <code>style.css</code> 第 2 行使用 <code>@import url('https://fonts.googleapis.com/...')</code>，这是渲染阻塞请求，且依赖第三方 CDN。在网络不佳时页面文字会延迟显示。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>改为 <code>&lt;link rel="preload"&gt;</code> + <code>&lt;link rel="stylesheet"&gt;</code> 放到 <code>&lt;head&gt;</code>，或使用 <code>font-display: swap</code>。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">3.3 日记列表用字符串拼接 + innerHTML</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        <code>updateDiaryList()</code>（第 1139-1252 行）在循环中用 <code>html +=</code> 拼接大量 HTML 字符串，然后一次性 <code>innerHTML</code>。当行为记录较多时（500 条上限），字符串拼接 + 解析 HTML 开销大。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>改用 <code>DocumentFragment</code> + <code>createElement</code> 构建 DOM，或使用虚拟列表只渲染可见区域。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">3.4 生产环境大量 console.log</span>
+        <span class="severity-badge sev-low">Low</span>
+      </div>
+      <p class="issue-body">
+        <code>script.js</code> 有 30+ 处 <code>console.log</code>，<code>login.js</code> 有 10+ 处。这些日志在生产环境暴露内部逻辑和用户邮箱信息。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>引入 loglevel 库或在构建时通过 Terser 的 <code>drop_console</code> 移除。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">3.5 Service Worker 缓存列表过时</span>
+        <span class="severity-badge sev-low">Low</span>
+      </div>
+      <p class="issue-body">
+        <code>sw.js</code> 缓存 <code>supabase.min.js</code>（已废弃），但不缓存 <code>i18n.js</code>、<code>login.js</code>、<code>api/api-client.js</code>、<code>i18n.css</code>。缓存版本号 <code>star-rewards-v1</code> 从未更新，部署新代码后用户拿到的是旧缓存。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>更新缓存列表，每次部署时递增版本号，或改用 Workbox 的预缓存策略。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">3.6 Service Worker 未注册</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        <code>sw.js</code> 存在但在 <code>index.html</code> 和 <code>login.html</code> 中没有 <code>navigator.serviceWorker.register()</code> 调用，PWA 离线功能实际未启用。<code>pwa-manager.js</code> 虽有注册逻辑，但未被任何页面引用。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>在页面中引入 <code>pwa-manager.js</code> 并确认注册逻辑执行。</div>
+    </div>
+  </div>
+
+  <!-- 4. 代码质量 -->
+  <div class="section">
+    <div class="section-title">4. 代码质量</div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">4.1 i18n 不完整，大量硬编码中文</span>
+        <span class="severity-badge sev-high">High</span>
+      </div>
+      <p class="issue-body">
+        虽然有 <code>i18n.js</code> 翻译系统，但 <code>script.js</code> 中大量消息仍是硬编码中文：<br>
+        - 第 619 行：<code>`成功添加 ${change} 分！`</code><br>
+        - <code>login.js</code> 中：<code>'请输入邮箱和密码'</code>、<code>'注册成功！请登录'</code><br>
+        - 第 1165 行：<code>date.toLocaleDateString('zh-CN')</code> 硬编码 locale<br>
+        英文用户会看到中英混杂的界面。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>将所有硬编码文案迁移到 i18n 翻译表，日期格式化使用 <code>currentLanguage</code> 决定 locale。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">4.2 i18n.js 中重复的 key</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        <code>i18n.js</code> 中 <code>behaviors</code> 对象的 <code>addBehavior</code> key 被定义了两次，后者覆盖前者。zh 和 en 都有此问题。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>合并为单一 key，删除重复定义。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">4.3 index.html 大量内联样式</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        <code>index.html</code> 第 39-52 行的认证状态卡片使用大量 inline style（<code>background: linear-gradient(...)</code>、<code>padding</code>、<code>border-radius</code> 等），既不便于维护，也无法利用 CSS 缓存。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>提取到 <code>style.css</code> 中使用 class 选择器。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">4.4 死代码 / 空函数</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        - <code>saveDataToCloud()</code>（第 1083-1086 行）：函数体只有 console.log，不做任何事<br>
+        - <code>initializeSupabase()</code>：返回 null<br>
+        - <code>validatePointsInput</code> / <code>validateGiftPointsInput</code>：定义了但从未调用<br>
+        - <code>loadDataFromSessionStorage</code>：在已登录场景下不会被调用<br>
+        - <code>api.resendConfirmation</code>：直接返回假数据，不调用后端
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>逐一删除或标记 <code>@deprecated</code>，确认无引用后清除。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">4.5 updateDiaryList 大量内联样式</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        <code>updateDiaryList()</code> 函数在拼接 HTML 时使用了大量内联样式（如 <code>style="margin-bottom: 8px; padding: 8px; background: #f8fff8; border-left: 3px solid #4CAF50; border-radius: 4px;"</code>），难以维护和主题化。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>提取为 CSS class（如 <code>.diary-item--positive</code>、<code>.diary-item--negative</code>），主题切换时只需改 CSS 变量。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">4.6 魔法数字遍布代码</span>
+        <span class="severity-badge sev-low">Low</span>
+      </div>
+      <p class="issue-body">
+        代码中大量硬编码数字：积分上限 10000、商品描述截取长度、500 条行为记录上限等，散布在各函数中，无常量定义。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>在文件顶部定义 <code>const MAX_POINTS = 10000</code> 等常量，统一引用。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">4.7 无统一错误处理策略</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        各 async 函数的 catch 块处理方式不一致：有的 <code>console.error</code> + <code>showTemporaryMessage</code>，有的只 <code>console.error</code>，有的直接 throw。用户看到的错误信息格式不统一。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>创建 <code>handleError(error, context)</code> 统一函数，集中处理日志 + 用户提示 + 错误上报。</div>
+    </div>
+  </div>
+
+  <!-- 5. 数据库 -->
+  <div class="section">
+    <div class="section-title">5. 数据库设计</div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">5.1 behaviors 表无软删除 / 编辑支持</span>
+        <span class="severity-badge sev-high">High</span>
+      </div>
+      <p class="issue-body">
+        数据库只有 INSERT 操作，前端无删除 / 编辑行为记录的功能。用户误操作添加错误积分后无法修正，只能通过兑换礼物来"消耗"错误积分。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>增加 <code>is_deleted TINYINT DEFAULT 0</code> 字段支持软删除，API 增加 <code>deleteBehavior</code> action，前端增加删除按钮。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">5.2 gifts 表无编辑 / 删除支持</span>
+        <span class="severity-badge sev-high">High</span>
+      </div>
+      <p class="issue-body">
+        礼物只能添加和兑换，不能编辑或删除。用户添加了错误的礼物名称 / 积分后无法修改。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>API 增加 <code>updateGift</code> / <code>deleteGift</code> action，前端增加编辑和删除入口。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">5.3 redeemed_gifts 表缺少 gift_id 外键约束</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        <code>redeemed_gifts.gift_id</code> 字段存在但无外键约束（可为 NULL），兑换记录与原礼物之间无引用完整性保证。如果原礼物被（未来）删除，兑换记录中的 gift_id 会变成悬挂引用。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>当前设计（兑换时复制 name/points 到 redeemed_gifts）是合理的反范式冗余，但应加注释说明设计意图，或在 gift_id 上加 SET NULL 外键。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">5.4 无分页支持</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        <code>getBehaviors</code> 和 <code>getGifts</code> 一次返回全部记录（无 LIMIT / OFFSET）。虽然目前有 500 条前端限制，但长期使用后数据量增长会导致响应变大、渲染变慢。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>API 增加 <code>page</code> / <code>pageSize</code> 参数，前端实现"加载更多"或无限滚动。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">5.5 无数据库索引优化</span>
+        <span class="severity-badge sev-low">Low</span>
+      </div>
+      <p class="issue-body">
+        当前索引基本合理（idx_behaviors_user_time, idx_gifts_user_created, idx_redeemed_user_date），但 <code>profiles</code> 表无 <code>user_id</code> 之外的索引。随着用户增长，<code>getProfile</code> 查询仍可接受，但批量统计（如全站积分排行）将变慢。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>当前规模下可接受。未来如增加排行榜功能，需添加 <code>total_points</code> 索引。</div>
+    </div>
+  </div>
+
+  <!-- 6. UX/功能 -->
+  <div class="section">
+    <div class="section-title">6. UX 与功能缺失</div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">6.1 无加载状态 / Skeleton Screen</span>
+        <span class="severity-badge sev-high">High</span>
+      </div>
+      <p class="issue-body">
+        数据加载期间页面无任何加载指示器（spinner / skeleton / progress bar）。用户点击"成长日记"等模块时，如果网络慢，页面表现为空白，用户不知道是在加载还是出错了。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>在数据请求前显示 skeleton / spinner，请求完成（成功或失败）后隐藏。使用 <code>loading</code> 状态变量控制。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">6.2 无操作确认 / 撤销机制</span>
+        <span class="severity-badge sev-high">High</span>
+      </div>
+      <p class="issue-body">
+        兑换礼物、添加积分等操作无二次确认。用户误点"兑换"按钮会直接扣除积分，且无法撤销（数据库无软删除）。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>关键操作（兑换礼物、大额扣分）增加确认对话框。理想情况下支持"撤销"（5 秒内可回退）。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">6.3 无离线数据同步</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        Service Worker 的 <code>syncData()</code> 是空函数（只有 console.log），<code>sync</code> 事件监听器存在但无实际同步逻辑。用户离线时无法添加积分 / 礼物，网络恢复后也不会自动同步。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>使用 IndexedDB 存储离线操作队列，Service Worker 的 <code>sync</code> 事件触发时批量提交。或使用 Workbox 的 Background Sync API。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">6.4 无密码重置功能</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        用户忘记密码后无法自助重置。后端 <code>api/index.php</code> 无 <code>resetPassword</code> / <code>forgotPassword</code> action，前端无相关入口。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>增加密码重置流程：邮箱验证 -> 生成临时 token -> 重置页面 -> 更新密码。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">6.5 无数据导出功能</span>
+        <span class="severity-badge sev-low">Low</span>
+      </div>
+      <p class="issue-body">
+        用户无法导出自己的行为记录、积分历史、兑换记录。对于家长来说，可能需要打印或备份这些数据。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>增加"导出为 CSV / PDF"功能，后端增加 <code>exportData</code> action。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">6.6 移动端手势支持不足</span>
+        <span class="severity-badge sev-low">Low</span>
+      </div>
+      <p class="issue-body">
+        虽然有 <code>mobile-app.js</code> 和 Capacitor 封装，但核心交互（切换模块、删除记录）依赖点击，无滑动手势。儿童使用时，滑动删除比点击更自然。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>引入轻量手势库（如 Hammer.js）或自行实现 touch 事件，支持左滑删除、左右切页。</div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <span class="issue-title">6.7 无家长 / 儿童角色区分</span>
+        <span class="severity-badge sev-medium">Medium</span>
+      </div>
+      <p class="issue-body">
+        作为"儿童行为激励管理"应用，当前所有用户权限相同。儿童可以自行添加积分、兑换礼物，没有家长审核 / 审批机制。
+      </p>
+      <div class="issue-fix"><strong>修复：</strong>增加 <code>role</code> 字段（parent / child），家长账号可管理儿童账号、审核积分变更和兑换请求。</div>
+    </div>
+  </div>
+
+  <!-- 优先级路线图 -->
+  <div class="section">
+    <div class="section-title">优化路线图</div>
+    <div class="priority-section">
+      <div class="priority-card">
+        <h3>Phase 1 - 紧急修复（1-2 周）</h3>
+        <ol>
+          <li>修复 XSS 漏洞（1.1, 1.2）- 对所有 innerHTML 拼接的用户输入做 escapeHtml</li>
+          <li>删除重复的 <code>updateAuthUI</code> 定义（2.3）</li>
+          <li>清理 Supabase 遗留代码（2.2）</li>
+          <li>修复 CORS 通配符配置（1.3）</li>
+          <li>增加 API 速率限制（1.4）</li>
+          <li>更新 SW 缓存列表并注册 SW（3.5, 3.6）</li>
+        </ol>
+      </div>
+      <div class="priority-card">
+        <h3>Phase 2 - 架构优化（2-4 周）</h3>
+        <ol>
+          <li>合并三套主题为单一入口（2.1）- CSS 变量 + 主题配置</li>
+          <li>提取公共函数到 utils.js（2.4）</li>
+          <li>实现增量数据更新（3.1）</li>
+          <li>完善 i18n，消除硬编码中文（4.1, 4.2）</li>
+          <li>增加加载状态 / Skeleton（6.1）</li>
+          <li>增加操作确认对话框（6.2）</li>
+          <li>增加行为 / 礼物的删除 / 编辑功能（5.1, 5.2）</li>
+        </ol>
+      </div>
+    </div>
+    <div class="priority-section">
+      <div class="priority-card">
+        <h3>Phase 3 - 体验提升（4-8 周）</h3>
+        <ol>
+          <li>引入 Vite 构建工具 + ES modules（2.5）</li>
+          <li>实现离线数据同步（6.3）</li>
+          <li>增加密码重置功能（6.4）</li>
+          <li>增加家长 / 儿童角色区分（6.7）</li>
+          <li>API 分页支持（5.4）</li>
+          <li>数据导出功能（6.5）</li>
+          <li>移动端手势支持（6.6）</li>
+          <li>Token 吊销机制（1.6）</li>
+        </ol>
+      </div>
+      <div class="priority-card">
+        <h3>持续改进项</h3>
+        <ol>
+          <li>清理死代码（4.4）- 持续进行</li>
+          <li>消除内联样式（4.3, 4.5）- 持续进行</li>
+          <li>移除生产 console.log（3.4）- 构建时自动处理</li>
+          <li>统一错误处理策略（4.7）</li>
+          <li>提取魔法数字为常量（4.6）</li>
+          <li>Google Fonts 优化（3.2）</li>
+          <li>日记列表性能优化（3.3）</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- 后端亮点 -->
+  <div class="section">
+    <div class="section-title">后端安全亮点（值得保持）</div>
+    <div class="issue-card" style="border-color: #66bb6a;">
+      <div class="issue-header">
+        <span class="issue-title" style="color:#66bb6a;">PHP 后端安全实践良好</span>
+        <span class="severity-badge sev-low">Good</span>
+      </div>
+      <p class="issue-body" style="color:#95a0b8;">
+        后端代码体现了较好的安全意识，以下实践应继续保持：
+        <br><br>
+        - PDO 预处理语句防 SQL 注入（<code>ATTR_EMULATE_PREPARES => false</code>）
+        <br>- bcrypt 哈希存储密码（cost=12）
+        <br>- JWT 使用 HMAC-SHA256 签名 + <code>hash_equals</code> 防时序攻击
+        <br>- 密码长度验证（6-255）
+        <br>- 邮箱格式验证（<code>filter_var</code>）
+        <br>- 安全响应头（<code>X-Content-Type-Options</code>, <code>X-Frame-Options</code>, <code>Referrer-Policy</code>）
+        <br>- 数据库 CHECK 约束（积分非负、礼物积分必须 > 0）
+        <br>- 外键级联删除（<code>ON DELETE CASCADE</code>）
+        <br>- 预编译 SQL 中参数化查询，无字符串拼接
+      </p>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
