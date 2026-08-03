@@ -30,8 +30,7 @@ npx serve .
 3. **访问应用**
    - 主题选择页：`https://[你的用户名].github.io/Star-Rewards/theme-selector.html`
    - 经典版：`https://[你的用户名].github.io/Star-Rewards/index.html`
-   - 卷娃模式：`https://[你的用户名].github.io/Star-Rewards/theme_juanwa.html`
-   - 卷自己模式：`https://[你的用户名].github.io/Star-Rewards/theme_juanziji.html`
+   - 其他主题在登录后通过主题选择器或 URL 参数切换：`index.html?theme=juanwa` / `index.html?theme=juanziji`
 
 ## 📱 主题介绍
 
@@ -67,38 +66,36 @@ npx serve .
 
 ```
 Star-Rewards/
-├── index.html              # 经典版主页面
+├── index.html              # 主页面（支持 ?theme= 参数切换主题）
 ├── theme-selector.html     # 主题选择页面
-├── theme_juanwa.html       # 卷娃主题页面
-├── theme_juanziji.html     # 卷自己主题页面
-├── style.css              # 经典版样式
-├── style_juanwa.css       # 卷娃主题样式
-├── style_juanziji.css     # 卷自己主题样式
-├── script.js              # 经典版脚本
-├── script_juanwa.js       # 卷娃主题脚本
-├── script_juanziji.js     # 卷自己主题脚本
+├── style.css              # 经典版默认样式
+├── style_juanwa.css       # 卷娃主题样式（动态加载）
+├── style_juanziji.css     # 卷自己主题样式（动态加载）
+├── script.js              # 主逻辑脚本
+├── themes.js              # 动态主题管理系统
 ├── login.html             # 登录页面
 ├── login.js               # 登录脚本
-├── supabase.min.js        # Supabase客户端
+├── utils.js               # 公共工具函数
 ├── behavior-templates.html # 行为模板页面
 ├── mobile-wrapper.html    # 移动端包装页面
 ├── mobile-app.js          # 移动端脚本
+├── api/                   # 后端 API
+│   ├── index.php
+│   ├── config.php
+│   └── api-client.js
 └── README.md              # 项目说明
 ```
 
 ## 🔧 配置说明
 
-### Supabase 配置
-1. 在 [Supabase](https://supabase.com) 注册账号
-2. 创建新项目
-3. 在 `script.js` 和 `script_juanziji.js` 中更新以下配置：
-   ```javascript
-   const SUPABASE_URL = '你的Supabase项目URL';
-   const SUPABASE_ANON_KEY = '你的匿名访问密钥';
-   ```
+### 后端 API
+1. 将 `api/` 目录部署到支持 PHP + MySQL 的服务器
+2. 配置 `api/config.php` 中的数据库连接信息
+3. 运行 `database/mysql.sql` 初始化数据库
+4. 前端 `api/api-client.js` 自动指向 `api/` 路径
 
 ### 数据库结构
-详见 `sql.txt` 文件中的数据库表结构定义。
+运行 `database/mysql.sql` 初始化数据库表结构
 
 ## 🎯 使用场景
 
