@@ -204,6 +204,14 @@ class ApiClient {
         return await this.request('getRedeemedGifts');
     }
 
+    async deleteBehavior(behaviorId) {
+        return await this.request('deleteBehavior', { id: behaviorId });
+    }
+
+    async deleteGift(giftId) {
+        return await this.request('deleteGift', { id: giftId });
+    }
+
     async updateTheme(theme) {
         return await this.request('updateTheme', { theme });
     }

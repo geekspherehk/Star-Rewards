@@ -223,6 +223,12 @@ switch ($action) {
     case 'getUserConfig':
         handleGetUserConfig($pdo);
         break;
+    case 'deleteBehavior':
+        handleDeleteBehavior($pdo, $data);
+        break;
+    case 'deleteGift':
+        handleDeleteGift($pdo, $data);
+        break;
     default:
         sendError('Invalid action', 400);
 }
@@ -513,5 +519,39 @@ function handleGetUserConfig($pdo) {
         sendJson($config);
     } catch (Exception $e) {
         sendError('Failed to get user config', 500, $e->getMessage());
+    }
+}
+
+function handleDeleteBehavior($pdo, $data) {
+    $userId = getUserId();
+    $behaviorId = isset($data['id']) ? (int)$data['id'] : 0;
+    if ($behaviorId <= 0) sendError('Invalid behavior ID', 400);
+
+    try {
+        $stmt = $pdo->prepare('DELETE FROM behaviors WHERE id = ? AND user_id = ?');
+        $stmt->execute([$behaviorId, $userId]);
+        if ($stmt->rowCount() === 0) {
+            sendError('Behavior not found or not owned by you', 404);
+        }
+        sendJson(['success' => true]);
+    } catch (Exception $e) {
+        sendError('Failed to delete behavior', 500, $e->getMessage());
+    }
+}
+
+function handleDeleteGift($pdo, $data) {
+    $userId = getUserId();
+    $giftId = isset($data['id']) ? (int)$data['id'] : 0;
+    if ($giftId <= 0) sendError('Invalid gift ID', 400);
+
+    try {
+        $stmt = $pdo->prepare('DELETE FROM gifts WHERE id = ? AND user_id = ?');
+        $stmt->execute([$giftId, $userId]);
+        if ($stmt->rowCount() === 0) {
+            sendError('Gift not found or not owned by you', 404);
+        }
+        sendJson(['success' => true]);
+    } catch (Exception $e) {
+        sendError('Failed to delete gift', 500, $e->getMessage());
     }
 }

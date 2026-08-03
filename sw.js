@@ -10,7 +10,9 @@ const urlsToCache = [
   '/login.js',
   '/i18n.js',
   '/utils.js',
-  '/api/api-client.js'
+  '/api/api-client.js',
+  '/themes.js',
+  '/theme-selector.html'
 ];
 
 // 安装Service Worker

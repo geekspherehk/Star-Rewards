@@ -356,6 +356,20 @@ function updateGiftList() {
         };
         
         li.appendChild(redeemBtn);
+
+        // Delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = '🗑';
+        deleteBtn.title = 'Delete';
+        deleteBtn.style.cssText = 'background:none;border:none;font-size:1.2rem;cursor:pointer;padding:4px 8px;opacity:0.5;transition:opacity 0.2s;';
+        deleteBtn.onmouseenter = () => deleteBtn.style.opacity = '1';
+        deleteBtn.onmouseleave = () => deleteBtn.style.opacity = '0.5';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteGift(gift.id);
+        };
+        li.appendChild(deleteBtn);
         giftList.appendChild(li);
     });
 }
@@ -585,6 +599,8 @@ async function addPoints() {
             throw new Error('用户未登录');
         }
 
+        showLoading('Adding points...');
+
         await api.addBehavior(desc, change);
         await loadDataFromCloud();
         
@@ -600,9 +616,12 @@ async function addPoints() {
             `✅ 成功添加 ${change} 分！` : 
             `⚠️ 扣除 ${Math.abs(change)} 分`;
         showTemporaryMessage(message, 'success');
+        
+        hideLoading();
 
     } catch (error) {
         console.error('添加积分失败:', error);
+        hideLoading();
         showTemporaryMessage(t('common.addPointsFailed') + (error.message ? `: ${escapeHtml(error.message)}` : ''), 'error');
     }
 }
@@ -678,6 +697,8 @@ async function addGift() {
         const originalInputUrl = document.getElementById('gift-image').value.trim();
         const descriptionHtml = textToHtmlWithLinks(description);
 
+        showLoading('Adding gift...');
+
         const result = await api.addGift(name, giftPoints, description, imageUrl, originalInputUrl);
 
         await loadDataFromCloud();
@@ -703,9 +724,12 @@ async function addGift() {
         document.getElementById('gift-name').focus();
 
         showTemporaryMessage(t('common.addGiftSuccess').replace('{name}', escapeHtml(name)), 'success');
+        
+        hideLoading();
 
     } catch (error) {
         console.error('添加礼物失败:', error);
+        hideLoading();
         showTemporaryMessage(t('common.addGiftFailed') + (error.message ? `: ${escapeHtml(error.message)}` : ''), 'error');
     }
 }
@@ -733,45 +757,91 @@ function setPresetBehavior(description, points) {
 
 // 兑换礼物
 async function redeemGift(giftId) {
-    try {
-        if (!api.getToken()) {
-            throw new Error('用户未登录');
-        }
-
-        const id = typeof giftId === 'string' ? parseInt(giftId) : giftId;
-        
-        let gift = gifts.find(g => g.id === id);
-        if (!gift) {
-            gift = gifts[id];
-        }
-        
-        if (!gift) {
-            showTemporaryMessage(t('common.giftNotFound'), 'error');
-            return;
-        }
-
-        if (currentPoints < gift.points) {
-            showTemporaryMessage(t('common.insufficientPoints'), 'error');
-            return;
-        }
-
-        const confirmed = confirm(t('common.confirmRedeemMessage').replace('{name}', escapeHtml(gift.name)).replace('{points}', gift.points));
-        if (!confirmed) return;
-
-        await api.redeemGift(gift.id);
-        await loadDataFromCloud();
-
-        updatePointsDisplay();
-        updateGiftList();
-        updateRedeemedList();
-
-        showTemporaryMessage(t('common.redeemSuccess'), 'success');
-
-    } catch (error) {
-        console.error('兑换礼物失败:', error);
-        showTemporaryMessage(t('common.redeemFailed') + (error.message ? `: ${escapeHtml(error.message)}` : ''), 'error');
+    const id = typeof giftId === 'string' ? parseInt(giftId) : giftId;
+    
+    let gift = gifts.find(g => g.id === id);
+    if (!gift) {
+        gift = gifts[id];
     }
+    
+    if (!gift) {
+        showTemporaryMessage(t('common.giftNotFound'), 'error');
+        return;
+    }
+
+    if (currentPoints < gift.points) {
+        showTemporaryMessage(t('common.insufficientPoints'), 'error');
+        return;
+    }
+
+    const message = t('common.confirmRedeemMessage')
+        .replace('{name}', escapeHtml(gift.name))
+        .replace('{points}', gift.points);
+    
+    showConfirm(message, async () => {
+        try {
+            if (!api.getToken()) {
+                throw new Error('用户未登录');
+            }
+
+            showLoading('Redeeming...');
+            await api.redeemGift(gift.id);
+            await loadDataFromCloud();
+
+            updatePointsDisplay();
+            updateGiftList();
+            updateRedeemedList();
+
+            hideLoading();
+            showTemporaryMessage(t('common.redeemSuccess'), 'success');
+
+        } catch (error) {
+            console.error('兑换礼物失败:', error);
+            hideLoading();
+            showTemporaryMessage(t('common.redeemFailed') + (error.message ? `: ${escapeHtml(error.message)}` : ''), 'error');
+        }
+    });
 }
+
+// Delete a behavior record
+async function deleteBehavior(behaviorId) {
+    showConfirm('确定要删除这条行为记录吗？', async () => {
+        try {
+            showLoading('Deleting...');
+            await api.deleteBehavior(behaviorId);
+            await loadDataFromCloud();
+            updatePointsDisplay();
+            updateBehaviorLog();
+            updateGiftList();
+            updateDiaryList();
+            hideLoading();
+            showTemporaryMessage('已删除', 'success');
+        } catch (error) {
+            hideLoading();
+            showTemporaryMessage('删除失败: ' + escapeHtml(error.message), 'error');
+        }
+    });
+}
+
+// Delete a gift
+async function deleteGift(giftId) {
+    showConfirm('确定要删除这个礼物吗？', async () => {
+        try {
+            showLoading('Deleting...');
+            await api.deleteGift(giftId);
+            await loadDataFromCloud();
+            updateGiftList();
+            updateDiaryList();
+            hideLoading();
+            showTemporaryMessage('已删除', 'success');
+        } catch (error) {
+            hideLoading();
+            showTemporaryMessage('删除失败: ' + escapeHtml(error.message), 'error');
+        }
+    });
+}
+
+// 兑换礼物
 
 
 
@@ -1089,9 +1159,10 @@ function updateDiaryList() {
             dayBehaviors.forEach(behavior => {
                 const escapedDesc = escapeHtml(behavior.description || '');
                 html += `
-                    <div style="margin-bottom: 8px; padding: 8px; background: ${behavior.points > 0 ? '#f8fff8' : '#fff8f8'}; border-left: 3px solid ${behavior.points > 0 ? '#4CAF50' : '#f44336'}; border-radius: 4px;">
+                    <div style="margin-bottom: 8px; padding: 8px; background: ${behavior.points > 0 ? '#f8fff8' : '#fff8f8'}; border-left: 3px solid ${behavior.points > 0 ? '#4CAF50' : '#f44336'}; border-radius: 4px; position:relative;">
                         <span style="color: ${behavior.points > 0 ? '#4CAF50' : '#f44336'}; font-weight: bold;">${behavior.points > 0 ? '+' : ''}${behavior.points}</span>
                         - ${escapedDesc}
+                        <button onclick="deleteBehavior(${behavior.id})" style="position:absolute;top:6px;right:6px;background:none;border:none;font-size:0.9rem;cursor:pointer;opacity:0.4;padding:2px 4px;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.4'" title="Delete">🗑</button>
                         <small style="color: #666; display: block; margin-top: 2px;">${new Date(behavior.timestamp).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}</small>
                     </div>
                 `;
