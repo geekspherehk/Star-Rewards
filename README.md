@@ -90,9 +90,15 @@ Star-Rewards/
 
 ### 后端 API
 1. 将 `api/` 目录部署到支持 PHP + MySQL 的服务器
-2. 配置 `api/config.php` 中的数据库连接信息
-3. 运行 `database/mysql.sql` 初始化数据库
+2. **创建 `api/.env.php` 数据库配置文件**（⚠️ 必做！该文件被 .gitignore 排除，git 上传不会包含它）：
+   - 参考模板 `api/.env.example.php`，复制为 `api/.env.php`
+   - 填入 Hostinger 数据库的真实信息（hPanel → 数据库 → MySQL 数据库）
+   - 也可通过 hPanel 的 PHP Configuration 设置环境变量 DB_HOST / DB_NAME / DB_USER / DB_PASS / TOKEN_SECRET
+3. 运行 `database/mysql.sql` 初始化数据库（phpMyAdmin 中导入）
 4. 前端 `api/api-client.js` 自动指向 `api/` 路径
+
+> ❌ 若登录报错 `Database configuration missing`，说明服务器上缺少 `api/.env.php`
+> 或环境变量 —— 请按第 2 步创建配置文件。
 
 ### 数据库结构
 运行 `database/mysql.sql` 初始化数据库表结构

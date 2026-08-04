@@ -43,14 +43,20 @@ define('TOKEN_TTL', getenv('TOKEN_TTL') ?: ($env['TOKEN_TTL'] ?? 86400));
 if (empty(DB_HOST) || empty(DB_NAME) || empty(DB_USER) || empty(DB_PASS)) {
     http_response_code(500);
     header('Content-Type: application/json');
-    echo json_encode(['error' => 'Database configuration missing. Please set environment variables.']);
+    echo json_encode([
+        'error' => 'Database configuration missing. Please set environment variables.',
+        'hint'  => 'Create api/.env.php (see api/.env.example.php) or set DB_HOST/DB_NAME/DB_USER/DB_PASS on the server.'
+    ]);
     exit;
 }
 
 if (empty(TOKEN_SECRET)) {
     http_response_code(500);
     header('Content-Type: application/json');
-    echo json_encode(['error' => 'Token secret missing. Please set TOKEN_SECRET environment variable.']);
+    echo json_encode([
+        'error' => 'Token secret missing. Please set TOKEN_SECRET environment variable.',
+        'hint'  => 'Set TOKEN_SECRET in api/.env.php (see api/.env.example.php).'
+    ]);
     exit;
 }
 ?>
