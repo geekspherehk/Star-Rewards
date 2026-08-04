@@ -66,9 +66,20 @@ async function extractProductImageFromUrl(url) {
 }
 
 
-// 移除checkUserLoggedIn函数 - 认证逻辑全部移至login页面
+// ── Constants ──
+const MAX_POINTS = 10000;
+const MAX_GIFT_POINTS = 100000;
+const MAX_BEHAVIOR_DESC_LENGTH = 1000;
+const MAX_GIFT_NAME_LENGTH = 255;
+const MAX_GIFT_DESC_LENGTH = 2000;
+const MAX_IMAGE_URL_LENGTH = 2048;
+const BEHAVIOR_PAGE_SIZE = 500;
+const DEBUG = false;
 
-// 本地数据变量
+// Conditional logger — only logs when DEBUG is true
+function log(...args) { if (DEBUG) console.log(...args); }
+
+// ── State ──
 let currentPoints = 0;
 let totalPoints = 0;
 let behaviors = [];
@@ -78,8 +89,6 @@ let diaryEntries = [];
 
 // 当前登录用户信息
 let currentUser = null;
-
-// 移除restoreBasicData函数 - 认证逻辑全部移至login页面
 
 // 用户登出
 async function signOut() {
@@ -145,10 +154,6 @@ function updateAuthUI(user) {
         showNotLoggedInState();
     }
 }
-
-// 移除initAuth函数 - 认证逻辑全部移至login页面
-
-
 
 function updatePointsDisplay() {
     const currentPointsElement = document.getElementById('current-points');
@@ -870,29 +875,6 @@ async function deleteGift(giftId) {
         }
     });
 }
-
-// 兑换礼物
-
-
-
-// 表单验证和用户体验增强
-function validatePointsInput(inputElement) {
-    inputElement.addEventListener('input', function() {
-        if (this.value < -1000) this.value = -1000;
-        if (this.value > 1000) this.value = 1000;
-    });
-}
-
-function validateGiftPointsInput(inputElement) {
-    inputElement.addEventListener('input', function() {
-        if (this.value < 1) this.value = 1;
-        if (this.value > 10000) this.value = 10000;
-    });
-}
-
-
-
-
 
 // 更新UI显示
 function updateUI() {
