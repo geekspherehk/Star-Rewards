@@ -534,6 +534,11 @@ function updateRedeemedList() {
     redeemedList.appendChild(giftsContainer);
 }
 
+// Helper: get locale based on current language
+function getLocale() {
+    return (typeof currentLanguage !== 'undefined' && currentLanguage === 'en') ? 'en-US' : 'zh-CN';
+}
+
 // 格式化兑换日期
 function formatRedeemDate(dateString) {
     if (!dateString || dateString === t('common.unknownTime')) return t('common.justNow');
@@ -552,7 +557,7 @@ function formatRedeemDate(dateString) {
         if (diffDays < 7) return t('common.daysAgo').replace('{days}', diffDays);
 
         // 超过一周显示具体日期
-        return date.toLocaleDateString('zh-CN', {
+        return date.toLocaleDateString(getLocale(), {
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
@@ -596,13 +601,24 @@ async function addPoints() {
     
     try {
         if (!api.getToken()) {
-            throw new Error('用户未登录');
-        }
+            throw new Error(t('common.notLoggedIn'));        }
 
         showLoading('Adding points...');
 
-        await api.addBehavior(desc, change);
-        await loadDataFromCloud();
+        const result = await api.addBehavior(desc, change);
+        
+        // Incremental update - no full reload needed
+        currentPoints = result.current_points || currentPoints;
+        totalPoints = result.total_points || totalPoints;
+        
+        // Add new behavior to local array
+        const newBehavior = {
+            id: result.id || Date.now(),
+            description: desc,
+            points: change,
+            timestamp: new Date().toISOString()
+        };
+        behaviors.unshift(newBehavior);
         
         updatePointsDisplay();
         updateBehaviorLog();
@@ -613,8 +629,8 @@ async function addPoints() {
         document.getElementById('behavior-desc').focus();
         
         const message = change > 0 ? 
-            `✅ 成功添加 ${change} 分！` : 
-            `⚠️ 扣除 ${Math.abs(change)} 分`;
+            t('common.pointsAdded').replace('{points}', change) : 
+            t('common.pointsDeductedMessage').replace('{points}', Math.abs(change));
         showTemporaryMessage(message, 'success');
         
         hideLoading();
@@ -691,8 +707,7 @@ async function addGift() {
     
     try {
         if (!api.getToken()) {
-            throw new Error('用户未登录');
-        }
+            throw new Error(t('common.notLoggedIn'));        }
         
         const originalInputUrl = document.getElementById('gift-image').value.trim();
         const descriptionHtml = textToHtmlWithLinks(description);
@@ -701,8 +716,7 @@ async function addGift() {
 
         const result = await api.addGift(name, giftPoints, description, imageUrl, originalInputUrl);
 
-        await loadDataFromCloud();
-
+        // Incremental update - add locally, no full reload
         const newGift = {
             id: result.id || Date.now(),
             name: name,
@@ -781,12 +795,26 @@ async function redeemGift(giftId) {
     showConfirm(message, async () => {
         try {
             if (!api.getToken()) {
-                throw new Error('用户未登录');
-            }
+                throw new Error(t('common.notLoggedIn'));            }
 
             showLoading('Redeeming...');
-            await api.redeemGift(gift.id);
-            await loadDataFromCloud();
+            const result = await api.redeemGift(gift.id);
+            
+            // Incremental update - no full reload needed
+            currentPoints = result.current_points || currentPoints;
+            
+            // Remove gift from local list
+            gifts = gifts.filter(g => g.id !== gift.id);
+            
+            // Add to redeemed list
+            const redeemedGift = {
+                id: result.redeemed_id || Date.now(),
+                name: result.redeemed_gift ? result.redeemed_gift.name : gift.name,
+                points: result.redeemed_gift ? result.redeemed_gift.points : gift.points,
+                image_url: result.redeemed_gift ? result.redeemed_gift.image_url : '',
+                redeem_date: new Date().toISOString()
+            };
+            redeemedGifts.unshift(redeemedGift);
 
             updatePointsDisplay();
             updateGiftList();
@@ -809,16 +837,17 @@ async function deleteBehavior(behaviorId) {
         try {
             showLoading('Deleting...');
             await api.deleteBehavior(behaviorId);
-            await loadDataFromCloud();
+            // Remove from local array
+            behaviors = behaviors.filter(b => b.id !== behaviorId);
             updatePointsDisplay();
             updateBehaviorLog();
             updateGiftList();
             updateDiaryList();
             hideLoading();
-            showTemporaryMessage('已删除', 'success');
+            showTemporaryMessage(t('common.deleted'), 'success');
         } catch (error) {
             hideLoading();
-            showTemporaryMessage('删除失败: ' + escapeHtml(error.message), 'error');
+            showTemporaryMessage(t('common.deleteFailed') + ': ' + escapeHtml(error.message), 'error');
         }
     });
 }
@@ -829,14 +858,15 @@ async function deleteGift(giftId) {
         try {
             showLoading('Deleting...');
             await api.deleteGift(giftId);
-            await loadDataFromCloud();
+            // Remove from local array
+            gifts = gifts.filter(g => g.id !== giftId);
             updateGiftList();
             updateDiaryList();
             hideLoading();
-            showTemporaryMessage('已删除', 'success');
+            showTemporaryMessage(t('common.deleted'), 'success');
         } catch (error) {
             hideLoading();
-            showTemporaryMessage('删除失败: ' + escapeHtml(error.message), 'error');
+            showTemporaryMessage(t('common.deleteFailed') + ': ' + escapeHtml(error.message), 'error');
         }
     });
 }
@@ -967,8 +997,7 @@ async function loadDataFromCloud() {
     
     try {
         if (!api.getToken()) {
-            throw new Error('用户未登录');
-        }
+            throw new Error(t('common.notLoggedIn'));        }
         
         const [profile, behaviorsData, giftsData, redeemedGiftsData] = await Promise.all([
             api.getProfile(),
@@ -1133,7 +1162,7 @@ function updateDiaryList() {
         // 按日期分组行为记录
         const behaviorsByDate = {};
         behaviors.forEach(behavior => {
-            const date = new Date(behavior.timestamp).toLocaleDateString('zh-CN');
+            const date = new Date(behavior.timestamp).toLocaleDateString(getLocale());
             if (!behaviorsByDate[date]) {
                 behaviorsByDate[date] = [];
             }
@@ -1163,7 +1192,7 @@ function updateDiaryList() {
                         <span style="color: ${behavior.points > 0 ? '#4CAF50' : '#f44336'}; font-weight: bold;">${behavior.points > 0 ? '+' : ''}${behavior.points}</span>
                         - ${escapedDesc}
                         <button onclick="deleteBehavior(${behavior.id})" style="position:absolute;top:6px;right:6px;background:none;border:none;font-size:0.9rem;cursor:pointer;opacity:0.4;padding:2px 4px;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.4'" title="Delete">🗑</button>
-                        <small style="color: #666; display: block; margin-top: 2px;">${new Date(behavior.timestamp).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}</small>
+                        <small style="color: #666; display: block; margin-top: 2px;">${new Date(behavior.timestamp).toLocaleTimeString(getLocale(), {hour: '2-digit', minute: '2-digit'})}</small>
                     </div>
                 `;
             });
@@ -1179,7 +1208,7 @@ function updateDiaryList() {
         // 按日期分组已兑换礼物
         const giftsByDate = {};
         redeemedGifts.forEach(gift => {
-            const date = new Date(gift.redeem_date).toLocaleDateString('zh-CN');
+            const date = new Date(gift.redeem_date).toLocaleDateString(getLocale());
             if (!giftsByDate[date]) {
                 giftsByDate[date] = [];
             }
@@ -1208,7 +1237,7 @@ function updateDiaryList() {
                     <div style="margin-bottom: 8px; padding: 8px; background: #fff8f0; border-left: 3px solid #ff9800; border-radius: 4px;">
                         <span style="color: #ff5722; font-weight: bold;">-${gift.points}</span>
                         - 🏆 ${escapedName}
-                        <small style="color: #666; display: block; margin-top: 2px;">${new Date(gift.redeem_date).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}</small>
+                        <small style="color: #666; display: block; margin-top: 2px;">${new Date(gift.redeem_date).toLocaleTimeString(getLocale(), {hour: '2-digit', minute: '2-digit'})}</small>
                     </div>
                 `;
             });

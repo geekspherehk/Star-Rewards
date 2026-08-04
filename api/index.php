@@ -385,8 +385,20 @@ function handleAddBehavior($pdo, $data) {
             WHERE user_id = ?');
         $stmt->execute([$currentDelta, $totalDelta, $userId]);
 
+        $behaviorId = (int)$pdo->lastInsertId();
+
+        // Fetch updated points
+        $stmt = $pdo->prepare('SELECT current_points, total_points FROM profiles WHERE user_id = ?');
+        $stmt->execute([$userId]);
+        $profile = $stmt->fetch();
+
         $pdo->commit();
-        sendJson(['success' => true]);
+        sendJson([
+            'success' => true,
+            'id' => $behaviorId,
+            'current_points' => (int)$profile['current_points'],
+            'total_points' => (int)$profile['total_points']
+        ]);
     } catch (Exception $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         sendError('Failed to add behavior', 500, $e->getMessage());
@@ -469,8 +481,25 @@ function handleRedeemGift($pdo, $data) {
         $stmt = $pdo->prepare('UPDATE profiles SET current_points = current_points - ?, updated_at = NOW() WHERE user_id = ?');
         $stmt->execute([(int)$gift['points'], $userId]);
 
+        $stmt = $pdo->prepare('SELECT id, current_points FROM profiles WHERE user_id = ?');
+        $stmt->execute([$userId]);
+        $profile = $stmt->fetch();
+        $stmt = $pdo->prepare('SELECT id FROM redeemed_gifts WHERE user_id = ? AND gift_id = ? ORDER BY id DESC LIMIT 1');
+        $stmt->execute([$userId, $giftId]);
+        $redeemedRow = $stmt->fetch();
+
         $pdo->commit();
-        sendJson(['success' => true]);
+        sendJson([
+            'success' => true,
+            'current_points' => (int)$profile['current_points'],
+            'redeemed_id' => $redeemedRow ? (int)$redeemedRow['id'] : null,
+            'redeemed_gift' => [
+                'name' => $gift['name'],
+                'points' => (int)$gift['points'],
+                'image_url' => $gift['image_url'] ?? '',
+                'original_url' => $gift['original_url'] ?? ''
+            ]
+        ]);
     } catch (Exception $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         if ($e->getCode() === 400 || $e->getCode() === 404) {

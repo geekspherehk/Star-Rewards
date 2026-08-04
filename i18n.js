@@ -131,7 +131,19 @@ const translations = {
             justNow: '刚刚',
             minutesAgo: '{minutes} 分钟前',
             hoursAgo: '{hours} 小时前',
-            daysAgo: '{days} 天前'
+            daysAgo: '{days} 天前',
+            notLoggedIn: '用户未登录',
+            deleted: '已删除',
+            deleteFailed: '删除失败',
+            pointsAdded: '✅ 成功添加 {points} 分！',
+            pointsDeductedMessage: '⚠️ 扣除 {points} 分',
+            enterEmailAndPassword: '⚠️ 请输入邮箱和密码',
+            passwordMinLength: '⚠️ 密码至少需要6位字符',
+            registerSuccess: '✅ 注册成功！请登录',
+            registerFailed: '❌ 注册失败',
+            loginSuccessMessage: '✅ 登录成功！正在跳转...',
+            alreadyLoggedIn: '✅ 检测到已登录状态，正在跳转...',
+            enterEmailFirst: '⚠️ 请先输入您的邮箱地址'
         },
         theme: {
             title: '选择你的主题',
@@ -379,7 +391,19 @@ const translations = {
             justNow: 'Just now',
             minutesAgo: '{minutes} minutes ago',
             hoursAgo: '{hours} hours ago',
-            daysAgo: '{days} days ago'
+            daysAgo: '{days} days ago',
+            notLoggedIn: 'Not logged in',
+            deleted: 'Deleted',
+            deleteFailed: 'Delete failed',
+            pointsAdded: '✅ Successfully added {points} points!',
+            pointsDeductedMessage: '⚠️ Deducted {points} points',
+            enterEmailAndPassword: '⚠️ Please enter email and password',
+            passwordMinLength: '⚠️ Password must be at least 6 characters',
+            registerSuccess: '✅ Registration successful! Please log in',
+            registerFailed: '❌ Registration failed',
+            loginSuccessMessage: '✅ Login successful! Redirecting...',
+            alreadyLoggedIn: '✅ Already logged in, redirecting...',
+            enterEmailFirst: '⚠️ Please enter your email first'
         },
         theme: {
             title: 'Choose Your Theme',

@@ -35,16 +35,14 @@ function buildConfirmEmailUrl() {
 }
 
 async function signUp(email, password) {
-    if (!email || !password) throw new Error('邮箱和密码不能为空');
-    console.log('SignUp: 调用API注册...');
+    if (!email || !password) throw new Error(t('common.enterEmailAndPassword'));    console.log('SignUp: 调用API注册...');
     const result = await api.register(email, password);
     console.log('SignUp: API响应:', result);
     return result;
 }
 
 async function signIn(email, password) {
-    if (!email || !password) throw new Error('邮箱和密码不能为空');
-    console.log('SignIn: 调用API登录...');
+    if (!email || !password) throw new Error(t('common.enterEmailAndPassword'));    console.log('SignIn: 调用API登录...');
     const result = await api.login(email, password);
     console.log('SignIn: API响应:', result);
     return { user: { id: result.user_id, email: result.email }, session: { access_token: result.token } };
@@ -66,21 +64,21 @@ async function handleSignUp() {
     const email = document.getElementById('register-email').value.trim();
     const password = document.getElementById('register-password').value;
     if (!email || !password) {
-        showTemporaryMessage('⚠️ 请输入邮箱和密码', 'error');
+        showTemporaryMessage(t('common.enterEmailAndPassword'), 'error');
         return;
     }
     if (password.length < 6) {
-        showTemporaryMessage('⚠️ 密码至少需要6位字符', 'error');
+        showTemporaryMessage(t('common.passwordMinLength'), 'error');
         return;
     }
     try {
         await signUp(email, password);
-        showTemporaryMessage('✅ 注册成功！请登录', 'success');
+        showTemporaryMessage(t('common.registerSuccess'), 'success');
         toggleAuthForm('login');
         document.getElementById('register-email').value = '';
         document.getElementById('register-password').value = '';
     } catch (error) {
-        showTemporaryMessage(`❌ 注册失败: ${escapeHtml(error.message)}`, 'error');
+        showTemporaryMessage(t('common.registerFailed') + ': ' + escapeHtml(error.message), 'error');
     }
 }
 
@@ -89,7 +87,7 @@ async function handleSignIn() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     if (!email || !password) {
-        showTemporaryMessage('⚠️ 请输入邮箱和密码', 'error');
+        showTemporaryMessage(t('common.enterEmailAndPassword'), 'error');
         return;
     }
     try {
@@ -98,7 +96,7 @@ async function handleSignIn() {
         console.log('登录成功，返回数据:', data);
         document.getElementById('login-email').value = '';
         document.getElementById('login-password').value = '';
-        showTemporaryMessage('✅ 登录成功！正在跳转...', 'success');
+        showTemporaryMessage(t('common.loginSuccessMessage'), 'success');
         let userData = data.user;
         if (userData) {
             localStorage.setItem('user_email', userData.email);
@@ -108,7 +106,7 @@ async function handleSignIn() {
         await handleLoginSuccess(userData);
     } catch (error) {
         console.error('登录过程中发生错误:', error);
-        showTemporaryMessage(`❌ 登录失败: ${escapeHtml(error.message)}`, 'error');
+        showTemporaryMessage(t('common.loginFailed') + ': ' + escapeHtml(error.message), 'error');
     }
 }
 
@@ -128,7 +126,7 @@ async function initAuth() {
             const profile = await api.getProfile();
             if (profile) {
                 console.log('Login.js: 检测到已登录用户:', profile.email);
-                showTemporaryMessage('✅ 检测到已登录状态，正在跳转...', 'success');
+                showTemporaryMessage(t('common.alreadyLoggedIn'), 'success');
                 setTimeout(() => {
                     window.location.href = 'index.html';
                 }, 1000);
@@ -147,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function resendConfirmationEmail(email) {
-    if (!email) throw new Error('邮箱不能为空');
+    if (!email) throw new Error(t('common.enterEmailFirst'));
     try {
         const result = await api.resendConfirmation(email);
         return result;
@@ -160,7 +158,7 @@ async function resendConfirmationEmail(email) {
 async function handleResendConfirmation() {
     const email = document.getElementById('login-email').value.trim();
     if (!email) {
-        showTemporaryMessage('⚠️ 请先输入您的邮箱地址', 'warning');
+        showTemporaryMessage(t('common.enterEmailFirst'), 'warning');
         return;
     }
     try {
