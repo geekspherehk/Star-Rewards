@@ -1,5 +1,5 @@
 // Service Worker 文件
-const CACHE_NAME = 'star-rewards-v2';
+const CACHE_NAME = 'star-rewards-v3';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -12,7 +12,9 @@ const urlsToCache = [
   '/utils.js',
   '/api/api-client.js',
   '/themes.js',
-  '/theme-selector.html'
+  '/theme-selector.html',
+  '/pwa-styles.css',
+  '/manifest.json'
 ];
 
 // 安装Service Worker
@@ -23,6 +25,7 @@ self.addEventListener('install', (event) => {
         console.log('✅ 缓存已打开');
         return cache.addAll(urlsToCache);
       })
+      .then(() => self.skipWaiting())
       .catch(error => {
         console.log('⚠️ 缓存部分资源失败:', error);
         // 继续安装，即使某些资源无法缓存
@@ -42,7 +45,7 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
 

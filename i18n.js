@@ -556,12 +556,19 @@ function t(key) {
 function updateLanguageUI() {
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
-        element.textContent = t(key);
+        const translated = t(key);
+        // 防御：翻译缺失时保留 HTML 中的默认文本，避免显示 key 名
+        if (translated !== key) {
+            element.textContent = translated;
+        }
     });
     
     document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
         const key = element.getAttribute('data-i18n-placeholder');
-        element.placeholder = t(key);
+        const translated = t(key);
+        if (translated !== key) {
+            element.placeholder = translated;
+        }
     });
 }
 
