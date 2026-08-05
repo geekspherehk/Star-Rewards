@@ -4,4 +4,4 @@ Disallow: /api/
 Disallow: /login.html
 Disallow: /theme-selector.html
 
-Sitemap: https://star-rewards.example.com/sitemap.xml
+Sitemap: https://stellar.gaocaihk.com/sitemap.xml
