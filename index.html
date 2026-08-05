@@ -39,6 +39,8 @@
     <script src="utils.js"></script>
     <script src="pwa-manager.js"></script>
     <script src="themes.js"></script>
+    <!-- Chart.js 积分趋势图 -->
+    <script src="chart.min.js"></script>
     <script>
         // 页面加载日志
         console.log('index.html页面开始加载...');
@@ -109,6 +111,15 @@
                         <div class="points-value" id="total-points">0</div>
                         <div class="points-label" data-i18n="home.totalPoints">累计获得积分</div>
                     </div>
+                    <div class="points-card streak-card">
+                        <div class="points-value" id="streak-count">0</div>
+                        <div class="points-label" data-i18n="home.streakDays">连续打卡天数</div>
+                    </div>
+                </div>
+
+                <div class="chart-container" id="chart-container" style="display:none;">
+                    <h3 data-i18n="home.pointsTrend">📈 积分趋势</h3>
+                    <canvas id="points-chart" style="max-height: 220px;"></canvas>
                 </div>
                 
                 <div class="form-group">

@@ -31,6 +31,8 @@ const translations = {
             pointsDesc: '记录成长，积累积分',
             giftsDesc: '记录愿望，激励成长',
             diaryDesc: '回顾足迹，见证成长',
+            streakDays: '连续打卡天数',
+            pointsTrend: '📈 积分趋势',
             diary: '成长日记'
         },
         behaviors: {
@@ -291,7 +293,9 @@ const translations = {
             pointsDesc: 'Record growth, earn points',
             giftsDesc: 'Record wishes, stay motivated',
             diaryDesc: 'Review journey, witness growth',
-            diary: 'Growth Diary'
+            diary: 'Growth Diary',
+            streakDays: 'Day Streak',
+            pointsTrend: '📈 Points Trend'
         },
         behaviors: {
             title: 'Behaviors',

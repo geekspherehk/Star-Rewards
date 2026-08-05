@@ -168,6 +168,134 @@ function updatePointsDisplay() {
     }
 }
 
+// 连续打卡天数（streak）
+function updateStreak() {
+    const streakEl = document.getElementById('streak-count');
+    if (!streakEl) return;
+    streakEl.textContent = calculateStreak(behaviors);
+}
+
+function calculateStreak(behaviorList) {
+    if (!Array.isArray(behaviorList) || behaviorList.length === 0) return 0;
+    const daySet = new Set();
+    behaviorList.forEach(b => {
+        if (b && b.timestamp) {
+            const d = new Date(b.timestamp);
+            if (!isNaN(d)) daySet.add(d.toDateString());
+        }
+    });
+    if (daySet.size === 0) return 0;
+
+    // 从今天开始往回数连续天数；今天没记录则从昨天开始
+    let streak = 0;
+    let cursor = new Date();
+    if (!daySet.has(cursor.toDateString())) {
+        cursor.setDate(cursor.getDate() - 1);
+    }
+    while (daySet.has(cursor.toDateString())) {
+        streak++;
+        cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+}
+
+// 积分趋势图（Chart.js）
+let pointsChart = null;
+
+function renderPointsChart() {
+    const canvas = document.getElementById('points-chart');
+    const container = document.getElementById('chart-container');
+    if (!canvas || !container) return;
+
+    // 无行为记录时不显示图表
+    if (!Array.isArray(behaviors) || behaviors.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    container.style.display = 'block';
+
+    if (typeof Chart === 'undefined') {
+        container.style.display = 'none';
+        return;
+    }
+
+    // 聚合最近 14 天的每日积分（加分为正、扣分为负）
+    const days = [];
+    const dayMap = {};
+    for (let i = 13; i >= 0; i--) {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() - i);
+        const key = d.toDateString();
+        dayMap[key] = 0;
+        days.push(d);
+    }
+    behaviors.forEach(b => {
+        if (b && b.timestamp) {
+            const d = new Date(b.timestamp);
+            if (!isNaN(d)) {
+                const key = d.toDateString();
+                if (key in dayMap) dayMap[key] += Number(b.points) || 0;
+            }
+        }
+    });
+
+    // 累计积分曲线（更直观看到成长）
+    let cumulative = 0;
+    const cumulativeData = days.map(d => {
+        cumulative += dayMap[d.toDateString()] || 0;
+        return cumulative;
+    });
+    const labels = days.map(d => {
+        const fmt = typeof currentLanguage !== 'undefined' && currentLanguage === 'en' ? 'en-US' : 'zh-CN';
+        return d.toLocaleDateString(fmt, { month: 'numeric', day: 'numeric' });
+    });
+
+    const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const textColor = isDark ? '#e0e0e0' : '#555';
+    const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+
+    if (pointsChart) {
+        pointsChart.destroy();
+    }
+
+    pointsChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: t('home.currentPoints'),
+                data: cumulativeData,
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.12)',
+                fill: true,
+                tension: 0.35,
+                borderWidth: 2,
+                pointRadius: 3,
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    ticks: { color: textColor, maxTicksLimit: 7, maxRotation: 0 },
+                    grid: { display: false }
+                },
+                y: {
+                    ticks: { color: textColor },
+                    grid: { color: gridColor },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
 function updateBehaviorLog() {
     const logContainer = document.getElementById('behavior-log');
     if (!logContainer) return;
@@ -626,6 +754,8 @@ async function addPoints() {
         behaviors.unshift(newBehavior);
         
         updatePointsDisplay();
+        updateStreak();
+        renderPointsChart();
         updateBehaviorLog();
         updateGiftList();
         
@@ -845,6 +975,8 @@ async function deleteBehavior(behaviorId) {
             // Remove from local array
             behaviors = behaviors.filter(b => b.id !== behaviorId);
             updatePointsDisplay();
+            updateStreak();
+            renderPointsChart();
             updateBehaviorLog();
             updateGiftList();
             updateDiaryList();
@@ -880,6 +1012,8 @@ async function deleteGift(giftId) {
 function updateUI() {
     console.log('Script.js: 更新UI显示');
     updatePointsDisplay();
+    updateStreak();
+    renderPointsChart();
     updateBehaviorLog();
     updateGiftList();
     updateRedeemedList();
