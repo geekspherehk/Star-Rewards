@@ -1,13 +1,35 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Best Me</title>
+    <title>Star Rewards 儿童积分奖励系统 - 行为管理、习惯养成工具</title>
+    <meta name="description" content="Star Rewards 积分奖励系统：用积分激励孩子养成好习惯，支持行为记录、愿望清单、积分兑换。内置儿童/女性/男性行为奖励模板，家庭育儿管理好帮手。">
+    <link rel="canonical" href="https://star-rewards.example.com/index.html">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="alternate icon" href="favicon.ico">
     <link rel="apple-touch-icon" href="logo.svg">
     <meta name="theme-color" content="#667eea">
+    <meta property="og:title" content="Star Rewards 儿童积分奖励系统 - 行为管理、习惯养成工具">
+    <meta property="og:description" content="用积分激励孩子养成好习惯：行为记录、愿望清单、积分兑换，内置丰富行为奖励模板。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://star-rewards.example.com/index.html">
+    <meta property="og:image" content="https://star-rewards.example.com/logo.svg">
+    <meta name="twitter:card" content="summary">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Star Rewards",
+      "alternateName": "儿童积分奖励系统",
+      "description": "用积分激励孩子养成好习惯，支持行为记录、愿望清单、积分兑换，内置丰富行为奖励模板。",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Any",
+      "url": "https://star-rewards.example.com/index.html",
+      "inLanguage": ["zh-CN", "en"],
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
+    }
+    </script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="i18n.css">
     <!-- API Client for Hostinger MySQL -->
@@ -26,15 +48,15 @@
     </script>
 </head>
 <body>
-    <div class="language-selector">
+    <header class="language-selector">
         <select id="language-selector" onchange="setLanguage(this.value)">
             <option value="zh">中文</option>
             <option value="en">English</option>
         </select>
-    </div>
+    </header>
     
-    <div class="container">
-        <h1>🌟 Best Me</h1>
+    <main class="container">
+        <h1>Star Rewards 儿童积分奖励系统</h1>
         
         <!-- 用户认证状态卡片 -->
         <div id="auth-status-card" style="margin-bottom: 15px;">
@@ -143,7 +165,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </main>
     
     <script>
         // 页面加载时初始化

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /login.html
+Disallow: /theme-selector.html
+
+Sitemap: https://star-rewards.example.com/sitemap.xml

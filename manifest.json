@@ -1,10 +1,20 @@
 {
-  "name": "Star Rewards",
+  "name": "Star Rewards 儿童积分奖励系统",
   "short_name": "Star Rewards",
-  "description": "儿童积分奖励系统 - 让成长更有动力",
+  "description": "儿童积分奖励系统 - 用积分激励孩子养成好习惯，支持行为记录、愿望清单、积分兑换",
+  "lang": "zh-CN",
+  "categories": ["education", "productivity", "kids"],
   "start_url": "/",
   "display": "standalone",
   "background_color": "#4CAF50",
   "theme_color": "#4CAF50",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
 }
