@@ -207,8 +207,24 @@ function renderPointsChart() {
     const container = document.getElementById('chart-container');
     if (!canvas || !container) return;
 
-    // 无行为记录时不显示图表
-    if (!Array.isArray(behaviors) || behaviors.length === 0) {
+    // 收集所有积分变动事件：行为加减分 + 兑换扣分（负向）
+    const events = [];
+    (Array.isArray(behaviors) ? behaviors : []).forEach(b => {
+        if (b && b.timestamp) {
+            const d = new Date(b.timestamp);
+            if (!isNaN(d)) events.push({ date: d, delta: Number(b.points) || 0 });
+        }
+    });
+    (Array.isArray(redeemedGifts) ? redeemedGifts : []).forEach(r => {
+        const dateStr = r.redeem_date || r.created_at;
+        if (dateStr) {
+            const d = new Date(dateStr);
+            if (!isNaN(d)) events.push({ date: d, delta: -(Number(r.points) || 0) });
+        }
+    });
+
+    // 没有任何变动记录时不显示图表
+    if (events.length === 0) {
         container.style.display = 'none';
         return;
     }
@@ -219,37 +235,33 @@ function renderPointsChart() {
         return;
     }
 
-    // 聚合最近 14 天的每日积分（加分为正、扣分为负）
-    const days = [];
+    // 按天聚合积分变动
     const dayMap = {};
-    for (let i = 13; i >= 0; i--) {
-        const d = new Date();
-        d.setHours(0, 0, 0, 0);
-        d.setDate(d.getDate() - i);
-        const key = d.toDateString();
-        dayMap[key] = 0;
-        days.push(d);
-    }
-    behaviors.forEach(b => {
-        if (b && b.timestamp) {
-            const d = new Date(b.timestamp);
-            if (!isNaN(d)) {
-                const key = d.toDateString();
-                if (key in dayMap) dayMap[key] += Number(b.points) || 0;
-            }
-        }
+    events.forEach(e => {
+        const key = e.date.toDateString();
+        dayMap[key] = (dayMap[key] || 0) + e.delta;
     });
 
-    // 累计积分曲线（更直观看到成长）
+    // 从最早记录日到今天逐日累计，曲线终点 = 当前积分
+    const dayKeys = Object.keys(dayMap).map(k => new Date(k));
+    const start = new Date(Math.min(...dayKeys));
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(0, 0, 0, 0);
+
+    const fmt = typeof currentLanguage !== 'undefined' && currentLanguage === 'en' ? 'en-US' : 'zh-CN';
+    const labels = [];
+    const cumulativeData = [];
     let cumulative = 0;
-    const cumulativeData = days.map(d => {
-        cumulative += dayMap[d.toDateString()] || 0;
-        return cumulative;
-    });
-    const labels = days.map(d => {
-        const fmt = typeof currentLanguage !== 'undefined' && currentLanguage === 'en' ? 'en-US' : 'zh-CN';
-        return d.toLocaleDateString(fmt, { month: 'numeric', day: 'numeric' });
-    });
+    const cursor = new Date(start);
+    let guard = 0;
+    while (cursor <= end && guard < 730) { // 最多 2 年，防死循环
+        cumulative += dayMap[cursor.toDateString()] || 0;
+        labels.push(cursor.toLocaleDateString(fmt, { month: 'numeric', day: 'numeric' }));
+        cumulativeData.push(cumulative);
+        cursor.setDate(cursor.getDate() + 1);
+        guard++;
+    }
 
     const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     const textColor = isDark ? '#e0e0e0' : '#555';
@@ -271,8 +283,8 @@ function renderPointsChart() {
                 fill: true,
                 tension: 0.35,
                 borderWidth: 2,
-                pointRadius: 3,
-                pointHoverRadius: 5
+                pointRadius: 0,
+                pointHoverRadius: 4
             }]
         },
         options: {
@@ -283,7 +295,7 @@ function renderPointsChart() {
             },
             scales: {
                 x: {
-                    ticks: { color: textColor, maxTicksLimit: 7, maxRotation: 0 },
+                    ticks: { color: textColor, maxTicksLimit: 8, maxRotation: 0 },
                     grid: { display: false }
                 },
                 y: {
