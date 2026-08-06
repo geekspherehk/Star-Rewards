@@ -1,12 +1,12 @@
 // Service Worker 文件
-const CACHE_NAME = 'star-rewards-v4';
+const CACHE_NAME = 'star-rewards-v5';
 const urlsToCache = [
   '/',
   '/index.html',
   '/login.html',
   '/style.css',
   '/i18n.css',
-  '/script.js',
+  '/script.js?v=4',
   '/login.js',
   '/i18n.js',
   '/utils.js',
@@ -15,7 +15,7 @@ const urlsToCache = [
   '/theme-selector.html',
   '/pwa-styles.css',
   '/manifest.json',
-  '/chart.min.js'
+  '/chart.min.js?v=2'
 ];
 
 // 安装Service Worker
