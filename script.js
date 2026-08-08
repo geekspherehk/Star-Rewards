@@ -1464,9 +1464,14 @@ function showNotLoggedInState() {
     
     // 即使在未登录状态下也显示成长日记
     updateDiaryList();
-    // 演示数据下同步渲染愿望清单与兑换记录（含空态引导）
+    // 演示数据下同步渲染行为记录/愿望清单/兑换记录（含空态引导）
+    updateBehaviorLog();
     updateGiftList();
     updateRedeemedList();
+
+    // 未登录不显示悬浮记分按钮
+    const fab = document.getElementById('quick-add-fab');
+    if (fab) fab.style.display = 'none';
     
     console.log('Script.js: 未登录状态UI已显示');
 }
@@ -1491,6 +1496,10 @@ function showLoggedInState(user) {
     if (notLoggedInState) {
         notLoggedInState.style.display = 'none';
     }
+
+    // 已登录：积分页默认显示悬浮记分按钮
+    const fab = document.getElementById('quick-add-fab');
+    if (fab) fab.style.display = 'flex';
     
     console.log('Script.js: 已登录状态UI已显示');
 }
@@ -1960,8 +1969,26 @@ function showModule(moduleId) {
     if (selectedCard) {
         selectedCard.classList.add('active');
     }
+
+    // 成长日记页签包含趋势图/成就：切换到该页时重新渲染（修复隐藏容器下 canvas 尺寸为 0）
+    if (moduleId === 'diary-module') {
+        renderPointsChart();
+        renderAchievements();
+    }
+
+    // 悬浮快速记分按钮只在积分页显示
+    const fab = document.getElementById('quick-add-fab');
+    if (fab) {
+        fab.style.display = (moduleId === 'points-module') ? 'flex' : 'none';
+    }
     
     console.log('切换到模块:', moduleId);
+}
+
+// 悬浮按钮：回到积分页并聚焦记录表单
+function quickAddPoints() {
+    showModule('points-module');
+    focusBehaviorForm();
 }
 
 // 更新成长日记列表

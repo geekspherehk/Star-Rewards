@@ -607,6 +607,44 @@ h3 {
     box-shadow: 0 4px 12px rgba(173, 20, 87, 0.3);
 }
 
+/* 悬浮快速记分按钮 */
+.quick-add-fab {
+    position: fixed;
+    right: 18px;
+    bottom: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    font-size: 1.7rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 999;
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.45);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.quick-add-fab:hover {
+    transform: translateY(-3px) scale(1.04);
+    box-shadow: 0 10px 26px rgba(102, 126, 234, 0.55);
+}
+
+.quick-add-fab:active {
+    transform: scale(0.96);
+}
+
+/* 区块小标题（如"最近记录"） */
+.section-title {
+    margin: 4px 0 10px;
+    font-size: 1.05rem;
+    color: #333;
+}
+
 /* 海报预览 */
 .poster-preview-wrap {
     display: flex;
