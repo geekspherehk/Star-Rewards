@@ -592,6 +592,69 @@ h3 {
     box-shadow: 0 4px 12px rgba(92, 107, 192, 0.3);
 }
 
+/* 每日打卡提醒 */
+.reminder-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.reminder-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #795548;
+    margin-right: auto;
+}
+
+.reminder-bar input[type="time"] {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    border: 2px solid #ffd54f;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: #fff;
+    color: #5d4037;
+    min-width: 0;
+}
+
+.reminder-toggle {
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, #ffb300, #f57c00);
+    border: none;
+    border-radius: 18px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reminder-toggle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(255, 152, 0, 0.35);
+}
+
+.reminder-toggle.active {
+    background: linear-gradient(135deg, #66bb6a, #43a047);
+}
+
+@media (max-width: 600px) {
+    .reminder-bar {
+        gap: 8px;
+    }
+    .reminder-label {
+        width: 100%;
+        margin-bottom: 4px;
+    }
+}
+
 /* 多孩档案切换 */
 .profile-switcher {
     display: flex;

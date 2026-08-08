@@ -1617,8 +1617,101 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (currentPage === 'index.html' || currentPage === '') {
         console.log('Script.js: 在主页，开始初始化应用...');
         await initializeApp();
+        initReminder();
     }
 });
+
+// ── 每日打卡提醒（本地通知，浏览器需保持打开）──
+const REMINDER_KEY = 'sr_reminder';
+let reminderTimer = null;
+
+function initReminder() {
+    const timeInput = document.getElementById('reminder-time');
+    if (!timeInput) return;
+    const saved = loadReminder();
+    if (saved && saved.time) timeInput.value = saved.time;
+    updateReminderButton();
+    if (reminderTimer) clearInterval(reminderTimer);
+    reminderTimer = setInterval(checkReminder, 30000);
+    checkReminder();
+}
+
+function loadReminder() {
+    try {
+        return JSON.parse(localStorage.getItem(REMINDER_KEY) || 'null');
+    } catch (e) {
+        return null;
+    }
+}
+
+function saveReminder(data) {
+    try { localStorage.setItem(REMINDER_KEY, JSON.stringify(data)); } catch (e) { /* ignore */ }
+}
+
+function updateReminderButton() {
+    const btn = document.getElementById('reminder-toggle');
+    if (!btn) return;
+    const saved = loadReminder();
+    if (saved && saved.enabled) {
+        btn.textContent = t('home.reminderDisable');
+        btn.classList.add('active');
+    } else {
+        btn.textContent = t('home.reminderEnable');
+        btn.classList.remove('active');
+    }
+}
+
+async function toggleReminder() {
+    const saved = loadReminder() || {};
+    if (!saved.enabled) {
+        if (!('Notification' in window)) {
+            showTemporaryMessage(t('home.reminderUnsupported'), 'error');
+            return;
+        }
+        let permission = Notification.permission;
+        if (permission !== 'granted') {
+            permission = await Notification.requestPermission();
+        }
+        if (permission !== 'granted') {
+            showTemporaryMessage(t('home.reminderDenied'), 'error');
+            return;
+        }
+        const timeInput = document.getElementById('reminder-time');
+        saved.enabled = true;
+        saved.time = timeInput && timeInput.value ? timeInput.value : '19:00';
+        saved.lastDate = '';
+        saveReminder(saved);
+        showTemporaryMessage(t('home.reminderOn'), 'success');
+    } else {
+        saved.enabled = false;
+        saveReminder(saved);
+        showTemporaryMessage(t('home.reminderOff'), 'success');
+    }
+    updateReminderButton();
+}
+
+function checkReminder() {
+    const saved = loadReminder();
+    if (!saved || !saved.enabled || !saved.time) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const now = new Date();
+    const today = now.toDateString();
+    const hhmm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+    if (hhmm === saved.time && saved.lastDate !== today) {
+        saved.lastDate = today;
+        saveReminder(saved);
+        try {
+            const profile = (Array.isArray(profiles) ? profiles : []).find(p => p.id === selectedProfileId);
+            new Notification(t('home.reminderTitle'), {
+                body: t('home.reminderBody', { name: profile && profile.name ? profile.name : '' }),
+                icon: '/favicon.svg'
+            });
+        } catch (e) { /* ignore */ }
+        showTemporaryMessage(t('home.reminderNow'), 'success');
+    }
+}
 
 // 模块切换功能
 function showModule(moduleId) {

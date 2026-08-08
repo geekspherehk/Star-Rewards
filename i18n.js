@@ -82,7 +82,17 @@ const translations = {
             exportFailed: '导出失败',
             welcomeTitle: '欢迎来到 Star Rewards！',
             welcomeDesc: '记录第一个好行为，为孩子点亮第一颗星星，解锁第一个成就吧！',
-            welcomeCta: '⭐ 记录第一个行为'
+            welcomeCta: '⭐ 记录第一个行为',
+            reminderLabel: '每日打卡提醒',
+            reminderEnable: '开启提醒',
+            reminderDisable: '关闭提醒',
+            reminderOn: '已开启每日提醒',
+            reminderOff: '已关闭每日提醒',
+            reminderUnsupported: '当前浏览器不支持通知提醒',
+            reminderDenied: '通知权限被拒绝，请在浏览器设置中允许',
+            reminderTitle: 'Star Rewards 打卡提醒',
+            reminderBody: '今天还没有打卡？别忘了记录孩子的成长哦！',
+            reminderNow: '⏰ 该打卡啦！'
         },
         behaviors: {
             title: '行为记录',
@@ -400,7 +410,17 @@ const translations = {
             exportFailed: 'Export failed',
             welcomeTitle: 'Welcome to Star Rewards!',
             welcomeDesc: 'Log your first behavior, light up a star for your child and unlock your first achievement!',
-            welcomeCta: '⭐ Log First Behavior'
+            welcomeCta: '⭐ Log First Behavior',
+            reminderLabel: 'Daily Check-in Reminder',
+            reminderEnable: 'Enable Reminder',
+            reminderDisable: 'Disable Reminder',
+            reminderOn: 'Daily reminder enabled',
+            reminderOff: 'Daily reminder disabled',
+            reminderUnsupported: 'Notifications are not supported in this browser',
+            reminderDenied: 'Notification permission denied. Please allow it in browser settings.',
+            reminderTitle: 'Star Rewards Check-in Reminder',
+            reminderBody: "Haven't checked in yet? Don't forget to record your child's progress!",
+            reminderNow: '⏰ Time to check in!'
         },
         behaviors: {
             title: 'Behaviors',
