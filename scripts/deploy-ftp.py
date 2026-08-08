@@ -153,10 +153,8 @@ def upload(ftp, remote_root, local_file):
     rel = os.path.relpath(local_file, REPO_ROOT)
     remote_path = (remote_root + '/' + rel.replace(os.sep, '/')) if remote_root else rel.replace(os.sep, '/')
     ensure_dir(ftp, os.path.dirname(remote_path))
-    try:
-        ftp.cwd('/')  # 相对路径上传时确保落在 FTP 根
-    except ftplib.error_perm:
-        pass
+    # 注意：不要 cwd('/') —— 该服务器 STOR 相对路径会解析到 chroot 根（家目录）而非登录目录。
+    # 登录目录即 web 根（pwd=/public_html），直接用相对路径上传即可。
     with open(local_file, 'rb') as f:
         ftp.storbinary(f'STOR {remote_path}', f)
     print(f"✔ 已上传 {rel} ({os.path.getsize(local_file)} bytes) -> {remote_path}")
