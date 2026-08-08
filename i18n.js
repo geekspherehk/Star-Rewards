@@ -92,7 +92,15 @@ const translations = {
             reminderDenied: '通知权限被拒绝，请在浏览器设置中允许',
             reminderTitle: 'Star Rewards 打卡提醒',
             reminderBody: '今天还没有打卡？别忘了记录孩子的成长哦！',
-            reminderNow: '⏰ 该打卡啦！'
+            reminderNow: '⏰ 该打卡啦！',
+            sharePoster: '🖼️ 分享海报',
+            posterTitle: '成长海报',
+            posterSubtitle: '记录每一次进步，点亮每一颗星',
+            posterFooter: '记录孩子的每一次成长',
+            posterDownload: '💾 保存图片',
+            posterShare: '📤 分享',
+            posterSaved: '海报已保存',
+            posterFailed: '海报生成失败'
         },
         behaviors: {
             title: '行为记录',
@@ -420,7 +428,15 @@ const translations = {
             reminderDenied: 'Notification permission denied. Please allow it in browser settings.',
             reminderTitle: 'Star Rewards Check-in Reminder',
             reminderBody: "Haven't checked in yet? Don't forget to record your child's progress!",
-            reminderNow: '⏰ Time to check in!'
+            reminderNow: '⏰ Time to check in!',
+            sharePoster: '🖼️ Share Poster',
+            posterTitle: 'Growth Poster',
+            posterSubtitle: 'Every step counts, every star shines',
+            posterFooter: "Record every step of your child's growth",
+            posterDownload: '💾 Save Image',
+            posterShare: '📤 Share',
+            posterSaved: 'Poster saved',
+            posterFailed: 'Poster generation failed'
         },
         behaviors: {
             title: 'Behaviors',

@@ -311,6 +311,206 @@ function exportData() {
     }
 }
 
+// ── 分享海报（canvas 生成成长海报）──
+function getSelectedProfile() {
+    return (Array.isArray(profiles) ? profiles : []).find(x => x.id === selectedProfileId) || {};
+}
+
+function openPosterModal() {
+    const modal = document.getElementById('poster-modal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    renderPoster();
+    const shareBtn = document.getElementById('poster-share-btn');
+    if (shareBtn) {
+        shareBtn.style.display = (navigator.share && navigator.canShare) ? 'inline-block' : 'none';
+    }
+}
+
+function closePosterModal() {
+    const modal = document.getElementById('poster-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function posterColor() {
+    return getSelectedProfile().color || '#FFB300';
+}
+
+function shadeColor(hex, factor) {
+    const h = String(hex).replace('#', '');
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    if (!/^[0-9a-fA-F]{6}$/.test(full)) return `rgba(255,255,255,${factor})`;
+    const n = parseInt(full, 16);
+    const r = Math.min(255, Math.round(((n >> 16) & 255) * factor + 255 * (1 - factor)));
+    const g = Math.min(255, Math.round(((n >> 8) & 255) * factor + 255 * (1 - factor)));
+    const b = Math.min(255, Math.round((n & 255) * factor + 255 * (1 - factor)));
+    return `rgb(${r},${g},${b})`;
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function renderPoster() {
+    const canvas = document.getElementById('poster-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const W = canvas.width;
+    const H = canvas.height;
+    const fontFamily = '"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.clearRect(0, 0, W, H);
+
+    // 背景渐变
+    const color = posterColor();
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, color);
+    grad.addColorStop(0.55, shadeColor(color, 0.72));
+    grad.addColorStop(1, shadeColor(color, 0.48));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // 装饰圆
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = '#fff';
+    [[70, 140, 95], [640, 250, 60], [110, 960, 70], [655, 1030, 105]].forEach(([x, y, r]) => {
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // 标题
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    ctx.font = 'bold 54px ' + fontFamily;
+    ctx.fillText(t('home.posterTitle'), W / 2, 105);
+    ctx.font = '26px ' + fontFamily;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText(t('home.posterSubtitle'), W / 2, 158);
+
+    // 头像圆 + emoji
+    const p = getSelectedProfile();
+    const cy = 330;
+    const cr = 108;
+    ctx.beginPath();
+    ctx.arc(W / 2, cy, cr, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.fill();
+    ctx.font = '108px serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(p.avatar || '⭐', W / 2, cy + 10);
+    ctx.textBaseline = 'alphabetic';
+
+    // 名字 + 日期
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 54px ' + fontFamily;
+    ctx.fillText((p.name || '孩子').slice(0, 10), W / 2, 512);
+    ctx.font = '24px ' + fontFamily;
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fillText(new Date().toLocaleDateString(), W / 2, 556);
+
+    // 三个统计卡
+    const stats = [
+        [t('home.currentPoints'), currentPoints],
+        [t('home.totalPoints'), totalPoints],
+        [t('home.streakDays'), calculateStreak(behaviors)]
+    ];
+    const cardW = 200;
+    const cardH = 150;
+    const gap = 18;
+    const startX = (W - (cardW * 3 + gap * 2)) / 2;
+    const cardY = 620;
+    stats.forEach(([label, value], i) => {
+        const x = startX + i * (cardW + gap);
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        roundRectPath(ctx, x, cardY, cardW, cardH, 18);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 50px ' + fontFamily;
+        ctx.fillText(String(value), x + cardW / 2, cardY + 70);
+        ctx.font = '22px ' + fontFamily;
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.fillText(String(label), x + cardW / 2, cardY + 120);
+    });
+
+    // 成就
+    const ach = computeAchievements();
+    const unlocked = ach.filter(a => a.unlocked);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 34px ' + fontFamily;
+    ctx.fillText(t('home.achievements.title') + ' ' + unlocked.length + '/' + ach.length, W / 2, 850);
+
+    const iconSize = 66;
+    const cols = 5;
+    const shown = unlocked.slice(0, 10);
+    if (shown.length > 0) {
+        const totalW = cols * iconSize + (cols - 1) * 18;
+        const rowCount = Math.ceil(shown.length / cols);
+        const baseY = 872;
+        ctx.textAlign = 'center';
+        shown.forEach((a, i) => {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const x = (W - totalW) / 2 + col * (iconSize + 18);
+            const y = baseY + row * (iconSize + 14) + (rowCount === 1 ? (iconSize + 14) / 4 : 0);
+            ctx.font = '52px serif';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(a.icon, x + iconSize / 2, y + iconSize / 2 + 4);
+            ctx.textBaseline = 'alphabetic';
+        });
+        ctx.textAlign = 'center';
+    }
+
+    // 底部
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.font = '28px ' + fontFamily;
+    ctx.fillText(t('home.posterFooter'), W / 2, H - 105);
+    ctx.font = '22px ' + fontFamily;
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillText('stellar.gaocaihk.com', W / 2, H - 58);
+}
+
+function downloadPoster() {
+    const canvas = document.getElementById('poster-canvas');
+    if (!canvas) return;
+    canvas.toBlob(blob => {
+        if (!blob) {
+            showTemporaryMessage(t('home.posterFailed'), 'error');
+            return;
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'star-rewards_' + (getSelectedProfile().name || 'poster').replace(/[^\w\u4e00-\u9fa5-]/g, '') + '.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showTemporaryMessage(t('home.posterSaved'), 'success');
+    }, 'image/png');
+}
+
+async function sharePoster() {
+    if (!navigator.share) return;
+    const canvas = document.getElementById('poster-canvas');
+    if (!canvas) return;
+    try {
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        if (!blob) return;
+        const file = new File([blob], 'star-rewards-poster.png', { type: 'image/png' });
+        await navigator.share({ files: [file], title: t('home.posterTitle'), text: t('home.posterFooter') });
+    } catch (e) {
+        if (e.name !== 'AbortError') console.error('分享失败:', e);
+    }
+}
+
 // 积分趋势图（Chart.js）
 let pointsChart = null;
 

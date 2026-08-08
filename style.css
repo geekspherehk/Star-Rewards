@@ -565,13 +565,17 @@ h3 {
     color: #8a8a8a;
 }
 
-/* 数据导出 */
+/* 数据导出 & 分享海报 */
 .export-bar {
-    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
     margin-bottom: 25px;
 }
 
-.export-btn {
+.export-btn,
+.poster-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -586,10 +590,41 @@ h3 {
     transition: all 0.2s ease;
 }
 
+.poster-btn {
+    color: #ad1457;
+    background: #fce4ec;
+}
+
 .export-btn:hover {
     background: #5c6bc0;
     color: #fff;
     box-shadow: 0 4px 12px rgba(92, 107, 192, 0.3);
+}
+
+.poster-btn:hover {
+    background: #ad1457;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(173, 20, 87, 0.3);
+}
+
+/* 海报预览 */
+.poster-preview-wrap {
+    display: flex;
+    justify-content: center;
+    max-height: 62vh;
+    overflow: auto;
+    background: #f5f5f5;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+#poster-canvas {
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
 /* 每日打卡提醒 */
