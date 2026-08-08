@@ -276,6 +276,9 @@ switch ($action) {
     case 'deleteGift':
         handleDeleteGift($pdo, $data);
         break;
+    case 'fetchProductInfo':
+        handleFetchProductInfo($pdo, $data);
+        break;
     default:
         sendError('Invalid action', 400);
 }
@@ -770,4 +773,125 @@ function handleDeleteGift($pdo, $data) {
     } catch (Exception $e) {
         sendError('Failed to delete gift', 500, $e->getMessage());
     }
+}
+
+// 从电商/商品链接提取商品信息（标题/主图/价格），供愿望清单「从链接导入」
+function handleFetchProductInfo($pdo, $data) {
+    getUserId(); // 需要登录
+    rateLimit('fetchProductInfo', 20, 60); // 防滥用：每 IP 每分钟 20 次
+
+    $url = trim($data['url'] ?? '');
+    if ($url === '') sendError('URL is required', 400);
+    if (strlen($url) > 2048) sendError('URL too long', 400);
+    if (!preg_match('#^https?://#i', $url)) {
+        $url = 'https://' . $url;
+    }
+
+    // SSRF 防护
+    $parts = parse_url($url);
+    if (!$parts || empty($parts['host'])) sendError('Invalid URL', 400);
+    $scheme = strtolower($parts['scheme'] ?? '');
+    if (!in_array($scheme, ['http', 'https'], true)) sendError('Only http/https URLs are allowed', 400);
+
+    $host = strtolower($parts['host']);
+    if (filter_var($host, FILTER_VALIDATE_IP)) {
+        sendError('IP addresses are not allowed', 400);
+    }
+    if (preg_match('#^(localhost|0\.0\.0\.0)$#i', $host)
+        || substr($host, -6) === '.local'
+        || substr($host, -9) === '.internal') {
+        sendError('This host is not allowed', 400);
+    }
+    $port = $parts['port'] ?? null;
+    if ($port !== null && !in_array((int)$port, [80, 443], true)) {
+        sendError('Only default ports are allowed', 400);
+    }
+
+    $html = fetchUrlContent($url);
+    if ($html === null || $html === '') {
+        sendError('Failed to fetch the page', 502);
+    }
+
+    $title = extractMetaTag($html, 'og:title')
+        ?: extractMetaTag($html, 'twitter:title')
+        ?: extractHtmlTitle($html);
+    $image = extractMetaTag($html, 'og:image')
+        ?: extractMetaTag($html, 'twitter:image')
+        ?: extractFirstImageSrc($html);
+    $price = extractMetaTag($html, 'product:price:amount')
+        ?: extractMetaTag($html, 'og:price:amount');
+
+    if ($image !== '') {
+        $image = resolveRelativeUrl($image, $url);
+    }
+
+    if ($title === '' && $image === '' && $price === '') {
+        sendError('Could not extract product info from this page', 422);
+    }
+
+    sendJson([
+        'title' => mb_substr($title, 0, 255),
+        'image_url' => mb_substr($image, 0, 2048),
+        'price' => $price !== '' ? (string)$price : null
+    ]);
+}
+
+// 抓取页面内容（带超时/大小上限）
+function fetchUrlContent($url) {
+    $ctx = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'timeout' => 8,
+            'follow_location' => 1,
+            'max_redirects' => 5,
+            'ignore_errors' => true,
+            'header' => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\n"
+                . "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n"
+                . "Accept-Language: zh-CN,zh;q=0.9,en;q=0.8\r\n"
+        ],
+        // 部分共享主机 CA 证书路径异常，放宽校验以提升可用性（仅抓取公开商品页）
+        'ssl' => ['verify_peer' => false, 'verify_peer_name' => false]
+    ]);
+    $body = @file_get_contents($url, false, $ctx);
+    if ($body === false) return null;
+    if (strlen($body) > 2000000) {
+        $body = substr($body, 0, 2000000); // 2MB 上限
+    }
+    return $body;
+}
+
+// 提取 <meta property|name="X" content="...">（属性顺序两种都支持）
+function extractMetaTag($html, $key) {
+    $escaped = preg_quote($key, '#');
+    if (preg_match('#<meta[^>]+(?:property|name)=["\']' . $escaped . '["\'][^>]*content=["\']([^"\']*)["\']#i', $html, $m)
+        || preg_match('#<meta[^>]+content=["\']([^"\']*)["\'][^>]+(?:property|name)=["\']' . $escaped . '["\']#i', $html, $m)) {
+        return html_entity_decode(trim($m[1]), ENT_QUOTES, 'UTF-8');
+    }
+    return '';
+}
+
+function extractHtmlTitle($html) {
+    if (preg_match('#<title[^>]*>(.*?)</title>#is', $html, $m)) {
+        return html_entity_decode(trim(preg_replace('/\s+/', ' ', $m[1])), ENT_QUOTES, 'UTF-8');
+    }
+    return '';
+}
+
+function extractFirstImageSrc($html) {
+    if (preg_match('#<img[^>]+src=["\']([^"\']+)["\']#i', $html, $m)) {
+        return html_entity_decode(trim($m[1]), ENT_QUOTES, 'UTF-8');
+    }
+    return '';
+}
+
+// 把相对图片路径补全为绝对 URL
+function resolveRelativeUrl($path, $baseUrl) {
+    if (preg_match('#^https?://#i', $path)) return $path;
+    if (strpos($path, '//') === 0) return 'https:' . $path;
+    if ($path === '') return '';
+    $parts = parse_url($baseUrl);
+    $origin = ($parts['scheme'] ?? 'https') . '://' . ($parts['host'] ?? '');
+    if (strpos($path, '/') === 0) return $origin . $path;
+    $dir = isset($parts['path']) ? substr($parts['path'], 0, strrpos($parts['path'], '/') + 1) : '/';
+    return $origin . $dir . $path;
 }

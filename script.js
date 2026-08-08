@@ -29,43 +29,6 @@ function isEcommerceUrl(url) {
     return ecommercePatterns.some(pattern => pattern.test(url));
 }
 
-// 从电商平台URL提取商品图片
-async function extractProductImageFromUrl(url) {
-    try {
-        // 对于不同电商平台，使用不同的策略提取或生成图片URL
-        if (url.includes('jd.com')) {
-            // 京东：尝试从URL中提取商品ID并生成图片URL
-            const match = url.match(/item\.jd\.com\/(\d+)\.html/);
-            if (match && match[1]) {
-                const productId = match[1];
-                // 返回京东商品主图URL（注意：这是基于京东图片CDN规则生成的）
-                return `https://img12.360buyimg.com/n7/jfs/t${productId.slice(-3)}/${productId}/smalls/${productId}_1.jpg`;
-            }
-        } else if (url.includes('tmall.com') || url.includes('taobao.com')) {
-            // 淘宝/天猫：尝试从URL中提取商品ID
-            const match = url.match(/id=(\d+)/) || url.match(/item\.(taobao|tmall)\.com\/item\.htm\?(.*?)(?:id=(\d+))/);
-            if (match && match[1]) {
-                const productId = match[1];
-                // 使用淘宝商品图片占位服务
-                return `https://img.alicdn.com/imgextra/i${productId.slice(-1)}/${productId}.jpg`;
-            }
-        } else if (url.includes('amazon')) {
-            // 亚马逊：使用通用占位图
-            return 'https://m.media-amazon.com/images/G/01/gc/designs/livepreview/amazon_dkblue_noto_email_v2016_us-main._CB468775337_.png';
-        } else {
-            // 其他电商平台：使用商品详情页的通用图片占位服务
-            return `https://via.placeholder.com/80?text=商品图片`;
-        }
-        
-        // 如果无法提取，则使用默认的商品图片占位图
-        return 'https://via.placeholder.com/80?text=商品';
-    } catch (error) {
-        console.error('提取商品图片失败:', error);
-        return null;
-    }
-}
-
-
 // ── Constants ──
 const MAX_POINTS = 10000;
 const MAX_GIFT_POINTS = 100000;
@@ -973,22 +936,66 @@ function textToHtmlWithLinks(text) {
     });
 }
 
+// 从商品链接一键导入标题与图片
+async function importProductInfo() {
+    const linkInput = document.getElementById('gift-link');
+    const url = linkInput ? linkInput.value.trim() : '';
+    if (!url) {
+        alert(t('gifts.linkRequired'));
+        if (linkInput) linkInput.focus();
+        return;
+    }
+    if (!api.getToken()) {
+        showTemporaryMessage(t('common.notLoggedIn'), 'error');
+        return;
+    }
+
+    const btn = document.querySelector('.import-btn');
+    if (btn) { btn.disabled = true; btn.textContent = t('gifts.importing'); }
+    try {
+        const info = await api.fetchProductInfo(url);
+        if (!info || (!info.title && !info.image_url)) {
+            throw new Error(t('gifts.importNoData'));
+        }
+
+        const nameInput = document.getElementById('gift-name');
+        if (info.title && nameInput && !nameInput.value.trim()) {
+            nameInput.value = info.title;
+        }
+
+        const imageInput = document.getElementById('gift-image');
+        if (info.image_url && imageInput) {
+            imageInput.value = info.image_url;
+        }
+
+        const preview = document.getElementById('gift-image-preview');
+        if (preview) {
+            if (info.image_url) {
+                preview.src = info.image_url;
+                preview.style.display = 'inline-block';
+                preview.onerror = function () { this.style.display = 'none'; };
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        showTemporaryMessage(t('gifts.importSuccess'), 'success');
+    } catch (error) {
+        console.error('导入商品信息失败:', error);
+        showTemporaryMessage(`${t('gifts.importFailed')}: ${escapeHtml(error.message)}`, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = t('gifts.importButton'); }
+    }
+}
+
 // 添加礼物
 async function addGift() {
     const name = document.getElementById('gift-name').value.trim();
     const giftPoints = parseInt(document.getElementById('gift-points').value);
     const description = document.getElementById('gift-description').value.trim();
-    let imageUrl = document.getElementById('gift-image').value.trim();
-    
-    if (isEcommerceUrl(imageUrl)) {
-        console.log('检测到电商平台URL，尝试提取商品图片...');
-        const extractedImage = await extractProductImageFromUrl(imageUrl);
-        if (extractedImage) {
-            imageUrl = extractedImage;
-            console.log('成功提取商品图片:', imageUrl);
-        }
-    }
-    
+    const imageUrl = document.getElementById('gift-image').value.trim();
+    const originalUrl = document.getElementById('gift-link') ? document.getElementById('gift-link').value.trim() : '';
+
     if (!name) {
         alert(t('common.enterGiftName'));
         document.getElementById('gift-name').focus();
@@ -1005,12 +1012,11 @@ async function addGift() {
         if (!api.getToken()) {
             throw new Error(t('common.notLoggedIn'));        }
         
-        const originalInputUrl = document.getElementById('gift-image').value.trim();
         const descriptionHtml = textToHtmlWithLinks(description);
 
         showLoading('Adding gift...');
 
-        const result = await api.addGift(name, giftPoints, description, imageUrl, originalInputUrl);
+        const result = await api.addGift(name, giftPoints, description, imageUrl, originalUrl);
 
         // Incremental update - add locally, no full reload
         const newGift = {
@@ -1020,7 +1026,7 @@ async function addGift() {
             description: description,
             description_html: descriptionHtml,
             image_url: imageUrl,
-            original_url: originalInputUrl,
+            original_url: originalUrl,
             created_at: new Date().toISOString()
         };
         gifts.unshift(newGift);
@@ -1031,6 +1037,9 @@ async function addGift() {
         document.getElementById('gift-points').value = '';
         document.getElementById('gift-description').value = '';
         document.getElementById('gift-image').value = '';
+        if (document.getElementById('gift-link')) document.getElementById('gift-link').value = '';
+        const preview = document.getElementById('gift-image-preview');
+        if (preview) preview.style.display = 'none';
         document.getElementById('gift-name').focus();
 
         showTemporaryMessage(t('common.addGiftSuccess').replace('{name}', escapeHtml(name)), 'success');

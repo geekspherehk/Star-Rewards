@@ -247,6 +247,10 @@ class ApiClient {
         return await this.request('deleteGift', { id: giftId });
     }
 
+    async fetchProductInfo(url) {
+        return await this.request('fetchProductInfo', { url });
+    }
+
     async updateTheme(theme) {
         return await this.request('updateTheme', { theme });
     }
