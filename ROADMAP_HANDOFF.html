@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Star Rewards 产品路线图与工程交付说明 v1.1</title>
+<style>
+  :root { --brand:#5c6bc0; --brand2:#764ba2; --ok:#2e7d32; --warn:#e65100; --bg:#f6f7fb; --card:#fff; --line:#e5e7ef; --txt:#2b2f3a; --sub:#6b7280; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--txt); line-height:1.7; }
+  .wrap { max-width:960px; margin:0 auto; padding:32px 20px 80px; }
+  header.hero { background:linear-gradient(135deg,#5c6bc0,#764ba2); color:#fff; border-radius:16px; padding:36px 32px; margin-bottom:28px; }
+  header.hero h1 { font-size:1.7rem; margin-bottom:8px; }
+  header.hero p.meta { opacity:.85; font-size:.9rem; }
+  header.hero .badges { margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+  .badge { display:inline-block; padding:3px 12px; border-radius:20px; font-size:.78rem; font-weight:600; background:rgba(255,255,255,.2); }
+  h2 { font-size:1.3rem; margin:36px 0 14px; padding-left:12px; border-left:5px solid var(--brand); }
+  h3 { font-size:1.05rem; margin:20px 0 10px; color:var(--brand2); }
+  p, li { font-size:.95rem; color:var(--txt); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin-bottom:16px; }
+  table { width:100%; border-collapse:collapse; font-size:.88rem; margin:12px 0; }
+  th, td { border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#f0f2ff; font-weight:700; }
+  .pill { display:inline-block; padding:2px 10px; border-radius:14px; font-size:.75rem; font-weight:700; }
+  .p-r1 { background:#e8f5e9; color:var(--ok); }
+  .p-r2 { background:#fff8e1; color:#b28704; }
+  .p-r3 { background:#e3f2fd; color:#1565c0; }
+  .p-r4 { background:#f3e5f5; color:#7b1fa2; }
+  .tag { background:#eef0ff; color:var(--brand); padding:1px 8px; border-radius:8px; font-size:.75rem; font-weight:600; }
+  .metric { display:flex; gap:14px; flex-wrap:wrap; margin:14px 0; }
+  .metric div { flex:1; min-width:150px; background:#f8f9ff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .metric .num { font-size:1.4rem; font-weight:800; color:var(--brand); }
+  .metric .lbl { font-size:.8rem; color:var(--sub); }
+  .us { background:#fafbff; border-left:3px solid var(--brand); border-radius:6px; padding:10px 14px; margin:8px 0; font-size:.9rem; }
+  .us b { color:var(--brand2); }
+  .ac { font-size:.85rem; color:var(--sub); margin-left:8px; }
+  code { background:#eef0f5; border-radius:4px; padding:1px 6px; font-size:.83rem; color:#c7254e; }
+  pre { background:#26303f; color:#e6edf3; border-radius:8px; padding:14px 16px; overflow-x:auto; font-size:.8rem; margin:10px 0; line-height:1.5; }
+  pre code { background:none; color:inherit; padding:0; }
+  .note { background:#fff8e1; border:1px solid #ffe082; border-radius:8px; padding:10px 14px; font-size:.88rem; margin:10px 0; }
+  .ok { color:var(--ok); } .warn { color:var(--warn); }
+  footer { margin-top:40px; font-size:.8rem; color:var(--sub); text-align:center; }
+  ul, ol { padding-left:22px; margin:8px 0; }
+  li { margin:4px 0; }
+  .toc { columns:2; font-size:.88rem; }
+  .toc a { color:var(--brand); text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>📋 Star Rewards 产品路线图与工程交付说明</h1>
+  <p class="meta">版本 v1.1 ｜ 编制：产品经理（AI 助理） ｜ 2026-08-08 ｜ 交付对象：工程团队</p>
+  <div class="badges">
+    <span class="badge">🎯 北极星：每周活跃记录家庭数</span>
+    <span class="badge">✅ P0 留存已全部上线</span>
+    <span class="badge">🔧 R1 确认：家庭共享 MVP + SEO×3 + 埋点</span>
+  </div>
+</header>
+
+<h2>★ 专家评审结论与最终确认（v1.1）</h2>
+<div class="card">
+  <p>评审方式：4 位领域专家独立评审（产品策略 / 技术架构 / 增长 SEO / 商业化），对 v1.0 路线图提出修正，以下为<b>确认后的最终方案</b>。</p>
+
+  <h3>共识与关键修正</h3>
+  <table>
+    <tr><th>主题</th><th>专家结论</th><th>采纳动作</th></tr>
+    <tr><td>R1 主交付</td><td>方向认可，但"家庭共享"是留存深化，须<b>先验证后重投</b></td><td>家庭共享缩为<b>最小可验证版</b>，R1 同步做低本获客（SEO + 海报带邀请链接）</td></tr>
+    <tr><td>家庭共享范围</td><td>砍多家庭切换；补<b>记录归属</b>（每条记录/兑换显示"谁记的"）</td><td>R1 只做单家庭；新增 behaviors.added_by，前端记录显示记录人</td></tr>
+    <tr><td>技术方案</td><td>5 项修正（见下）</td><td>全采纳</td></tr>
+    <tr><td>SEO 选题</td><td>"行为积分"是行内词，家长不这么搜</td><td>3 篇换真实搜索词 + 「免费打印」进标题</td></tr>
+    <tr><td>商业化</td><td>2 孩限制无效；家庭共享是增长引擎，必须免费</td><td>付费墙建在<b>增量价值</b>（模板库/AI/高级导出/去水印海报），成员上限 5 人免费</td></tr>
+  </table>
+
+  <h3>技术方案最终修订（采纳架构师意见）</h3>
+  <ol>
+    <li>授权收敛：只给 <code>profiles</code> 加 <code>family_id</code>（behaviors/gifts/redeemed 不加），统一在 <code>resolveProfileId</code> 入口校验"档案属当前家庭"；<code>users.family_id</code> 不加，<code>family_members</code> 为唯一事实源。</li>
+    <li>建家庭惰性化：注册不自动建家庭；<code>createFamily</code> 首次创建；老用户由一次性迁移脚本建家庭。迁移前<b>先导出线上 schema 核对</b>（仓库 mysql.sql 已过期），全量备份，ADD COLUMN 带 DEFAULT，全部 id 用 BIGINT。</li>
+    <li>权限：JWT 不加 family/role（24h token 会过期失效）；写操作统一走 <code>requireMember</code>，管理操作走 <code>requireOwner</code>，每请求查 family_members（static 缓存）。</li>
+    <li>并发：现有原子自增 + FOR UPDATE 正确；补 <code>rowCount</code> 校验（read-after-delete）；负分应用层兜底（非严格模式 CHECK 不生效）。</li>
+    <li>邀请码：6–8 位免混淆字母数字（去 0/O/1/I）+ UNIQUE + joinFamily 双重限流（IP + 按码）。</li>
+  </ol>
+
+  <h3>SEO 内容页最终选题（采纳增长专家）</h3>
+  <ul>
+    <li>①《积分奖励表模板（可打印）50 个》 ②《儿童自律培养：积分制实操指南》 ③《儿童愿望清单 + 兑换表模板》——title 含「免费打印」。</li>
+    <li>主攻 Google/Bing（域名未备案，国内引擎难收录），提交 Search Console + Bing Webmaster + sitemap。</li>
+    <li>JSON-LD 用 Article + <b>FAQPage + BreadcrumbList</b>（吃富摘要）；hreflang 双向互指；内链锚文本用关键词。</li>
+    <li>CTA 用「内容换注册」：文章给清单、<b>打印版/愿望清单文件注册可得</b>（转化预期提升 2–3×）。</li>
+  </ul>
+
+  <h3>商业化确认（采纳商业化专家）</h3>
+  <ul>
+    <li>家庭共享<b>永久免费</b>（上限 5 人）——它是定位也是增长引擎，不可作付费墙。</li>
+    <li>付费墙建在增量价值：模板库 / AI 建议 / 高级导出 / 去水印海报。权益<b>服务端 config 驱动、服务端强制</b>，前端只读，额度不写死在前端。</li>
+    <li>定价：月 ¥9.9（锚点）｜年 ¥68 主推 + 首年 ¥38 ｜终身买断 ¥98–128（中国家长信任度）。</li>
+    <li>支付未就绪排期：A 轨道先落地权益模型 + 升级页（"稍后开通/开售提醒"+ 首年半价预约名单）；B 轨道商户号就绪后只接支付，零重构。</li>
+  </ul>
+
+  <h3>✅ 最终 R1 范围（工程团队按此交付）</h3>
+  <table>
+    <tr><th>#</th><th>交付项</th><th>关键验收</th></tr>
+    <tr><td>1</td><td><b>家庭共享 MVP</b>：createFamily/getFamily/inviteMember(6-8位码)/joinFamily/removeMember/leaveFamily；记录归属显示；免费 5 人；老用户迁移脚本</td><td>邀请→加入→共同记录→移除全链路；记录显示"谁记的"；迁移后数据完整</td></tr>
+    <tr><td>2</td><td><b>SEO 内容页 ×3</b>（新选题 + 打印 CTA + FAQ JSON-LD + hreflang 双向）+ <b>海报带邀请链接</b></td><td>GSC/Bing 可收录；文章→注册漏斗可埋点观察</td></tr>
+    <tr><td>3</td><td><b>埋点</b>（核心事件：register/login/add_behavior/add_gift/redeem/poster_generated/invite_created/member_joined/calendar_view/profile_switch）</td><td>可查日活家庭/海报生成/邀请转化</td></tr>
+  </table>
+
+  <p class="note"><b>验证起点（2 周内）</b>：用 3 篇内容页跑「文章→注册」漏斗 + 家庭邀请转化；若内容转化低，先调选题/CTA 而非扩量。家庭共享若激活率（2+ 成员）&lt;15%，暂缓深化，先做获客。</p>
+</div>
+
+<h2>目录</h2>
+<div class="card toc">
+  <ul>
+    <li><a href="#s1">一、现状盘点</a></li>
+    <li><a href="#s2">二、北极星指标与数据</a></li>
+    <li><a href="#s3">三、下一步机会评估</a></li>
+    <li><a href="#s4">四、推荐路线图（R1–R4）</a></li>
+    <li><a href="#s5">五、R1 工程交付包</a></li>
+    <li><a href="#s6">六、R2+ 预研项</a></li>
+    <li><a href="#s7">七、风险与依赖</a></li>
+    <li><a href="#s8">八、工程约定（延续）</a></li>
+  </ul>
+</div>
+
+<h2 id="s1">一、现状盘点</h2>
+<div class="card">
+  <h3>1.1 已上线能力（2026-08-08 线上验证全部通过）</h3>
+  <table>
+    <tr><th>维度</th><th>能力</th><th>说明</th></tr>
+    <tr><td rowspan="4">留存</td><td>多孩档案</td><td>DB 迁移 + API 隔离 + 切换器/增删改（已上线）</td></tr>
+    <tr><td>成就徽章 ×13 + 解锁庆祝</td><td>纯前端计算，实时解锁提示</td></tr>
+    <tr><td>积分趋势 + 连续打卡 streak</td><td>Chart.js 本地化渲染</td></tr>
+    <tr><td>成长日历 / 每日提醒 / 新手引导</td><td>日历按天聚合积分+兑换；本地通知；空状态引导</td></tr>
+    <tr><td rowspan="3">体验</td><td>主操作前置 + 迷你仪表盘</td><td>记录表单首屏可见，模块卡实时数据</td></tr>
+    <tr><td>分享海报（对比度自适应）</td><td>canvas 生成，保存/系统分享</td></tr>
+    <tr><td>CSV 导出 / 电商链接一键导入</td><td>数据可带走；og:title/image 提取（SSRF 防护）</td></tr>
+    <tr><td>基建</td><td>FTP 自动部署 + 强制本地检查</td><td>preflight（JS/PHP/HTML）+ 上传后线上字节校验</td></tr>
+  </table>
+  <p class="note">产品定位已确认：<b>家长共同参与记录</b>，不设"家长审核"流程（避免与共同记录模式冲突）。P0 留存路线全部完成。</p>
+</div>
+
+<h2 id="s2">二、北极星指标与数据</h2>
+<div class="card">
+  <div class="metric">
+    <div><div class="num">WAF</div><div class="lbl">北极星：每周活跃记录家庭数</div></div>
+    <div><div class="num">D1 留存</div><div class="lbl">新注册次日留存 ≥ 35%</div></div>
+    <div><div class="num">≥3 记录/周</div><div class="lbl">活跃家庭每周记录数</div></div>
+    <div><div class="num">海报生成</div><div class="lbl">分享海报生成数（增长信号）</div></div>
+  </div>
+  <p><b>埋点建议（R1 一并落地）：</b>注册/登录、记录行为、添加愿望、兑换、生成海报、发起邀请、进入日历、切换孩子。实现：无第三方 SDK 阶段先落 <code>localStorage</code> 事件日志 + 服务端 <code>analytics_events</code> 计数表（按日聚合），后续可平滑迁移 GA4/自建。</p>
+</div>
+
+<h2 id="s3">三、下一步机会评估</h2>
+<div class="card">
+  <p>评估维度：<b>产品价值</b>（用户/业务影响）、<b>工程成本</b>、<b>风险</b>（技术/合规/依赖）、<b>定位对齐</b>（是否强化"家长共同参与记录"心智）。</p>
+  <table>
+    <tr><th>候选</th><th>价值</th><th>成本</th><th>风险</th><th>对齐度</th><th>评估结论</th></tr>
+    <tr><td><b>A. 家庭共享</b>（多人共同记录同一家庭）</td><td>高</td><td>中高</td><td>中</td><td>极高（核心定位）</td><td class="ok">R1 重点 —— 把"家长共同参与"从单人账号升级为家庭协作，直击定位</td></tr>
+    <tr><td><b>B. SEO 内容页</b>（育儿/行为积分长尾词）</td><td>中高</td><td>低</td><td>低</td><td>中</td><td class="ok">R1 快赢 —— 低成本拉自然流量，目前几乎无内容触达</td></tr>
+    <tr><td><b>C. Freemium + Pro 升级</b></td><td>中高</td><td>中</td><td>依赖支付资质</td><td>高</td><td>R2 —— 先做分层与升级入口；支付接入待商户号</td></tr>
+    <tr><td><b>D. 模板社区</b>（UGC 行为模板）</td><td>中</td><td>中高</td><td>中（内容审核）</td><td>中</td><td>R3 —— 社区需要先有用户基数</td></tr>
+    <tr><td><b>E. AI 行为建议</b>（Pro 卖点）</td><td>中高</td><td>中</td><td>API 成本/合规</td><td>高</td><td>R3/R4 —— 作为 Pro 功能，需预算与合规评审</td></tr>
+    <tr><td><b>F. 海外版</b>（英文落地页 + SEO）</td><td>中</td><td>低</td><td>低</td><td>中</td><td>视增长数据再启动</td></tr>
+  </table>
+  <p class="note"><b>PM 判断：</b>产品已具备完整留存闭环，下一步应同时补 <b>增长（SEO 内容）</b>与 <b>协作（家庭共享）</b>两条腿；商业化（Freemium/支付）放在 R2，取决于商户资质进度。</p>
+</div>
+
+<h2 id="s4">四、推荐路线图（R1–R4）</h2>
+<div class="card">
+  <table>
+    <tr><th>迭代</th><th>主题</th><th>范围</th><th>优先级</th></tr>
+    <tr><td><b>R1</b>（约 2 周）</td><td>协作 + 增长基础</td>
+      <td>① 家庭共享 MVP（邀请码/成员/共同记录）② SEO 内容页 ×3 ③ 埋点落地</td>
+      <td><span class="pill p-r1">R1 交付</span></td></tr>
+    <tr><td><b>R2</b>（约 2 周）</td><td>商业化起步</td>
+      <td>① Freemium 分层（家庭共享永久免费 5 人；Pro = 增量价值：模板库/AI/高级导出/去水印）② 升级引导页（A 轨道预约名单）③ 支付接入（微信/支付宝，依赖商户号）</td>
+      <td><span class="pill p-r2">R2</span></td></tr>
+    <tr><td><b>R3</b>（约 2 周）</td><td>社区 + AI</td>
+      <td>① 模板社区 v1（模板发布/浏览/收藏）② AI 行为建议（Pro，接入兼容 OpenAI 的 API）</td>
+      <td><span class="pill p-r3">R3</span></td></tr>
+    <tr><td><b>R4</b>（按数据决策）</td><td>增长实验</td>
+      <td>海外版（英文落地页+hreflang）、分享裂变玩法（海报带邀请链接）、A/B 定价</td>
+      <td><span class="pill p-r4">R4</span></td></tr>
+  </table>
+  <p class="note">R1 结束的退出标准：家庭共享链路（邀请→加入→共同记录）可用；3 篇内容页上线并被收录；核心事件埋点可查。</p>
+</div>
+
+<h2 id="s5">五、R1 工程交付包</h2>
+
+<div class="card">
+<h3>5.1 家庭共享（Family Sharing）—— 本迭代主交付</h3>
+<p><b>背景与目标：</b>产品定位"家长共同参与记录"，但当前一个家庭只有主账号能记录。目标：家人（配偶/老人）可通过邀请加入同一家庭，共同为孩子的档案记录积分、兑换愿望，且各自独立登录、看到同一份家庭数据。</p>
+
+<h3>5.1.1 用户故事</h3>
+<div class="us"><b>US-01</b> 作为家庭创建者（Owner），我可以在设置页创建家庭、生成 6–8 位邀请码，使家人能加入。<span class="ac">Acceptance：邀请码 24h 有效；Owner 可撤销并重新生成。</span></div>
+<div class="us"><b>US-02</b> 作为家人（Member），我可以用邀请码加入家庭，之后登录即看到家庭全部孩子档案并记录。<span class="ac">Acceptance：加入后默认选中家庭第一个孩子；无需重新建档案。</span></div>
+<div class="us"><b>US-03</b> 作为任意家庭成员，我都可以记录行为、添加愿望、兑换、查看日历/成就（共同参与模型，不做审核）。<span class="ac">Acceptance：所有写操作对家庭成员生效并实时可见（刷新/切页后一致）。</span></div>
+<div class="us"><b>US-04</b> 作为成员，我可以在设置页查看家庭与成员列表、退出家庭；Owner 可以移除成员。<span class="ac">Acceptance：移除后该成员失去访问权；被移除成员的数据不删除（档案归家庭）。</span></div>
+<div class="us"><b>US-05</b> 作为既有用户（已有档案），升级后我的档案自动归属我创建的家庭，历史数据不丢。<span class="ac">Acceptance：迁移后行为/兑换/成就数据完整。</span></div>
+
+<h3>5.1.2 技术方案要点</h3>
+<ul>
+  <li><b>数据模型</b>：新增 <code>families</code>（id, name, invite_code, invite_expires_at, created_at）；<code>family_members</code>（id, family_id, user_id, role: owner/member, joined_at，UNIQUE(family_id,user_id)，<b>唯一事实源</b>）；<code>profiles</code> 加 <code>family_id</code>（与 user_id 并列，统一在 <code>resolveProfileId</code> 校验"档案属当前家庭"）；<code>behaviors</code> / <code>redeemed_gifts</code> 加 <code>added_by</code>（记录归属：谁记的）。<b>不建 <code>users.family_id</code></b>。</li>
+  <li><b>兼容迁移</b>：<b>老用户</b>由一次性迁移脚本建家庭（Owner），profiles 挂到家庭；<b>新用户注册不自动建家庭</b>，<code>createFamily</code> 首次惰性创建。<b>迁移前先导出线上 schema 核对</b>（仓库 mysql.sql 已过期）、全量备份、ADD COLUMN 带 DEFAULT、id 用 BIGINT；脚本可回滚。老 API 调用继续可用（family_id 默认取该用户所属家庭，经 <code>family_members</code> 查询）。</li>
+  <li><b>API（新增 action）</b>：
+<pre><code>createFamily(name)            → family + invite_code
+getFamily()                   → 家庭信息 + 成员列表 + 档案
+inviteMember()                → 生成/刷新邀请码（Owner）
+joinFamily(code)              → 加入家庭（Member）
+removeMember(user_id)         → Owner 移除成员
+leaveFamily()                 → 成员退出</code></pre>
+  </li>
+  <li><b>权限</b>：档案写操作（addBehavior/addGift/redeemGift/updateProfile/deleteProfile）允许家庭内所有成员（共同参与模型）；管理操作（移除成员/删除家庭）仅 Owner。全部走现有 JWT + PDO 预处理。</li>
+  <li><b>并发</b>：多成员同时记录同一孩子 → 积分 UPDATE 采用原子自增（现状已满足），前端乐观更新 + 进入页签时重拉（现有 updateUI 模式）。</li>
+  <li><b>前端</b>：设置/家庭入口（个人中心新增"家庭"区块）→ 家庭页：邀请码展示+复制、成员列表、退出/移除；登录响应增加 family 信息。</li>
+  <li><b>Freemium 预留</b>：<b>家庭共享永久免费，成员上限 5 人</b>（含 Owner）；Pro = 增量价值（模板库/AI/高级导出/去水印海报），R2 直接启用。</li>
+</ul>
+
+<h3>5.1.3 验收清单（QA 可执行）</h3>
+<ol>
+  <li>Owner 创建家庭 → 拿到 6–8 位邀请码 → 复制成功。</li>
+  <li>新账号输入邀请码加入 → 登录后看到同一档案列表 → 记录一条行为 → Owner 刷新可见且积分一致。</li>
+  <li>成员兑换愿望 → Owner 侧兑换记录/积分同步。</li>
+  <li>Owner 移除成员 → 该成员刷新后提示无权限（401/403 处理）。</li>
+  <li>旧账号迁移：注册于 8-08 前的用户升级后档案/行为/成就完整。</li>
+  <li>邀请码过期/撤销后无法加入。</li>
+  <li>并发：两人同时 +5，最终积分正确累加。</li>
+</ol>
+</div>
+
+<div class="card">
+<h3>5.2 SEO 内容页 ×3（快赢）</h3>
+<p><b>目标：</b>"行为积分"是行内词、家长不这么搜。改用<b>真实搜索词</b>建立自然流量入口，并把用户引导到产品。目录 <code>articles/</code>，静态 HTML，双语（zh/en，<code>hreflang</code> 双向互指），主攻 Google/Bing（域名未备案）。</p>
+<ul>
+  <li>选题（含「免费打印」进 title）：①《积分奖励表模板（可打印）50 个》②《儿童自律培养：积分制实操指南》③《儿童愿望清单 + 兑换表模板》。均内链到 <code>behavior-templates.html</code> 与首页。</li>
+  <li>技术要求：语义化标签 + <code>JSON-LD (Article + FAQPage + BreadcrumbList)</code>（吃富摘要）+ 800 字以上原创正文 + 站内互链（关键词锚文本）+ 更新 <code>sitemap.xml</code>/<code>robots.txt</code>。</li>
+  <li><b>CTA「内容换注册」</b>：文章给清单，<b>打印版 / 愿望清单文件注册可得</b>（转化预期 +2~3×）；每页至少 2 个站内 CTA。</li>
+  <li>验收：页面可被 Google/Bing 收录（提交 Search Console + Bing Webmaster），GSC 可查「文章→注册」漏斗。</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>5.3 埋点（最小可用）</h3>
+<ul>
+  <li>事件：register / login / add_behavior / add_gift / redeem / poster_generated / invite_created / member_joined / calendar_view / profile_switch。</li>
+  <li>实现：前端事件 → <code>localStorage</code> 队列批量上报 → 服务端 <code>analytics_events</code>（event, user_id, family_id, ts, extra JSON）按日聚合查询。</li>
+  <li>验收：R1 结束时可查询"每日活跃家庭数 / 海报生成数 / 邀请转化数"。</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>5.4 海报带邀请链接（增长裂变）</h3>
+<p><b>目标：</b>把已上线的「分享海报」变成获客入口——海报底部加<b>家庭邀请链接 / 二维码</b>（带家庭 invite 或可生成专属分享码），未注册用户扫码/打开即进入注册并自动带入邀请，注册后 Owner 侧出现新成员（与 5.1 邀请机制打通）。</p>
+<ul>
+  <li>实现：海报 canvas 底部加一行邀请短链 / 二维码（指向 <code>/register?inv=CODE</code> 或由前端生成）；分享走 <code>navigator.share</code> 时附带链接。</li>
+  <li>埋点：<code>poster_generated</code> 与落地页 <code>invite_created</code> / <code>member_joined</code> 串联看转化。</li>
+  <li>验收：生成海报含可点击邀请链接；新用户经链接注册后归属对应家庭。</li>
+</ul>
+</div>
+
+<h2 id="s6">六、R2+ 预研项</h2>
+<div class="card">
+  <ul>
+    <li><b>Freemium 分层建议</b>：<b>家庭共享永久免费（5 成员）</b> + 全部基础功能（多孩/成就/趋势/日历/海报/CSV）；Pro = 增量价值：模板库 / AI 建议 / 高级导出 / 去水印海报。定价：月 ¥9.9（锚点）｜年 ¥68 主推（首年 ¥38）｜终身 ¥98–128。</li>
+    <li><b>支付</b>：国内 → 微信支付 Native/H5 或支付宝（需商户号与域名资质）；海外 → Stripe。R2 排期需 <b>商户资质进度确认</b>（风险依赖，见第七节）。</li>
+    <li><b>AI 建议</b>：接入 OpenAI 兼容接口，按次计费、仅 Pro 使用、输入输出做长度与敏感词约束；先灰度 10% 用户。</li>
+    <li><b>模板社区</b>：v1 只做"发布/浏览/收藏/使用"，审核用关键词过滤 + 举报，运营期人工抽审。</li>
+  </ul>
+</div>
+
+<h2 id="s7">七、风险与依赖</h2>
+<div class="card">
+  <table>
+    <tr><th>风险/依赖</th><th>等级</th><th>应对</th></tr>
+    <tr><td>支付商户资质（微信/支付宝）未就绪</td><td class="warn">高</td><td>R2 拆分：先上线 Pro 分层与升级入口（无支付可点"稍后开通"），支付单独跟踪，不阻塞其他迭代</td></tr>
+    <tr><td>家庭共享 DB 迁移影响线上</td><td class="warn">中</td><td>低峰执行 + 回滚脚本 + 迁移前全量备份；老接口兼容</td></tr>
+    <tr><td>多成员并发写</td><td>中</td><td>原子自增 UPDATE；前端进入页签重拉（现有模式）</td></tr>
+    <tr><td>CDN 缓存滞后</td><td>低</td><td>静态资源全部带版本号（既有约定），部署后 curl 字节校验</td></tr>
+    <tr><td>AI API 成本失控</td><td>中</td><td>按次计费 + 日限额 + 仅 Pro</td></tr>
+  </table>
+</div>
+
+<h2 id="s8">八、工程约定（延续）</h2>
+<div class="card">
+  <ul>
+    <li><b>部署铁律</b>：任何推送前必须本地检查通过（JS→node --check、PHP→php-parser、HTML→div 平衡），走 <code>scripts/deploy-ftp.py</code>（内置 preflight + 上传后线上字节校验）。线上用户优先，未经检查不上线。</li>
+    <li><b>版本管理</b>：改 JS/CSS 必须 bump（script.js?v=N / i18n.js?v=N / style.css?v=N）并升级 sw.js CACHE_NAME；index.html 与 sw.js urlsToCache 同步。</li>
+    <li><b>多语言</b>：i18n.js zh/en 双写，翻译缺失时保留 HTML 默认文本（不回退显示 key）。</li>
+    <li><b>代码提交</b>：每个功能一个 commit + 推送 GitHub，commit message 说明影响与 SW 版本。</li>
+  </ul>
+</div>
+
+<footer>
+  Star Rewards · 产品路线图与工程交付说明 v1.1 · 2026-08-08 · 交付工程团队后按 R1 排期执行，进度周更
+</footer>
+
+</div>
+</body>
+</html>
