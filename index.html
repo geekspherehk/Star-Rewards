@@ -35,7 +35,7 @@
     <!-- API Client for Hostinger MySQL -->
     <script src="api/api-client.js"></script>
     <!-- 多语言支持 -->
-    <script src="i18n.js?v=8"></script>
+    <script src="i18n.js?v=9"></script>
     <script src="utils.js"></script>
     <script src="pwa-manager.js"></script>
     <script src="themes.js"></script>
@@ -122,6 +122,11 @@
                 <div class="chart-container" id="chart-container" style="display:none;">
                     <h3 data-i18n="home.pointsTrend">📈 积分趋势</h3>
                     <canvas id="points-chart" style="max-height: 220px;"></canvas>
+                </div>
+
+                <div class="achievements-section" id="achievements-section">
+                    <h3 id="achievements-title">🏆 成就徽章</h3>
+                    <div class="achievements-grid" id="achievements-grid"></div>
                 </div>
                 
                 <div class="form-group">
@@ -241,7 +246,7 @@
             signOut();
         }
     </script>
-    <script src="script.js?v=5"></script>
+    <script src="script.js?v=6"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {

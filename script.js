@@ -203,6 +203,84 @@ function calculateStreak(behaviorList) {
     return streak;
 }
 
+// ── 成就徽章系统（从现有数据计算，无需额外存储）──
+const ACHIEVEMENTS = [
+    { id: 'first_star', icon: '⭐', metric: 'behaviors', target: 1 },
+    { id: 'ten_actions', icon: '🌱', metric: 'behaviors', target: 10 },
+    { id: 'fifty_actions', icon: '🌳', metric: 'behaviors', target: 50 },
+    { id: 'hundred_points', icon: '💯', metric: 'totalPoints', target: 100 },
+    { id: 'five_hundred', icon: '🏅', metric: 'totalPoints', target: 500 },
+    { id: 'thousand_pts', icon: '👑', metric: 'currentPoints', target: 1000 },
+    { id: 'streak3', icon: '🔥', metric: 'streak', target: 3 },
+    { id: 'streak7', icon: '⚡', metric: 'streak', target: 7 },
+    { id: 'streak30', icon: '📅', metric: 'streak', target: 30 },
+    { id: 'first_redeem', icon: '🎁', metric: 'redeemed', target: 1 },
+    { id: 'five_redeems', icon: '🎉', metric: 'redeemed', target: 5 },
+    { id: 'multi_child', icon: '👨‍👩‍👧', metric: 'profiles', target: 2 },
+    { id: 'variety', icon: '🎨', metric: 'days', target: 5 }
+];
+
+function computeAchievements() {
+    const behaviorList = Array.isArray(behaviors) ? behaviors : [];
+    const redeemedList = Array.isArray(redeemedGifts) ? redeemedGifts : [];
+    const profileList = Array.isArray(profiles) ? profiles : [];
+
+    const daySet = new Set();
+    behaviorList.forEach(b => {
+        if (b && b.timestamp) {
+            const d = new Date(b.timestamp);
+            if (!isNaN(d)) daySet.add(d.toDateString());
+        }
+    });
+
+    const metrics = {
+        behaviors: behaviorList.length,
+        totalPoints: Number(totalPoints) || 0,
+        currentPoints: Number(currentPoints) || 0,
+        streak: calculateStreak(behaviorList),
+        redeemed: redeemedList.length,
+        profiles: profileList.length,
+        days: daySet.size
+    };
+
+    return ACHIEVEMENTS.map(a => {
+        const current = metrics[a.metric] || 0;
+        return {
+            ...a,
+            current: current,
+            unlocked: current >= a.target,
+            pct: Math.min(100, Math.round(current / a.target * 100))
+        };
+    });
+}
+
+function renderAchievements() {
+    const grid = document.getElementById('achievements-grid');
+    if (!grid) return;
+
+    const list = computeAchievements();
+    const unlockedCount = list.filter(a => a.unlocked).length;
+
+    const titleEl = document.getElementById('achievements-title');
+    if (titleEl) titleEl.textContent = `${t('home.achievements.title')} (${unlockedCount}/${list.length})`;
+
+    grid.innerHTML = '';
+    list.forEach(a => {
+        const card = document.createElement('div');
+        card.className = 'achievement-card' + (a.unlocked ? ' unlocked' : ' locked');
+        card.innerHTML = `
+            <div class="achievement-icon">${a.icon}</div>
+            <div class="achievement-name">${escapeHtml(t('home.achievements.' + a.id + '.name'))}</div>
+            <div class="achievement-desc">${escapeHtml(t('home.achievements.' + a.id + '.desc'))}</div>
+            ${a.unlocked
+                ? `<div class="achievement-state">✓ ${t('home.achievements.unlocked')}</div>`
+                : `<div class="achievement-progress"><div class="achievement-progress-bar" style="width:${a.pct}%"></div></div>
+                   <div class="achievement-progress-text">${t('home.achievements.progress', { current: a.current, target: a.target })}</div>`}
+        `;
+        grid.appendChild(card);
+    });
+}
+
 // 积分趋势图（Chart.js）
 let pointsChart = null;
 
@@ -1030,6 +1108,7 @@ function updateUI() {
     updatePointsDisplay();
     updateStreak();
     renderPointsChart();
+    renderAchievements();
     updateBehaviorLog();
     updateGiftList();
     updateRedeemedList();
@@ -1042,6 +1121,9 @@ function showNotLoggedInState() {
     
     // 从sessionStorage加载本地数据
     loadDataFromSessionStorage();
+    
+    // 成就也从本地演示数据计算
+    renderAchievements();
     
     // 隐藏所有需要登录的内容，但保留成长日记模块可见
     const pointsSection = document.getElementById('points-section');

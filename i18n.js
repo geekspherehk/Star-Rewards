@@ -53,6 +53,25 @@ const translations = {
                 saveFailed: '保存失败',
                 deleteFailed: '删除失败',
                 deleteConfirm: '确定要删除这个孩子的档案吗？所有积分和记录将一并删除！'
+            },
+            achievements: {
+                title: '🏆 成就徽章',
+                unlocked: '已解锁',
+                locked: '未解锁',
+                progress: '{current}/{target}',
+                first_star: { name: '初次发光', desc: '完成第 1 个行为' },
+                ten_actions: { name: '小小行动家', desc: '完成 10 个行为' },
+                fifty_actions: { name: '行为大师', desc: '完成 50 个行为' },
+                hundred_points: { name: '百分达人', desc: '累计获得 100 积分' },
+                five_hundred: { name: '积分富翁', desc: '累计获得 500 积分' },
+                thousand_pts: { name: '千分王者', desc: '当前积分达到 1000' },
+                streak3: { name: '三日坚持', desc: '连续打卡 3 天' },
+                streak7: { name: '一周不间断', desc: '连续打卡 7 天' },
+                streak30: { name: '月度之星', desc: '连续打卡 30 天' },
+                first_redeem: { name: '初次兑现', desc: '兑换第 1 个愿望' },
+                five_redeems: { name: '兑换达人', desc: '兑换 5 个愿望' },
+                multi_child: { name: '温馨家庭', desc: '创建第 2 个孩子档案' },
+                variety: { name: '全面发展', desc: '在 5 个不同日期记录行为' }
             }
         },
         behaviors: {
@@ -335,6 +354,25 @@ const translations = {
                 saveFailed: 'Save failed',
                 deleteFailed: 'Delete failed',
                 deleteConfirm: 'Delete this child profile? All points and records will be removed!'
+            },
+            achievements: {
+                title: '🏆 Achievements',
+                unlocked: 'Unlocked',
+                locked: 'Locked',
+                progress: '{current}/{target}',
+                first_star: { name: 'First Light', desc: 'Complete your first behavior' },
+                ten_actions: { name: 'Little Doer', desc: 'Complete 10 behaviors' },
+                fifty_actions: { name: 'Behavior Master', desc: 'Complete 50 behaviors' },
+                hundred_points: { name: 'Centurion', desc: 'Earn 100 points total' },
+                five_hundred: { name: 'Point Tycoon', desc: 'Earn 500 points total' },
+                thousand_pts: { name: 'Thousand King', desc: 'Reach 1000 current points' },
+                streak3: { name: '3-Day Streak', desc: 'Check in 3 days in a row' },
+                streak7: { name: 'Week Warrior', desc: 'Check in 7 days in a row' },
+                streak30: { name: 'Monthly Star', desc: 'Check in 30 days in a row' },
+                first_redeem: { name: 'First Reward', desc: 'Redeem your first wish' },
+                five_redeems: { name: 'Redeem Pro', desc: 'Redeem 5 wishes' },
+                multi_child: { name: 'Happy Family', desc: 'Create a 2nd child profile' },
+                variety: { name: 'All-Rounder', desc: 'Log behaviors on 5 different days' }
             }
         },
         behaviors: {

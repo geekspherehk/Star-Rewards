@@ -407,6 +407,100 @@ h3 {
     margin-bottom: 12px;
 }
 
+/* 成就徽章系统 */
+.achievements-section {
+    background: #fff;
+    border-radius: 10px;
+    padding: 15px 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.achievements-section h3 {
+    margin-bottom: 12px;
+}
+
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.achievement-card {
+    position: relative;
+    text-align: center;
+    padding: 14px 10px 12px;
+    border-radius: 12px;
+    border: 2px solid #eee;
+    background: #fafafa;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.achievement-card.unlocked {
+    border-color: #ffd54f;
+    background: linear-gradient(135deg, #fffde7 0%, #fff8e1 100%);
+    box-shadow: 0 3px 10px rgba(255, 193, 7, 0.25);
+}
+
+.achievement-card.locked {
+    filter: grayscale(0.85);
+    opacity: 0.75;
+}
+
+.achievement-icon {
+    font-size: 1.8rem;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.achievement-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.achievement-desc {
+    font-size: 0.72rem;
+    color: #8a8a8a;
+    margin-bottom: 6px;
+    line-height: 1.35;
+}
+
+.achievement-state {
+    font-size: 0.75rem;
+    color: #2e7d32;
+    font-weight: 600;
+    margin-top: auto;
+}
+
+.achievement-progress {
+    width: 100%;
+    height: 5px;
+    background: #e8e8e8;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 3px;
+    margin-top: auto;
+}
+
+.achievement-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #ffb300, #ff8f00);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.achievement-progress-text {
+    font-size: 0.7rem;
+    color: #8a8a8a;
+}
+
 /* 多孩档案切换 */
 .profile-switcher {
     display: flex;
