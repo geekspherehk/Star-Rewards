@@ -1,0 +1,8 @@
+{
+  "host": "ftp.yourdomain.com",
+  "port": 21,
+  "user": "your_ftp_user",
+  "password": "your_ftp_password",
+  "remote_root": "public_html",
+  "use_tls": true
+}
