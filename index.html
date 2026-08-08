@@ -30,7 +30,7 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
     <link rel="stylesheet" href="i18n.css">
     <!-- API Client for Hostinger MySQL -->
     <script src="api/api-client.js"></script>
@@ -81,22 +81,25 @@
             </div>
         </div>
         
-        <!-- 功能模块导航 -->
+        <!-- 功能模块导航（迷你仪表盘：实时数据一眼可见） -->
         <div class="module-cards">
             <div class="module-card active" onclick="showModule('points-module')">
                 <div style="font-size: 2.5rem; margin-bottom: 10px;">🌟</div>
                 <h3 data-i18n="home.addPoints">成长积分</h3>
                 <p data-i18n="home.pointsDesc">记录成长，积累积分</p>
+                <div class="module-stat" id="stat-points"></div>
             </div>
             <div class="module-card" onclick="showModule('gifts-module')">
                 <div style="font-size: 2.5rem; margin-bottom: 10px;">🎁</div>
                 <h3 data-i18n="home.gifts">宝贝愿望</h3>
                 <p data-i18n="home.giftsDesc">记录愿望，激励成长</p>
+                <div class="module-stat" id="stat-gifts"></div>
             </div>
             <div class="module-card" onclick="showModule('diary-module')">
                 <div style="font-size: 2.5rem; margin-bottom: 10px;">📖</div>
                 <h3 data-i18n="home.diary">成长日记</h3>
                 <p data-i18n="home.diaryDesc">回顾足迹，见证成长</p>
+                <div class="module-stat" id="stat-diary"></div>
             </div>
         </div>
 
@@ -206,7 +209,10 @@
                 </div>
 
                 <div class="achievements-section" id="achievements-section">
-                    <h3 id="achievements-title">🏆 成就徽章</h3>
+                    <div class="achievements-head">
+                        <h3 id="achievements-title">🏆 成就徽章</h3>
+                        <button type="button" class="poster-btn achievements-poster-btn" onclick="openPosterModal()"><span data-i18n="home.sharePoster">🖼️ 分享海报</span></button>
+                    </div>
                     <div class="achievements-grid" id="achievements-grid"></div>
                 </div>
             </div>
@@ -274,7 +280,7 @@
             signOut();
         }
     </script>
-    <script src="script.js?v=14"></script>
+    <script src="script.js?v=15"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {

@@ -200,6 +200,41 @@ h3 {
     color: white;
 }
 
+/* 模块卡迷你数据 */
+.module-stat {
+    margin-top: 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #5c6bc0;
+    background: rgba(255, 255, 255, 0.65);
+    border-radius: 14px;
+    padding: 4px 10px;
+    display: inline-block;
+}
+
+.module-card.active .module-stat {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.22);
+}
+
+/* 成就区块头部（标题 + 分享海报按钮） */
+.achievements-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.achievements-head h3 {
+    margin: 0;
+}
+
+.achievements-poster-btn {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+}
+
 /* 模块内容区域 */
 .module-content {
     display: none;

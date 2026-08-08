@@ -1417,6 +1417,17 @@ function updateUI() {
     updateRedeemedList();
     updateDiaryList();
     updateWelcomeBanner();
+    updateModuleStats();
+}
+
+// 顶部模块卡迷你仪表盘：实时数据一眼可见（emoji+数字，语言无关）
+function updateModuleStats() {
+    const sP = document.getElementById('stat-points');
+    if (sP) sP.textContent = `🌟 ${currentPoints} 分`;
+    const sG = document.getElementById('stat-gifts');
+    if (sG) sG.textContent = `🎁 ${(Array.isArray(gifts) ? gifts : []).length} · ✅ ${(Array.isArray(redeemedGifts) ? redeemedGifts : []).length} 已兑换`;
+    const sD = document.getElementById('stat-diary');
+    if (sD) sD.textContent = `📝 ${(Array.isArray(behaviors) ? behaviors : []).length} 条记录`;
 }
 
 // 新用户空状态引导横幅
@@ -1468,6 +1479,7 @@ function showNotLoggedInState() {
     updateBehaviorLog();
     updateGiftList();
     updateRedeemedList();
+    updateModuleStats();
 
     // 未登录不显示悬浮记分按钮
     const fab = document.getElementById('quick-add-fab');
