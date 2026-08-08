@@ -629,6 +629,14 @@ function updateGiftList() {
         li.appendChild(deleteBtn);
         giftList.appendChild(li);
     });
+
+    // 空状态引导
+    if (gifts.length === 0) {
+        const emptyMessage = document.createElement('li');
+        emptyMessage.className = 'empty-behavior-message';
+        emptyMessage.innerHTML = t('gifts.emptyHint');
+        giftList.appendChild(emptyMessage);
+    }
 }
 
 function updateRedeemedList() {
@@ -1189,6 +1197,23 @@ function updateUI() {
     updateGiftList();
     updateRedeemedList();
     updateDiaryList();
+    updateWelcomeBanner();
+}
+
+// 新用户空状态引导横幅
+function updateWelcomeBanner() {
+    const banner = document.getElementById('welcome-banner');
+    if (!banner) return;
+    const isNewProfile = (Array.isArray(behaviors) ? behaviors : []).length === 0 && !totalPoints;
+    banner.style.display = isNewProfile ? 'flex' : 'none';
+}
+
+function focusBehaviorForm() {
+    const input = document.getElementById('behavior-desc');
+    if (input) {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => input.focus(), 300);
+    }
 }
 
 // 显示未登录状态

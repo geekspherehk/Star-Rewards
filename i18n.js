@@ -79,7 +79,10 @@ const translations = {
             exportBehaviorCount: '行为记录数',
             exportRedeemedCount: '兑换记录数',
             exportSuccess: '导出成功',
-            exportFailed: '导出失败'
+            exportFailed: '导出失败',
+            welcomeTitle: '欢迎来到 Star Rewards！',
+            welcomeDesc: '记录第一个好行为，为孩子点亮第一颗星星，解锁第一个成就吧！',
+            welcomeCta: '⭐ 记录第一个行为'
         },
         behaviors: {
             title: '行为记录',
@@ -115,6 +118,7 @@ const translations = {
             importFailed: '导入失败',
             linkRequired: '请输入商品链接',
             importNoData: '未能从该页面提取到商品信息',
+            emptyHint: '还没有愿望清单？把宝贝想要的礼物放进来，让努力看得见！',
             redeem: '兑换',
             confirmRedeem: '确定要兑换吗？',
             redeemSuccess: '兑换成功',
@@ -393,7 +397,10 @@ const translations = {
             exportBehaviorCount: 'Behaviors Logged',
             exportRedeemedCount: 'Gifts Redeemed',
             exportSuccess: 'Export successful',
-            exportFailed: 'Export failed'
+            exportFailed: 'Export failed',
+            welcomeTitle: 'Welcome to Star Rewards!',
+            welcomeDesc: 'Log your first behavior, light up a star for your child and unlock your first achievement!',
+            welcomeCta: '⭐ Log First Behavior'
         },
         behaviors: {
             title: 'Behaviors',
@@ -429,6 +436,7 @@ const translations = {
             importFailed: 'Import failed',
             linkRequired: 'Please enter a product link',
             importNoData: 'Could not extract product info from this page',
+            emptyHint: 'No wishes yet? Add a reward your child wants — make the effort visible!',
             redeem: 'Redeem',
             confirmRedeem: 'Are you sure you want to redeem this?',
             redeemSuccess: 'Redeem successful',
