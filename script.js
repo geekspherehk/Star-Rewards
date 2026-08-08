@@ -87,6 +87,10 @@ let gifts = [];
 let redeemedGifts = [];
 let diaryEntries = [];
 
+// 多孩档案
+let profiles = [];
+let selectedProfileId = null;
+
 // 当前登录用户信息
 let currentUser = null;
 
@@ -1127,8 +1131,9 @@ async function loadDataFromCloud() {
         if (!api.getToken()) {
             throw new Error(t('common.notLoggedIn'));        }
         
-        const [profile, behaviorsData, giftsData, redeemedGiftsData] = await Promise.all([
+        const [profile, profilesData, behaviorsData, giftsData, redeemedGiftsData] = await Promise.all([
             api.getProfile(),
+            api.getProfiles(),
             api.getBehaviors(),
             api.getGifts(),
             api.getRedeemedGifts()
@@ -1144,6 +1149,12 @@ async function loadDataFromCloud() {
             currentPoints = profile.current_points || 0;
             totalPoints = profile.total_points || 0;
         }
+        profiles = profilesData || [];
+        if (profile && profile.id) {
+            selectedProfileId = profile.id;
+            api.setSelectedProfileId(profile.id);
+        }
+        renderProfileSwitcher();
         behaviors = behaviorsData || [];
         
         gifts = (giftsData || []).map(gift => ({
@@ -1167,6 +1178,198 @@ async function loadDataFromCloud() {
         console.error('Script.js: 从云端加载数据失败:', error);
         throw error;
     }
+}
+
+// ── 多孩档案切换 ──
+function renderProfileSwitcher() {
+    const container = document.getElementById('profile-switcher');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!profiles || profiles.length === 0) return;
+
+    profiles.forEach(p => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'profile-chip' + (p.id === selectedProfileId ? ' active' : '');
+        chip.style.setProperty('--chip-color', p.color || '#FFB300');
+        chip.setAttribute('title', t('home.profile.switch'));
+        chip.onclick = () => switchProfile(p.id);
+        chip.innerHTML = `<span class="profile-chip-avatar">${escapeHtml(p.avatar || '⭐')}</span><span class="profile-chip-name">${escapeHtml(p.name || '孩子')}</span>`;
+
+        const editBtn = document.createElement('span');
+        editBtn.className = 'profile-chip-edit';
+        editBtn.textContent = '✎';
+        editBtn.setAttribute('title', t('home.profile.edit'));
+        editBtn.onclick = (e) => {
+            e.stopPropagation();
+            openProfileModal(p.id);
+        };
+        chip.appendChild(editBtn);
+
+        container.appendChild(chip);
+    });
+
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'profile-chip profile-chip-add';
+    addBtn.setAttribute('title', t('home.profile.add'));
+    addBtn.innerHTML = `<span class="profile-chip-avatar">➕</span><span class="profile-chip-name">${t('home.profile.add')}</span>`;
+    addBtn.onclick = () => openProfileModal();
+    container.appendChild(addBtn);
+}
+
+async function switchProfile(profileId) {
+    if (profileId === selectedProfileId) return;
+    try {
+        await api.setSelectedProfile(profileId);
+        selectedProfileId = profileId;
+        await loadDataFromCloud();
+        updateUI();
+        renderProfileSwitcher();
+        const p = profiles.find(x => x.id === profileId);
+        showTemporaryMessage(t('home.profile.switched', { name: p ? p.name : '' }), 'success');
+    } catch (error) {
+        console.error('切换孩子失败:', error);
+        showTemporaryMessage(`${t('home.profile.switchFailed')}: ${escapeHtml(error.message)}`, 'error');
+    }
+}
+
+// 档案弹窗
+let editingProfileId = null;
+const PROFILE_AVATARS = ['⭐', '🌟', '😊', '🐱', '🐶', '🦊', '🐼', '🦁', '👧', '👦', '🧒', '👶'];
+const PROFILE_COLORS = ['#FFB300', '#FF7043', '#EC407A', '#AB47BC', '#7E57C2', '#5C6BC0', '#42A5F5', '#26C6DA', '#26A69A', '#66BB6A'];
+
+function openProfileModal(profileId) {
+    editingProfileId = profileId || null;
+    const modal = document.getElementById('profile-modal');
+    if (!modal) return;
+    const nameInput = document.getElementById('profile-name');
+    const title = document.getElementById('profile-modal-title');
+    const deleteBtn = document.getElementById('profile-delete-btn');
+
+    let p = null;
+    if (editingProfileId) {
+        p = profiles.find(x => x.id === editingProfileId);
+    }
+    if (title) title.textContent = editingProfileId ? t('home.profile.edit') : t('home.profile.add');
+    if (nameInput) nameInput.value = p ? (p.name || '') : '';
+    if (deleteBtn) deleteBtn.style.display = (editingProfileId && profiles.length > 1) ? 'inline-block' : 'none';
+
+    renderAvatarPicker(p ? (p.avatar || '⭐') : '⭐');
+    renderColorPicker(p ? (p.color || '#FFB300') : '#FFB300');
+
+    modal.style.display = 'flex';
+    if (nameInput) nameInput.focus();
+}
+
+function renderAvatarPicker(selected) {
+    const wrap = document.getElementById('profile-avatar-picker');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    PROFILE_AVATARS.forEach(a => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'picker-emoji' + (a === selected ? ' active' : '');
+        b.textContent = a;
+        b.onclick = () => {
+            wrap.dataset.value = a;
+            wrap.querySelectorAll('.picker-emoji').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+        };
+        wrap.appendChild(b);
+    });
+    wrap.dataset.value = selected;
+}
+
+function renderColorPicker(selected) {
+    const wrap = document.getElementById('profile-color-picker');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    PROFILE_COLORS.forEach(c => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'picker-color' + (c.toLowerCase() === String(selected).toLowerCase() ? ' active' : '');
+        b.style.background = c;
+        b.onclick = () => {
+            wrap.dataset.value = c;
+            wrap.querySelectorAll('.picker-color').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+        };
+        wrap.appendChild(b);
+    });
+    wrap.dataset.value = selected;
+}
+
+function closeProfileModal() {
+    const modal = document.getElementById('profile-modal');
+    if (modal) modal.style.display = 'none';
+    editingProfileId = null;
+}
+
+async function saveProfile() {
+    const nameInput = document.getElementById('profile-name');
+    const name = nameInput ? nameInput.value.trim() : '';
+    if (!name) {
+        showTemporaryMessage(t('home.profile.nameRequired'), 'error');
+        if (nameInput) nameInput.focus();
+        return;
+    }
+    const avatarWrap = document.getElementById('profile-avatar-picker');
+    const colorWrap = document.getElementById('profile-color-picker');
+    const avatar = avatarWrap ? (avatarWrap.dataset.value || '⭐') : '⭐';
+    const color = colorWrap ? (colorWrap.dataset.value || '#FFB300') : '#FFB300';
+
+    try {
+        if (editingProfileId) {
+            await api.updateProfile(editingProfileId, { name, avatar, color });
+        } else {
+            await api.addProfile(name, avatar, color);
+        }
+        closeProfileModal();
+        await reloadProfiles();
+        showTemporaryMessage(t('home.profile.saved'), 'success');
+    } catch (error) {
+        console.error('保存孩子档案失败:', error);
+        showTemporaryMessage(`${t('home.profile.saveFailed')}: ${escapeHtml(error.message)}`, 'error');
+    }
+}
+
+async function reloadProfiles() {
+    try {
+        profiles = await api.getProfiles() || [];
+        renderProfileSwitcher();
+    } catch (e) {
+        console.error('重新加载档案失败', e);
+    }
+}
+
+function deleteCurrentProfile() {
+    if (!editingProfileId) return;
+    if (profiles.length <= 1) {
+        showTemporaryMessage(t('home.profile.onlyOne'), 'error');
+        return;
+    }
+    if (!confirm(t('home.profile.deleteConfirm'))) return;
+    (async () => {
+        try {
+            await api.deleteProfile(editingProfileId);
+            closeProfileModal();
+            await reloadProfiles();
+            if (selectedProfileId === editingProfileId) {
+                const first = profiles[0];
+                if (first) {
+                    await api.setSelectedProfile(first.id);
+                    selectedProfileId = first.id;
+                    await loadDataFromCloud();
+                    updateUI();
+                }
+            }
+            renderProfileSwitcher();
+            showTemporaryMessage(t('home.profile.deleted'), 'success');
+        } catch (error) {
+            showTemporaryMessage(`${t('home.profile.deleteFailed')}: ${escapeHtml(error.message)}`, 'error');
+        }
+    })();
 }
 
 // 从sessionStorage加载数据 - 登录页面存储的数据

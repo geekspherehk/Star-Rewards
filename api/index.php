@@ -157,6 +157,38 @@ function getUserId() {
     return (int)$payload['user_id'];
 }
 
+// ── Multi-child profile helpers ──
+function getSelectedProfileId($pdo, $userId) {
+    $stmt = $pdo->prepare('SELECT selected_profile_id FROM user_configs WHERE user_id = ?');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+    return ($row && $row['selected_profile_id']) ? (int)$row['selected_profile_id'] : null;
+}
+
+function firstProfileId($pdo, $userId) {
+    $stmt = $pdo->prepare('SELECT id FROM profiles WHERE user_id = ? ORDER BY id ASC LIMIT 1');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+    return $row ? (int)$row['id'] : null;
+}
+
+function profileBelongsToUser($pdo, $userId, $profileId) {
+    $stmt = $pdo->prepare('SELECT id FROM profiles WHERE id = ? AND user_id = ?');
+    $stmt->execute([$profileId, $userId]);
+    return (bool)$stmt->fetch();
+}
+
+// Resolve which child profile a request targets: explicit profile_id (if owned) → selected → first
+function resolveProfileId($pdo, $userId, $data) {
+    $pid = isset($data['profile_id']) ? (int)$data['profile_id'] : 0;
+    if ($pid > 0 && profileBelongsToUser($pdo, $userId, $pid)) {
+        return $pid;
+    }
+    $sel = getSelectedProfileId($pdo, $userId);
+    if ($sel) return $sel;
+    return firstProfileId($pdo, $userId);
+}
+
 function validateEmail($email) {
     $email = trim($email);
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return false;
@@ -199,14 +231,29 @@ switch ($action) {
     case 'getProfile':
         handleGetProfile($pdo);
         break;
+    case 'getProfiles':
+        handleGetProfiles($pdo);
+        break;
+    case 'addProfile':
+        handleAddProfile($pdo, $data);
+        break;
+    case 'updateProfile':
+        handleUpdateProfile($pdo, $data);
+        break;
+    case 'deleteProfile':
+        handleDeleteProfile($pdo, $data);
+        break;
+    case 'setSelectedProfile':
+        handleSetSelectedProfile($pdo, $data);
+        break;
     case 'getBehaviors':
-        handleGetBehaviors($pdo);
+        handleGetBehaviors($pdo, $data);
         break;
     case 'addBehavior':
         handleAddBehavior($pdo, $data);
         break;
     case 'getGifts':
-        handleGetGifts($pdo);
+        handleGetGifts($pdo, $data);
         break;
     case 'addGift':
         handleAddGift($pdo, $data);
@@ -215,7 +262,7 @@ switch ($action) {
         handleRedeemGift($pdo, $data);
         break;
     case 'getRedeemedGifts':
-        handleGetRedeemedGifts($pdo);
+        handleGetRedeemedGifts($pdo, $data);
         break;
     case 'updateTheme':
         handleUpdateTheme($pdo, $data);
@@ -254,10 +301,11 @@ function handleRegister($pdo, $data) {
         $userId = (int)$pdo->lastInsertId();
 
         $pdo->beginTransaction();
-        $stmt = $pdo->prepare('INSERT INTO profiles (user_id, current_points, total_points) VALUES (?, 0, 0)');
-        $stmt->execute([$userId]);
-        $stmt = $pdo->prepare('INSERT INTO user_configs (user_id, selected_theme) VALUES (?, "classic")');
-        $stmt->execute([$userId]);
+        $stmt = $pdo->prepare('INSERT INTO profiles (user_id, name, avatar, color, current_points, total_points) VALUES (?, ?, ?, ?, 0, 0)');
+        $stmt->execute([$userId, '孩子', '⭐', '#FFB300']);
+        $profileId = (int)$pdo->lastInsertId();
+        $stmt = $pdo->prepare('INSERT INTO user_configs (user_id, selected_theme, selected_profile_id) VALUES (?, "classic", ?)');
+        $stmt->execute([$userId, $profileId]);
         $pdo->commit();
 
         $token = generateToken($userId, $email);
@@ -265,7 +313,11 @@ function handleRegister($pdo, $data) {
             'token' => $token,
             'user_id' => $userId,
             'email' => $email,
-            'expires_in' => TOKEN_TTL
+            'expires_in' => TOKEN_TTL,
+            'profiles' => [
+                ['id' => $profileId, 'name' => '孩子', 'avatar' => '⭐', 'color' => '#FFB300', 'current_points' => 0, 'total_points' => 0]
+            ],
+            'selected_profile_id' => $profileId
         ], 201);
     } catch (Exception $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
@@ -292,11 +344,20 @@ function handleLogin($pdo, $data) {
         }
 
         $token = generateToken((int)$user['id'], $user['email']);
+        $stmt = $pdo->prepare('SELECT id, name, avatar, color, current_points, total_points FROM profiles WHERE user_id = ? ORDER BY id ASC');
+        $stmt->execute([(int)$user['id']]);
+        $profiles = $stmt->fetchAll();
+        $selected = getSelectedProfileId($pdo, (int)$user['id']);
+        if (!$selected && $profiles) {
+            $selected = (int)$profiles[0]['id'];
+        }
         sendJson([
             'token' => $token,
             'user_id' => (int)$user['id'],
             'email' => $user['email'],
-            'expires_in' => TOKEN_TTL
+            'expires_in' => TOKEN_TTL,
+            'profiles' => $profiles,
+            'selected_profile_id' => $selected
         ]);
     } catch (Exception $e) {
         sendError('Login failed', 500, $e->getMessage());
@@ -335,12 +396,14 @@ function handleRefreshToken() {
 
 function handleGetProfile($pdo) {
     $userId = getUserId();
+    $profileId = getSelectedProfileId($pdo, $userId);
+    if (!$profileId) $profileId = firstProfileId($pdo, $userId);
     try {
-        $stmt = $pdo->prepare('SELECT current_points, total_points FROM profiles WHERE user_id = ? LIMIT 1');
-        $stmt->execute([$userId]);
+        $stmt = $pdo->prepare('SELECT id, name, avatar, color, current_points, total_points FROM profiles WHERE id = ? AND user_id = ?');
+        $stmt->execute([$profileId, $userId]);
         $profile = $stmt->fetch();
         if (!$profile) {
-            $profile = ['current_points' => 0, 'total_points' => 0, 'user_id' => $userId];
+            $profile = ['id' => $profileId, 'name' => '孩子', 'avatar' => '⭐', 'color' => '#FFB300', 'current_points' => 0, 'total_points' => 0, 'user_id' => $userId];
         }
         $profile['user_id'] = $userId;
         sendJson($profile);
@@ -349,11 +412,129 @@ function handleGetProfile($pdo) {
     }
 }
 
-function handleGetBehaviors($pdo) {
+function handleGetProfiles($pdo) {
     $userId = getUserId();
     try {
-        $stmt = $pdo->prepare('SELECT id, description, points, timestamp FROM behaviors WHERE user_id = ? ORDER BY timestamp DESC LIMIT 500');
+        $stmt = $pdo->prepare('SELECT id, name, avatar, color, current_points, total_points FROM profiles WHERE user_id = ? ORDER BY id ASC');
         $stmt->execute([$userId]);
+        sendJson($stmt->fetchAll());
+    } catch (Exception $e) {
+        sendError('Failed to get profiles', 500, $e->getMessage());
+    }
+}
+
+function handleAddProfile($pdo, $data) {
+    $userId = getUserId();
+    $name = trim($data['name'] ?? '');
+    if ($name === '') sendError('Child name required', 400);
+    if (strlen($name) > 50) sendError('Name too long (max 50)', 400);
+    $avatar = isset($data['avatar']) ? trim($data['avatar']) : '⭐';
+    if ($avatar === '' || strlen($avatar) > 20) $avatar = '⭐';
+    $color = isset($data['color']) ? trim($data['color']) : '#FFB300';
+    if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) $color = '#FFB300';
+    try {
+        $stmt = $pdo->prepare('INSERT INTO profiles (user_id, name, avatar, color, current_points, total_points) VALUES (?, ?, ?, ?, 0, 0)');
+        $stmt->execute([$userId, $name, $avatar, $color]);
+        $id = (int)$pdo->lastInsertId();
+        sendJson(['success' => true, 'id' => $id, 'name' => $name, 'avatar' => $avatar, 'color' => $color, 'current_points' => 0, 'total_points' => 0], 201);
+    } catch (Exception $e) {
+        sendError('Failed to add child', 500, $e->getMessage());
+    }
+}
+
+function handleUpdateProfile($pdo, $data) {
+    $userId = getUserId();
+    $profileId = isset($data['profile_id']) ? (int)$data['profile_id'] : 0;
+    if ($profileId <= 0) sendError('Invalid profile id', 400);
+    if (!profileBelongsToUser($pdo, $userId, $profileId)) sendError('Profile not found', 404);
+
+    $fields = [];
+    $params = [];
+    if (isset($data['name'])) {
+        $n = trim($data['name']);
+        if ($n === '' || strlen($n) > 50) sendError('Invalid name', 400);
+        $fields[] = 'name = ?';
+        $params[] = $n;
+    }
+    if (isset($data['avatar'])) {
+        $a = trim($data['avatar']);
+        if ($a === '' || strlen($a) > 20) $a = '⭐';
+        $fields[] = 'avatar = ?';
+        $params[] = $a;
+    }
+    if (isset($data['color'])) {
+        $c = trim($data['color']);
+        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $c)) $c = '#FFB300';
+        $fields[] = 'color = ?';
+        $params[] = $c;
+    }
+    if (empty($fields)) sendError('Nothing to update', 400);
+    $fields[] = 'updated_at = NOW()';
+    $params[] = $profileId;
+    $params[] = $userId;
+
+    try {
+        $stmt = $pdo->prepare('UPDATE profiles SET ' . implode(', ', $fields) . ' WHERE id = ? AND user_id = ?');
+        $stmt->execute($params);
+        sendJson(['success' => true]);
+    } catch (Exception $e) {
+        sendError('Failed to update child', 500, $e->getMessage());
+    }
+}
+
+function handleDeleteProfile($pdo, $data) {
+    $userId = getUserId();
+    $profileId = isset($data['profile_id']) ? (int)$data['profile_id'] : 0;
+    if ($profileId <= 0) sendError('Invalid profile id', 400);
+    if (!profileBelongsToUser($pdo, $userId, $profileId)) sendError('Profile not found', 404);
+
+    $stmt = $pdo->prepare('SELECT COUNT(*) AS cnt FROM profiles WHERE user_id = ?');
+    $stmt->execute([$userId]);
+    if ((int)$stmt->fetch()['cnt'] <= 1) {
+        sendError('Cannot delete the only child profile', 400);
+    }
+
+    try {
+        $pdo->beginTransaction();
+        $sel = getSelectedProfileId($pdo, $userId);
+        if ($sel == $profileId) {
+            $stmt = $pdo->prepare('SELECT id FROM profiles WHERE user_id = ? AND id != ? ORDER BY id ASC LIMIT 1');
+            $stmt->execute([$userId, $profileId]);
+            $next = $stmt->fetch();
+            $nextId = $next ? (int)$next['id'] : null;
+            $stmt = $pdo->prepare('UPDATE user_configs SET selected_profile_id = ? WHERE user_id = ?');
+            $stmt->execute([$nextId, $userId]);
+        }
+        $stmt = $pdo->prepare('DELETE FROM profiles WHERE id = ? AND user_id = ?');
+        $stmt->execute([$profileId, $userId]);
+        $pdo->commit();
+        sendJson(['success' => true]);
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        sendError('Failed to delete child', 500, $e->getMessage());
+    }
+}
+
+function handleSetSelectedProfile($pdo, $data) {
+    $userId = getUserId();
+    $profileId = isset($data['profile_id']) ? (int)$data['profile_id'] : 0;
+    if ($profileId <= 0) sendError('Invalid profile id', 400);
+    if (!profileBelongsToUser($pdo, $userId, $profileId)) sendError('Profile not found', 404);
+    try {
+        $stmt = $pdo->prepare('INSERT INTO user_configs (user_id, selected_profile_id, updated_at) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE selected_profile_id = VALUES(selected_profile_id), updated_at = VALUES(updated_at)');
+        $stmt->execute([$userId, $profileId]);
+        sendJson(['success' => true, 'selected_profile_id' => $profileId]);
+    } catch (Exception $e) {
+        sendError('Failed to set profile', 500, $e->getMessage());
+    }
+}
+
+function handleGetBehaviors($pdo, $data) {
+    $userId = getUserId();
+    $profileId = resolveProfileId($pdo, $userId, $data);
+    try {
+        $stmt = $pdo->prepare('SELECT id, profile_id, description, points, timestamp FROM behaviors WHERE user_id = ? AND profile_id = ? ORDER BY timestamp DESC LIMIT 500');
+        $stmt->execute([$userId, $profileId]);
         sendJson($stmt->fetchAll());
     } catch (Exception $e) {
         sendError('Failed to get behaviors', 500, $e->getMessage());
@@ -362,6 +543,7 @@ function handleGetBehaviors($pdo) {
 
 function handleAddBehavior($pdo, $data) {
     $userId = getUserId();
+    $profileId = resolveProfileId($pdo, $userId, $data);
     $description = trim($data['description'] ?? '');
     $points = isset($data['points']) ? (int)$data['points'] : 0;
 
@@ -372,8 +554,8 @@ function handleAddBehavior($pdo, $data) {
 
     try {
         $pdo->beginTransaction();
-        $stmt = $pdo->prepare('INSERT INTO behaviors (user_id, description, points) VALUES (?, ?, ?)');
-        $stmt->execute([$userId, $description, $points]);
+        $stmt = $pdo->prepare('INSERT INTO behaviors (user_id, profile_id, description, points) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$userId, $profileId, $description, $points]);
 
         $currentDelta = $points;
         $totalDelta = max($points, 0);
@@ -382,14 +564,14 @@ function handleAddBehavior($pdo, $data) {
             SET current_points = current_points + ?, 
                 total_points = total_points + ?,
                 updated_at = NOW() 
-            WHERE user_id = ?');
-        $stmt->execute([$currentDelta, $totalDelta, $userId]);
+            WHERE id = ? AND user_id = ?');
+        $stmt->execute([$currentDelta, $totalDelta, $profileId, $userId]);
 
         $behaviorId = (int)$pdo->lastInsertId();
 
         // Fetch updated points
-        $stmt = $pdo->prepare('SELECT current_points, total_points FROM profiles WHERE user_id = ?');
-        $stmt->execute([$userId]);
+        $stmt = $pdo->prepare('SELECT current_points, total_points FROM profiles WHERE id = ? AND user_id = ?');
+        $stmt->execute([$profileId, $userId]);
         $profile = $stmt->fetch();
 
         $pdo->commit();
@@ -405,11 +587,12 @@ function handleAddBehavior($pdo, $data) {
     }
 }
 
-function handleGetGifts($pdo) {
+function handleGetGifts($pdo, $data) {
     $userId = getUserId();
+    $profileId = resolveProfileId($pdo, $userId, $data);
     try {
-        $stmt = $pdo->prepare('SELECT id, name, points, description, image_url, original_url, created_at FROM gifts WHERE user_id = ? ORDER BY created_at DESC');
-        $stmt->execute([$userId]);
+        $stmt = $pdo->prepare('SELECT id, profile_id, name, points, description, image_url, original_url, created_at FROM gifts WHERE user_id = ? AND profile_id = ? ORDER BY created_at DESC');
+        $stmt->execute([$userId, $profileId]);
         sendJson($stmt->fetchAll());
     } catch (Exception $e) {
         sendError('Failed to get gifts', 500, $e->getMessage());
@@ -418,6 +601,7 @@ function handleGetGifts($pdo) {
 
 function handleAddGift($pdo, $data) {
     $userId = getUserId();
+    $profileId = resolveProfileId($pdo, $userId, $data);
     $name = trim($data['name'] ?? '');
     $points = isset($data['points']) ? (int)$data['points'] : 0;
     $description = trim($data['description'] ?? '');
@@ -433,8 +617,8 @@ function handleAddGift($pdo, $data) {
     if (strlen($originalUrl) > 2048) sendError('Original URL too long', 400);
 
     try {
-        $stmt = $pdo->prepare('INSERT INTO gifts (user_id, name, points, description, image_url, original_url) VALUES (?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$userId, $name, $points, $description, $imageUrl, $originalUrl]);
+        $stmt = $pdo->prepare('INSERT INTO gifts (user_id, profile_id, name, points, description, image_url, original_url) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$userId, $profileId, $name, $points, $description, $imageUrl, $originalUrl]);
         sendJson(['success' => true, 'id' => (int)$pdo->lastInsertId()], 201);
     } catch (Exception $e) {
         sendError('Failed to add gift', 500, $e->getMessage());
@@ -443,6 +627,7 @@ function handleAddGift($pdo, $data) {
 
 function handleRedeemGift($pdo, $data) {
     $userId = getUserId();
+    $profileId = resolveProfileId($pdo, $userId, $data);
     $giftId = isset($data['gift_id']) ? (int)$data['gift_id'] : 0;
 
     if ($giftId <= 0) sendError('Invalid gift id', 400);
@@ -450,13 +635,13 @@ function handleRedeemGift($pdo, $data) {
     try {
         $pdo->beginTransaction();
 
-        $stmt = $pdo->prepare('SELECT id, name, points, description, image_url, original_url FROM gifts WHERE id = ? AND user_id = ? LIMIT 1 FOR UPDATE');
-        $stmt->execute([$giftId, $userId]);
+        $stmt = $pdo->prepare('SELECT id, name, points, description, image_url, original_url FROM gifts WHERE id = ? AND user_id = ? AND profile_id = ? LIMIT 1 FOR UPDATE');
+        $stmt->execute([$giftId, $userId, $profileId]);
         $gift = $stmt->fetch();
         if (!$gift) sendError('Gift not found', 404);
 
-        $stmt = $pdo->prepare('SELECT current_points FROM profiles WHERE user_id = ? LIMIT 1 FOR UPDATE');
-        $stmt->execute([$userId]);
+        $stmt = $pdo->prepare('SELECT current_points FROM profiles WHERE id = ? AND user_id = ? LIMIT 1 FOR UPDATE');
+        $stmt->execute([$profileId, $userId]);
         $profile = $stmt->fetch();
         if (!$profile || (int)$profile['current_points'] < (int)$gift['points']) {
             sendError('Insufficient points', 400);
@@ -466,10 +651,11 @@ function handleRedeemGift($pdo, $data) {
         $stmt->execute([$giftId]);
 
         $stmt = $pdo->prepare('INSERT INTO redeemed_gifts 
-            (user_id, gift_id, name, points, description, image_url, original_url, redeem_date) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
+            (user_id, profile_id, gift_id, name, points, description, image_url, original_url, redeem_date) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
         $stmt->execute([
             $userId,
+            $profileId,
             $giftId,
             $gift['name'],
             $gift['points'],
@@ -478,14 +664,14 @@ function handleRedeemGift($pdo, $data) {
             $gift['original_url'] ?? ''
         ]);
 
-        $stmt = $pdo->prepare('UPDATE profiles SET current_points = current_points - ?, updated_at = NOW() WHERE user_id = ?');
-        $stmt->execute([(int)$gift['points'], $userId]);
+        $stmt = $pdo->prepare('UPDATE profiles SET current_points = current_points - ?, updated_at = NOW() WHERE id = ? AND user_id = ?');
+        $stmt->execute([(int)$gift['points'], $profileId, $userId]);
 
-        $stmt = $pdo->prepare('SELECT id, current_points FROM profiles WHERE user_id = ?');
-        $stmt->execute([$userId]);
+        $stmt = $pdo->prepare('SELECT id, current_points FROM profiles WHERE id = ? AND user_id = ?');
+        $stmt->execute([$profileId, $userId]);
         $profile = $stmt->fetch();
-        $stmt = $pdo->prepare('SELECT id FROM redeemed_gifts WHERE user_id = ? AND gift_id = ? ORDER BY id DESC LIMIT 1');
-        $stmt->execute([$userId, $giftId]);
+        $stmt = $pdo->prepare('SELECT id FROM redeemed_gifts WHERE user_id = ? AND profile_id = ? AND gift_id = ? ORDER BY id DESC LIMIT 1');
+        $stmt->execute([$userId, $profileId, $giftId]);
         $redeemedRow = $stmt->fetch();
 
         $pdo->commit();
@@ -509,11 +695,12 @@ function handleRedeemGift($pdo, $data) {
     }
 }
 
-function handleGetRedeemedGifts($pdo) {
+function handleGetRedeemedGifts($pdo, $data) {
     $userId = getUserId();
+    $profileId = resolveProfileId($pdo, $userId, $data);
     try {
-        $stmt = $pdo->prepare('SELECT id, name, points, description, image_url, original_url, redeem_date FROM redeemed_gifts WHERE user_id = ? ORDER BY redeem_date DESC LIMIT 500');
-        $stmt->execute([$userId]);
+        $stmt = $pdo->prepare('SELECT id, profile_id, name, points, description, image_url, original_url, redeem_date FROM redeemed_gifts WHERE user_id = ? AND profile_id = ? ORDER BY redeem_date DESC LIMIT 500');
+        $stmt->execute([$userId, $profileId]);
         sendJson($stmt->fetchAll());
     } catch (Exception $e) {
         sendError('Failed to get redeemed gifts', 500, $e->getMessage());

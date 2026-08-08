@@ -12,6 +12,16 @@ class ApiClient {
         this.token = localStorage.getItem(TOKEN_KEY);
         this.tokenExpiry = parseInt(localStorage.getItem(TOKEN_EXPIRY_KEY) || '0', 10);
         this._refreshPromise = null;
+        this.selectedProfileId = parseInt(localStorage.getItem('selected_profile_id') || '0', 10) || null;
+    }
+
+    setSelectedProfileId(id) {
+        this.selectedProfileId = id ? parseInt(id, 10) : null;
+        if (this.selectedProfileId) {
+            localStorage.setItem('selected_profile_id', String(this.selectedProfileId));
+        } else {
+            localStorage.removeItem('selected_profile_id');
+        }
     }
 
     setToken(token, expiresIn = null) {
@@ -171,19 +181,43 @@ class ApiClient {
     }
 
     async getProfile() {
-        return await this.request('getProfile');
+        return await this.request('getProfile', { profile_id: this.selectedProfileId });
+    }
+
+    async getProfiles() {
+        return await this.request('getProfiles');
+    }
+
+    async addProfile(name, avatar = '⭐', color = '#FFB300') {
+        return await this.request('addProfile', { name, avatar, color });
+    }
+
+    async updateProfile(profileId, fields = {}) {
+        return await this.request('updateProfile', Object.assign({ profile_id: profileId }, fields));
+    }
+
+    async deleteProfile(profileId) {
+        return await this.request('deleteProfile', { profile_id: profileId });
+    }
+
+    async setSelectedProfile(profileId) {
+        const result = await this.request('setSelectedProfile', { profile_id: profileId });
+        if (result && result.success) {
+            this.setSelectedProfileId(profileId);
+        }
+        return result;
     }
 
     async getBehaviors() {
-        return await this.request('getBehaviors');
+        return await this.request('getBehaviors', { profile_id: this.selectedProfileId });
     }
 
     async addBehavior(description, points) {
-        return await this.request('addBehavior', { description, points });
+        return await this.request('addBehavior', { description, points, profile_id: this.selectedProfileId });
     }
 
     async getGifts() {
-        return await this.request('getGifts');
+        return await this.request('getGifts', { profile_id: this.selectedProfileId });
     }
 
     async addGift(name, points, description = '', imageUrl = '', originalUrl = '') {
@@ -192,16 +226,17 @@ class ApiClient {
             points,
             description,
             image_url: imageUrl,
-            original_url: originalUrl
+            original_url: originalUrl,
+            profile_id: this.selectedProfileId
         });
     }
 
     async redeemGift(giftId) {
-        return await this.request('redeemGift', { gift_id: giftId });
+        return await this.request('redeemGift', { gift_id: giftId, profile_id: this.selectedProfileId });
     }
 
     async getRedeemedGifts() {
-        return await this.request('getRedeemedGifts');
+        return await this.request('getRedeemedGifts', { profile_id: this.selectedProfileId });
     }
 
     async deleteBehavior(behaviorId) {

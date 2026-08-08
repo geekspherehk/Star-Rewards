@@ -33,7 +33,27 @@ const translations = {
             diaryDesc: '回顾足迹，见证成长',
             streakDays: '连续打卡天数',
             pointsTrend: '📈 积分趋势',
-            diary: '成长日记'
+            diary: '成长日记',
+            profile: {
+                switch: '切换孩子',
+                add: '添加孩子',
+                edit: '编辑孩子',
+                manage: '管理孩子档案',
+                name: '孩子姓名',
+                namePlaceholder: '例如：小明',
+                avatar: '头像',
+                color: '主题色',
+                delete: '删除该孩子',
+                switched: '已切换到 {name}',
+                saved: '孩子档案已保存',
+                deleted: '孩子档案已删除',
+                nameRequired: '请输入孩子姓名',
+                onlyOne: '这是唯一的档案，无法删除',
+                switchFailed: '切换失败',
+                saveFailed: '保存失败',
+                deleteFailed: '删除失败',
+                deleteConfirm: '确定要删除这个孩子的档案吗？所有积分和记录将一并删除！'
+            }
         },
         behaviors: {
             title: '行为记录',
@@ -295,7 +315,27 @@ const translations = {
             diaryDesc: 'Review journey, witness growth',
             diary: 'Growth Diary',
             streakDays: 'Day Streak',
-            pointsTrend: '📈 Points Trend'
+            pointsTrend: '📈 Points Trend',
+            profile: {
+                switch: 'Switch Child',
+                add: 'Add Child',
+                edit: 'Edit Child',
+                manage: 'Manage Children',
+                name: 'Child Name',
+                namePlaceholder: 'e.g. Xiaoming',
+                avatar: 'Avatar',
+                color: 'Theme Color',
+                delete: 'Delete this child',
+                switched: 'Switched to {name}',
+                saved: 'Child profile saved',
+                deleted: 'Child profile deleted',
+                nameRequired: 'Please enter the child name',
+                onlyOne: 'This is the only profile and cannot be deleted',
+                switchFailed: 'Switch failed',
+                saveFailed: 'Save failed',
+                deleteFailed: 'Delete failed',
+                deleteConfirm: 'Delete this child profile? All points and records will be removed!'
+            }
         },
         behaviors: {
             title: 'Behaviors',
@@ -538,7 +578,7 @@ function getLanguage() {
     return localStorage.getItem('language') || 'zh';
 }
 
-function t(key) {
+function t(key, params) {
     const keys = key.split('.');
     let value = translations[currentLanguage];
     
@@ -551,7 +591,13 @@ function t(key) {
     }
     
     if (typeof value === 'string') {
-        return value;
+        let result = value;
+        if (params && typeof params === 'object') {
+            Object.keys(params).forEach(p => {
+                result = result.replace(new RegExp('\\{' + p + '\\}', 'g'), params[p]);
+            });
+        }
+        return result;
     }
     
     return key;
