@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=5">
     <link rel="stylesheet" href="i18n.css">
     <!-- API Client for Hostinger MySQL -->
     <script src="api/api-client.js"></script>
     <!-- 多语言支持 -->
-    <script src="i18n.js?v=15"></script>
+    <script src="i18n.js?v=16"></script>
     <script src="utils.js"></script>
     <script src="pwa-manager.js"></script>
     <script src="themes.js"></script>
@@ -196,12 +196,23 @@
                 <div id="redeemed-list"></div>
             </div>
 
-            <!-- 成长日记模块（成长记录：足迹 + 趋势 + 成就） -->
+            <!-- 成长日记模块（成长日历：积分+兑换按天综合展示） -->
             <div id="diary-module" class="module-content">
-                <div class="diary-container">
-                    <h3 data-i18n="behaviors.title">📖 成长足迹</h3>
-                    <div id="diary-list" class="diary-list"></div>
+                <div class="diary-header">
+                    <h3 data-i18n="home.diary">📖 成长日历</h3>
+                    <button type="button" class="poster-btn" onclick="openPosterModal()"><span data-i18n="home.sharePoster">🖼️ 分享海报</span></button>
                 </div>
+
+                <div class="calendar-card">
+                    <div class="calendar-nav">
+                        <button type="button" class="cal-nav-btn" onclick="calendarShiftMonth(-1)" title="上个月">‹</button>
+                        <span id="calendar-month-label" class="calendar-month-label"></span>
+                        <button type="button" class="cal-nav-btn" onclick="calendarShiftMonth(1)" title="下个月">›</button>
+                    </div>
+                    <div id="calendar-grid" class="calendar-grid"></div>
+                </div>
+
+                <div id="calendar-day-detail" class="calendar-day-detail" style="display:none;"></div>
 
                 <div class="chart-container" id="chart-container" style="display:none;">
                     <h3 data-i18n="home.pointsTrend">📈 积分趋势</h3>
@@ -280,7 +291,7 @@
             signOut();
         }
     </script>
-    <script src="script.js?v=15"></script>
+    <script src="script.js?v=16"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {

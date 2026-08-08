@@ -677,11 +677,11 @@ function updateBehaviorLog() {
     `;
     logContainer.appendChild(statsDiv);
     
-    // 创建行为日志容器
+    // 创建行为日志容器（只显示最近 3 条，更多看成长日历）
     const behaviorsContainer = document.createElement('div');
     behaviorsContainer.className = 'behavior-log-container';
     
-    behaviors.forEach((behavior, index) => {
+    behaviors.slice(0, 3).forEach((behavior, index) => {
         const behaviorDiv = document.createElement('div');
         behaviorDiv.className = 'behavior-item';
         behaviorDiv.style.animationDelay = `${index * 0.1}s`;
@@ -706,6 +706,15 @@ function updateBehaviorLog() {
     });
     
     logContainer.appendChild(behaviorsContainer);
+
+    // 更多记录 → 成长日历
+    if (behaviors.length > 3) {
+        const moreBtn = document.createElement('button');
+        moreBtn.className = 'view-all-btn';
+        moreBtn.innerHTML = `${t('home.viewAllRecords')} (${totalBehaviors}) →`;
+        moreBtn.onclick = () => showModule('diary-module');
+        logContainer.appendChild(moreBtn);
+    }
     
     // 更新行为日志计数徽章
     const behaviorCount = document.getElementById('behavior-count');
@@ -1982,8 +1991,10 @@ function showModule(moduleId) {
         selectedCard.classList.add('active');
     }
 
-    // 成长日记页签包含趋势图/成就：切换到该页时重新渲染（修复隐藏容器下 canvas 尺寸为 0）
+    // 成长日历/趋势/成就 页签：切到该页时重新渲染（修复隐藏容器下 canvas 尺寸为 0、数据更新）
     if (moduleId === 'diary-module') {
+        renderCalendar();
+        renderCalendarDayDetail();
         renderPointsChart();
         renderAchievements();
     }
@@ -2005,119 +2016,143 @@ function quickAddPoints() {
 
 // 更新成长日记列表
 function updateDiaryList() {
-    const diaryList = document.getElementById('diary-list');
-    if (!diaryList) {
-        console.log('updateDiaryList: diary-list 元素未找到');
+    if (!calendarCursor) {
+        const now = new Date();
+        calendarCursor = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+    renderCalendar();
+    renderCalendarDayDetail();
+}
+
+// ── 成长日历：积分行为与兑换按天综合展示在月历上 ──
+let calendarCursor = null;      // 当前展示月份的第一天
+let calendarSelectedDay = null; // 'YYYY-MM-DD'
+
+function getCalendarLocale() {
+    return typeof currentLanguage !== 'undefined' && currentLanguage === 'en' ? 'en-US' : 'zh-CN';
+}
+
+function calendarDateKey(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function renderCalendar() {
+    const grid = document.getElementById('calendar-grid');
+    if (!grid) return;
+    const y = calendarCursor.getFullYear();
+    const m = calendarCursor.getMonth();
+    const label = document.getElementById('calendar-month-label');
+    if (label) {
+        label.textContent = new Date(y, m, 1).toLocaleDateString(getCalendarLocale(), { year: 'numeric', month: 'long' });
+    }
+
+    // 收集当月每日活动：积分行为（正负） + 兑换
+    const byDay = {};
+    (Array.isArray(behaviors) ? behaviors : []).forEach(b => {
+        const d = new Date(b.timestamp);
+        if (isNaN(d)) return;
+        const key = calendarDateKey(d);
+        if (!byDay[key]) byDay[key] = { earned: 0, redeemed: 0, items: [] };
+        const pts = Number(b.points) || 0;
+        if (pts > 0) byDay[key].earned += pts;
+        byDay[key].items.push({ type: 'b', id: b.id, points: pts, desc: b.description || '' });
+    });
+    (Array.isArray(redeemedGifts) ? redeemedGifts : []).forEach(r => {
+        const d = new Date(r.redeem_date || r.created_at);
+        if (isNaN(d)) return;
+        const key = calendarDateKey(d);
+        if (!byDay[key]) byDay[key] = { earned: 0, redeemed: 0, items: [] };
+        const pts = Number(r.points) || 0;
+        byDay[key].redeemed += pts;
+        byDay[key].items.push({ type: 'r', id: r.id, points: pts, desc: r.name || '' });
+    });
+
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const firstDow = (new Date(y, m, 1).getDay() + 6) % 7; // 周一开头
+    const lang = getCalendarLocale();
+    const weekdays = Array.from({ length: 7 }, (_, i) => new Date(2026, 0, 5 + i).toLocaleDateString(lang, { weekday: 'short' }));
+    const today = new Date();
+
+    let html = '<div class="cal-weekdays">' + weekdays.map(w => `<span>${w}</span>`).join('') + '</div>';
+    html += '<div class="cal-cells">';
+    for (let i = 0; i < firstDow; i++) html += '<span class="cal-cell cal-empty"></span>';
+    for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(y, m, d);
+        const key = calendarDateKey(date);
+        const day = byDay[key];
+        const isToday = y === today.getFullYear() && m === today.getMonth() && d === today.getDate();
+        const isSelected = key === calendarSelectedDay;
+        let cls = 'cal-cell';
+        if (isToday) cls += ' today';
+        if (isSelected) cls += ' selected';
+        if (day) cls += ' has-data';
+        let inner = `<span class="cal-day-num">${d}</span>`;
+        if (day && (day.earned > 0 || day.redeemed > 0)) {
+            inner += '<span class="cal-day-marks">';
+            if (day.earned > 0) inner += `<span class="cal-mark cal-earned">+${day.earned}</span>`;
+            if (day.redeemed > 0) inner += `<span class="cal-mark cal-redeemed">🎁${day.redeemed}</span>`;
+            inner += '</span>';
+        }
+        html += `<span class="${cls}" onclick="calendarSelectDay('${key}')" title="${key}">${inner}</span>`;
+    }
+    html += '</div>';
+    grid.innerHTML = html;
+}
+
+function calendarShiftMonth(delta) {
+    if (!calendarCursor) calendarCursor = new Date();
+    calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + delta, 1);
+    calendarSelectedDay = null;
+    renderCalendar();
+    renderCalendarDayDetail();
+}
+
+function calendarSelectDay(key) {
+    calendarSelectedDay = (calendarSelectedDay === key) ? null : key;
+    renderCalendar();
+    renderCalendarDayDetail();
+}
+
+function renderCalendarDayDetail() {
+    const panel = document.getElementById('calendar-day-detail');
+    if (!panel) return;
+    if (!calendarSelectedDay) {
+        panel.innerHTML = '';
+        panel.style.display = 'none';
         return;
     }
-    
-    console.log('updateDiaryList: 开始更新成长日记');
-    console.log('updateDiaryList: 行为记录数量:', behaviors ? behaviors.length : 0);
-    console.log('updateDiaryList: 已兑换礼物数量:', redeemedGifts ? redeemedGifts.length : 0);
-    
-    if ((!behaviors || behaviors.length === 0) && (!redeemedGifts || redeemedGifts.length === 0)) {
-        diaryList.innerHTML = `<p style="text-align: center; color: #666; padding: 20px;">${t('common.noDiaryRecords')}</p>`;
+    const items = [];
+    (Array.isArray(behaviors) ? behaviors : []).forEach(b => {
+        const d = new Date(b.timestamp);
+        if (!isNaN(d) && calendarDateKey(d) === calendarSelectedDay) {
+            items.push({ type: 'b', id: b.id, points: b.points, desc: b.description || '' });
+        }
+    });
+    (Array.isArray(redeemedGifts) ? redeemedGifts : []).forEach(r => {
+        const d = new Date(r.redeem_date || r.created_at);
+        if (!isNaN(d) && calendarDateKey(d) === calendarSelectedDay) {
+            items.push({ type: 'r', id: r.id, points: r.points, desc: r.name || '' });
+        }
+    });
+    if (items.length === 0) {
+        panel.innerHTML = '';
+        panel.style.display = 'none';
         return;
     }
-    
-    let html = '';
-    
-    // 创建响应式容器
-    html += '<div style="display: flex; gap: 20px; flex-wrap: wrap;">';
-    
-    // 行为记录列表
-    if (behaviors && behaviors.length > 0) {
-        // 按日期分组行为记录
-        const behaviorsByDate = {};
-        behaviors.forEach(behavior => {
-            const date = new Date(behavior.timestamp).toLocaleDateString(getLocale());
-            if (!behaviorsByDate[date]) {
-                behaviorsByDate[date] = [];
+    const title = new Date(calendarSelectedDay + 'T00:00:00').toLocaleDateString(getCalendarLocale(), { month: 'long', day: 'numeric', weekday: 'long' });
+    let html = `<div class="cal-detail-title">📌 ${title}</div>`;
+    items.forEach(it => {
+        if (it.type === 'b') {
+            const pos = Number(it.points) > 0;
+            html += `<div class="cal-detail-item behavior"><span class="cal-detail-icon">${pos ? '✅' : '❌'}</span><span class="cal-detail-pts ${pos ? 'pos' : 'neg'}">${pos ? '+' : ''}${it.points}</span><span class="cal-detail-desc">${escapeHtml(it.desc)}</span>`;
+            if (it.id) {
+                html += `<button class="cal-detail-del" onclick="deleteBehavior(${it.id})" title="Delete">🗑</button>`;
             }
-            behaviorsByDate[date].push(behavior);
-        });
-        
-        // 按日期排序
-        const sortedBehaviorDates = Object.keys(behaviorsByDate).sort((a, b) => new Date(b) - new Date(a));
-        
-        html += '<div class="diary-section" style="flex: 1; min-width: 300px;">';
-        html += `<h3 style="color: #4CAF50; margin-bottom: 15px; font-size: 18px;">📋 ${t('behaviors.title')}</h3>`;
-        
-        sortedBehaviorDates.forEach(date => {
-            const dayBehaviors = behaviorsByDate[date];
-            const dayPoints = dayBehaviors.reduce((sum, b) => sum + b.points, 0);
-            
-            html += `
-                <div class="diary-entry">
-                    <div class="diary-date">${date} <span class="diary-points">${dayPoints > 0 ? '+' : ''}${dayPoints} ${t('common.points')}</span></div>
-                    <div class="diary-content">
-            `;
-            
-            dayBehaviors.forEach(behavior => {
-                const escapedDesc = escapeHtml(behavior.description || '');
-                html += `
-                    <div style="margin-bottom: 8px; padding: 8px; background: ${behavior.points > 0 ? '#f8fff8' : '#fff8f8'}; border-left: 3px solid ${behavior.points > 0 ? '#4CAF50' : '#f44336'}; border-radius: 4px; position:relative;">
-                        <span style="color: ${behavior.points > 0 ? '#4CAF50' : '#f44336'}; font-weight: bold;">${behavior.points > 0 ? '+' : ''}${behavior.points}</span>
-                        - ${escapedDesc}
-                        <button onclick="deleteBehavior(${behavior.id})" style="position:absolute;top:6px;right:6px;background:none;border:none;font-size:0.9rem;cursor:pointer;opacity:0.4;padding:2px 4px;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.4'" title="Delete">🗑</button>
-                        <small style="color: #666; display: block; margin-top: 2px;">${new Date(behavior.timestamp).toLocaleTimeString(getLocale(), {hour: '2-digit', minute: '2-digit'})}</small>
-                    </div>
-                `;
-            });
-            
-            html += '</div></div>';
-        });
-        
-        html += '</div>';
-    }
-    
-    // 已兑换礼物列表
-    if (redeemedGifts && redeemedGifts.length > 0) {
-        // 按日期分组已兑换礼物
-        const giftsByDate = {};
-        redeemedGifts.forEach(gift => {
-            const date = new Date(gift.redeem_date).toLocaleDateString(getLocale());
-            if (!giftsByDate[date]) {
-                giftsByDate[date] = [];
-            }
-            giftsByDate[date].push(gift);
-        });
-        
-        // 按日期排序
-        const sortedGiftDates = Object.keys(giftsByDate).sort((a, b) => new Date(b) - new Date(a));
-        
-        html += '<div class="diary-section" style="flex: 1; min-width: 300px;">';
-        html += `<h3 style="color: #ff9800; margin-bottom: 15px; font-size: 18px;">🎁 ${t('redeemed.title')}</h3>`;
-        
-        sortedGiftDates.forEach(date => {
-            const dayGifts = giftsByDate[date];
-            const dayPoints = dayGifts.reduce((sum, g) => sum + g.points, 0);
-            
-            html += `
-                <div class="diary-entry">
-                    <div class="diary-date">${date} <span class="diary-points">-${dayPoints} ${t('common.points')}</span></div>
-                    <div class="diary-content">
-            `;
-            
-            dayGifts.forEach(gift => {
-                const escapedName = escapeHtml(gift.name || '');
-                html += `
-                    <div style="margin-bottom: 8px; padding: 8px; background: #fff8f0; border-left: 3px solid #ff9800; border-radius: 4px;">
-                        <span style="color: #ff5722; font-weight: bold;">-${gift.points}</span>
-                        - 🏆 ${escapedName}
-                        <small style="color: #666; display: block; margin-top: 2px;">${new Date(gift.redeem_date).toLocaleTimeString(getLocale(), {hour: '2-digit', minute: '2-digit'})}</small>
-                    </div>
-                `;
-            });
-            
-            html += '</div></div>';
-        });
-        
-        html += '</div>';
-    }
-    
-    html += '</div>'; // 关闭响应式容器
-    
-    console.log('updateDiaryList: 生成的HTML长度:', html.length);
-    diaryList.innerHTML = html;
+            html += '</div>';
+        } else {
+            html += `<div class="cal-detail-item gift"><span class="cal-detail-icon">🏆</span><span class="cal-detail-pts neg">-${it.points}</span><span class="cal-detail-desc">${escapeHtml(it.desc)}</span></div>`;
+        }
+    });
+    panel.innerHTML = html;
+    panel.style.display = 'block';
 }
