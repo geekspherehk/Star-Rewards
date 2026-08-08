@@ -559,6 +559,8 @@ function handleAddBehavior($pdo, $data) {
         $pdo->beginTransaction();
         $stmt = $pdo->prepare('INSERT INTO behaviors (user_id, profile_id, description, points) VALUES (?, ?, ?, ?)');
         $stmt->execute([$userId, $profileId, $description, $points]);
+        // 必须在 UPDATE 之前取值：该环境的 PDO 驱动在 UPDATE 后 lastInsertId() 会返回 0
+        $behaviorId = (int)$pdo->lastInsertId();
 
         $currentDelta = $points;
         $totalDelta = max($points, 0);
@@ -569,8 +571,6 @@ function handleAddBehavior($pdo, $data) {
                 updated_at = NOW() 
             WHERE id = ? AND user_id = ?');
         $stmt->execute([$currentDelta, $totalDelta, $profileId, $userId]);
-
-        $behaviorId = (int)$pdo->lastInsertId();
 
         // Fetch updated points
         $stmt = $pdo->prepare('SELECT current_points, total_points FROM profiles WHERE id = ? AND user_id = ?');
