@@ -72,7 +72,14 @@ const translations = {
                 five_redeems: { name: '兑换达人', desc: '兑换 5 个愿望' },
                 multi_child: { name: '温馨家庭', desc: '创建第 2 个孩子档案' },
                 variety: { name: '全面发展', desc: '在 5 个不同日期记录行为' }
-            }
+            },
+            exportData: '📤 导出数据',
+            exportSummary: '积分汇总',
+            exportDate: '导出时间：{date}',
+            exportBehaviorCount: '行为记录数',
+            exportRedeemedCount: '兑换记录数',
+            exportSuccess: '导出成功',
+            exportFailed: '导出失败'
         },
         behaviors: {
             title: '行为记录',
@@ -373,7 +380,14 @@ const translations = {
                 five_redeems: { name: 'Redeem Pro', desc: 'Redeem 5 wishes' },
                 multi_child: { name: 'Happy Family', desc: 'Create a 2nd child profile' },
                 variety: { name: 'All-Rounder', desc: 'Log behaviors on 5 different days' }
-            }
+            },
+            exportData: '📤 Export Data',
+            exportSummary: 'Summary',
+            exportDate: 'Exported: {date}',
+            exportBehaviorCount: 'Behaviors Logged',
+            exportRedeemedCount: 'Gifts Redeemed',
+            exportSuccess: 'Export successful',
+            exportFailed: 'Export failed'
         },
         behaviors: {
             title: 'Behaviors',

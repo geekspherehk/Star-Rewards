@@ -264,6 +264,14 @@ function renderAchievements() {
     const titleEl = document.getElementById('achievements-title');
     if (titleEl) titleEl.textContent = `${t('home.achievements.title')} (${unlockedCount}/${list.length})`;
 
+    // 新解锁检测（首次打开把当前已解锁设为基线，不弹提示）
+    const baseKey = `sr_ach_${localStorage.getItem('user_id') || 'x'}_${selectedProfileId || 'x'}`;
+    let known = [];
+    try { known = JSON.parse(localStorage.getItem(baseKey) || '[]'); } catch (e) { /* ignore */ }
+    const unlockedIds = list.filter(a => a.unlocked).map(a => a.id);
+    const newly = unlockedIds.filter(id => !known.includes(id));
+    try { localStorage.setItem(baseKey, JSON.stringify(unlockedIds)); } catch (e) { /* ignore */ }
+
     grid.innerHTML = '';
     list.forEach(a => {
         const card = document.createElement('div');
@@ -279,6 +287,65 @@ function renderAchievements() {
         `;
         grid.appendChild(card);
     });
+
+    // 新解锁的徽章依次弹出祝贺（最多 3 个，避免轰炸）
+    newly.slice(0, 3).forEach((id, i) => {
+        setTimeout(() => {
+            const badge = list.find(a => a.id === id);
+            if (badge) {
+                showTemporaryMessage(`🏆 ${badge.icon} ${t('home.achievements.' + id + '.name')} ${t('home.achievements.unlocked')}！`, 'success');
+            }
+        }, 400 * (i + 1));
+    });
+}
+
+// 导出当前孩子的数据为 CSV（含汇总 + 行为记录 + 兑换记录）
+function exportData() {
+    try {
+        const rows = [];
+        rows.push(['Star Rewards', new Date().toLocaleString()]);
+        rows.push([]);
+        rows.push([t('home.exportSummary')]);
+        rows.push([t('home.currentPoints'), currentPoints]);
+        rows.push([t('home.totalPoints'), totalPoints]);
+        rows.push([t('home.streakDays'), calculateStreak(behaviors)]);
+        rows.push([t('home.exportBehaviorCount'), (Array.isArray(behaviors) ? behaviors : []).length]);
+        rows.push([t('home.exportRedeemedCount'), (Array.isArray(redeemedGifts) ? redeemedGifts : []).length]);
+        rows.push([]);
+        rows.push([t('behaviors.title')]);
+        rows.push([t('behaviors.date'), t('behaviors.description'), t('behaviors.points')]);
+        (Array.isArray(behaviors) ? behaviors : []).forEach(b => {
+            rows.push([b.timestamp ? new Date(b.timestamp).toLocaleString() : '', b.description || '', b.points]);
+        });
+        rows.push([]);
+        rows.push([t('home.redeemed')]);
+        rows.push([t('behaviors.date'), t('gifts.name'), t('gifts.points')]);
+        (Array.isArray(redeemedGifts) ? redeemedGifts : []).forEach(r => {
+            const d = r.redeem_date || r.created_at;
+            rows.push([d ? new Date(d).toLocaleString() : '', r.name || '', r.points]);
+        });
+
+        const csv = '\uFEFF' + rows.map(row => row.map(cell => {
+            const s = String(cell ?? '');
+            return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        }).join(',')).join('\r\n');
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const profileName = (Array.isArray(profiles) ? profiles : []).find(p => p.id === selectedProfileId) || {};
+        a.href = url;
+        a.download = `star-rewards_${(profileName.name || 'child').replace(/[^\w\u4e00-\u9fa5-]/g, '')}_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showTemporaryMessage(t('home.exportSuccess'), 'success');
+    } catch (error) {
+        console.error('导出数据失败:', error);
+        showTemporaryMessage(t('home.exportFailed'), 'error');
+    }
 }
 
 // 积分趋势图（Chart.js）
