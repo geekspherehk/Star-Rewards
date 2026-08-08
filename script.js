@@ -347,6 +347,18 @@ function shadeColor(hex, factor) {
     return `rgb(${r},${g},${b})`;
 }
 
+// 判断背景色明暗，决定海报文字用深色还是白色（保证对比度）
+function isLightColor(hex) {
+    const h = String(hex).replace('#', '');
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    if (!/^[0-9a-fA-F]{6}$/.test(full)) return false;
+    const n = parseInt(full, 16);
+    const r = (n >> 16) & 255;
+    const g = (n >> 8) & 255;
+    const b = n & 255;
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 160;
+}
+
 function roundRectPath(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -376,23 +388,30 @@ function renderPoster() {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
+    // 根据背景明暗选择文字/装饰颜色，保证对比度（浅色背景用深字，深色背景用白字）
+    const light = isLightColor(color);
+    const textMain = light ? 'rgba(45,35,25,0.95)' : 'rgba(255,255,255,0.96)';
+    const textSub = light ? 'rgba(45,35,25,0.72)' : 'rgba(255,255,255,0.85)';
+    const textFoot = light ? 'rgba(45,35,25,0.88)' : 'rgba(255,255,255,0.92)';
+    const decoColor = light ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.12)';
+    const cardBg = light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.2)';
+
     // 装饰圆
-    ctx.globalAlpha = 0.12;
-    ctx.fillStyle = '#fff';
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = decoColor;
     [[70, 140, 95], [640, 250, 60], [110, 960, 70], [655, 1030, 105]].forEach(([x, y, r]) => {
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fill();
     });
-    ctx.globalAlpha = 1;
 
     // 标题
     ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    ctx.fillStyle = textMain;
     ctx.font = 'bold 54px ' + fontFamily;
     ctx.fillText(t('home.posterTitle'), W / 2, 105);
     ctx.font = '26px ' + fontFamily;
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillStyle = textSub;
     ctx.fillText(t('home.posterSubtitle'), W / 2, 158);
 
     // 头像圆 + emoji
@@ -409,11 +428,11 @@ function renderPoster() {
     ctx.textBaseline = 'alphabetic';
 
     // 名字 + 日期
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = textMain;
     ctx.font = 'bold 54px ' + fontFamily;
     ctx.fillText((p.name || '孩子').slice(0, 10), W / 2, 512);
     ctx.font = '24px ' + fontFamily;
-    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fillStyle = textSub;
     ctx.fillText(new Date().toLocaleDateString(), W / 2, 556);
 
     // 三个统计卡
@@ -429,21 +448,21 @@ function renderPoster() {
     const cardY = 620;
     stats.forEach(([label, value], i) => {
         const x = startX + i * (cardW + gap);
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillStyle = cardBg;
         roundRectPath(ctx, x, cardY, cardW, cardH, 18);
         ctx.fill();
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = textMain;
         ctx.font = 'bold 50px ' + fontFamily;
         ctx.fillText(String(value), x + cardW / 2, cardY + 70);
         ctx.font = '22px ' + fontFamily;
-        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.fillStyle = textSub;
         ctx.fillText(String(label), x + cardW / 2, cardY + 120);
     });
 
     // 成就
     const ach = computeAchievements();
     const unlocked = ach.filter(a => a.unlocked);
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = textMain;
     ctx.font = 'bold 34px ' + fontFamily;
     ctx.fillText(t('home.achievements.title') + ' ' + unlocked.length + '/' + ach.length, W / 2, 850);
 
@@ -469,11 +488,11 @@ function renderPoster() {
     }
 
     // 底部
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.fillStyle = textFoot;
     ctx.font = '28px ' + fontFamily;
     ctx.fillText(t('home.posterFooter'), W / 2, H - 105);
     ctx.font = '22px ' + fontFamily;
-    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillStyle = textSub;
     ctx.fillText('stellar.gaocaihk.com', W / 2, H - 58);
 }
 
