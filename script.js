@@ -1245,6 +1245,9 @@ function showNotLoggedInState() {
     
     // 即使在未登录状态下也显示成长日记
     updateDiaryList();
+    // 演示数据下同步渲染愿望清单与兑换记录（含空态引导）
+    updateGiftList();
+    updateRedeemedList();
     
     console.log('Script.js: 未登录状态UI已显示');
 }
