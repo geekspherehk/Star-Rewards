@@ -27,12 +27,13 @@ def load_creds():
 def connect(creds):
     ftp_class = ftplib.FTP_TLS if creds.get('use_tls', True) else ftplib.FTP
     ftp = ftp_class()
-    ftp.connect(creds['host'], int(creds.get('port', 21)), timeout=30)
+    host = creds['host'].replace('ftp://', '').replace('ftps://', '').rstrip('/')
+    ftp.connect(host, int(creds.get('port', 21)), timeout=30)
     ftp.login(creds['user'], creds['password'])
     if isinstance(ftp, ftplib.FTP_TLS):
         ftp.prot_p()  # 显式 TLS 数据连接
     ftp.set_pasv(True)
-    print(f"✔ 已连接 {creds['host']}:{creds.get('port', 21)}")
+    print(f"✔ 已连接 {host}:{creds.get('port', 21)}")
     return ftp
 
 
@@ -49,7 +50,7 @@ def ensure_dir(ftp, remote_dir):
 
 def upload(ftp, remote_root, local_file):
     rel = os.path.relpath(local_file, REPO_ROOT)
-    remote_path = remote_root + '/' + rel.replace(os.sep, '/')
+    remote_path = (remote_root + '/' + rel.replace(os.sep, '/')) if remote_root else rel.replace(os.sep, '/')
     ensure_dir(ftp, os.path.dirname(remote_path))
     with open(local_file, 'rb') as f:
         ftp.storbinary(f'STOR {remote_path}', f)
