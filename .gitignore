@@ -52,3 +52,5 @@ temp/
 
 # FTP 部署凭据（勿提交）
 scripts/.ftp-creds.json
+__pycache__/
+*.pyc
