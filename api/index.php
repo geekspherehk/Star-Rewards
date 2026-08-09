@@ -178,15 +178,73 @@ function profileBelongsToUser($pdo, $userId, $profileId) {
     return (bool)$stmt->fetch();
 }
 
-// Resolve which child profile a request targets: explicit profile_id (if owned) → selected → first
-function resolveProfileId($pdo, $userId, $data) {
+// Resolve which child profile a request targets (family-scoped): explicit profile_id (if in family) → selected → first in family
+function resolveProfileId($pdo, $familyId, $userId, $data) {
     $pid = isset($data['profile_id']) ? (int)$data['profile_id'] : 0;
-    if ($pid > 0 && profileBelongsToUser($pdo, $userId, $pid)) {
+    if ($pid > 0 && profileBelongsToFamily($pdo, $familyId, $pid)) {
         return $pid;
     }
     $sel = getSelectedProfileId($pdo, $userId);
-    if ($sel) return $sel;
-    return firstProfileId($pdo, $userId);
+    if ($sel && profileBelongsToFamily($pdo, $familyId, $sel)) return $sel;
+    $stmt = $pdo->prepare('SELECT id FROM profiles WHERE family_id = ? ORDER BY id ASC LIMIT 1');
+    $stmt->execute([$familyId]);
+    $row = $stmt->fetch();
+    return $row ? (int)$row['id'] : null;
+}
+
+// ── Family sharing helpers ──
+define('FAMILY_MAX_MEMBERS', 5);
+
+function getFamilyIdOfUser($pdo, $userId) {
+    $stmt = $pdo->prepare('SELECT family_id FROM family_members WHERE user_id = ? LIMIT 1');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+    return $row ? (int)$row['family_id'] : null;
+}
+
+function requireFamilyMember($pdo, $userId) {
+    $fid = getFamilyIdOfUser($pdo, $userId);
+    if (!$fid) sendError('You are not in a family', 403);
+    return $fid;
+}
+
+function profileBelongsToFamily($pdo, $familyId, $profileId) {
+    $stmt = $pdo->prepare('SELECT id FROM profiles WHERE id = ? AND family_id = ?');
+    $stmt->execute([$profileId, $familyId]);
+    return (bool)$stmt->fetch();
+}
+
+function generateInviteCode($pdo) {
+    $alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // unambiguous: no 0/O/1/I/L
+    $len = strlen($alphabet);
+    for ($i = 0; $i < 50; $i++) {
+        $code = '';
+        for ($j = 0; $j < 6; $j++) $code .= $alphabet[random_int(0, $len - 1)];
+        $stmt = $pdo->prepare('SELECT 1 FROM families WHERE invite_code = ?');
+        $stmt->execute([$code]);
+        if (!$stmt->fetch()) return $code;
+    }
+    sendError('Failed to generate invite code', 500);
+}
+
+function getFamilyInfo($pdo, $familyId, $userId) {
+    $stmt = $pdo->prepare('SELECT id, name, invite_code, invite_expires_at, created_at FROM families WHERE id = ?');
+    $stmt->execute([$familyId]);
+    $family = $stmt->fetch();
+    if (!$family) return null;
+    $stmt = $pdo->prepare('SELECT user_id, role, display_name, joined_at FROM family_members WHERE family_id = ? ORDER BY joined_at ASC');
+    $stmt->execute([$familyId]);
+    $members = $stmt->fetchAll();
+    foreach ($members as &$m) {
+        $m['is_self'] = ((int)$m['user_id'] === (int)$userId);
+    }
+    $family['member_count'] = count($members);
+    $family['max_members'] = FAMILY_MAX_MEMBERS;
+    return [
+        'family' => $family,
+        'members' => $members,
+        'invite_link' => 'https://stellar.gaocaihk.com/?invite=' . $family['invite_code']
+    ];
 }
 
 function validateEmail($email) {
@@ -279,6 +337,24 @@ switch ($action) {
     case 'fetchProductInfo':
         handleFetchProductInfo($pdo, $data);
         break;
+    case 'getFamily':
+        handleGetFamily($pdo);
+        break;
+    case 'inviteMember':
+        handleInviteMember($pdo, $data);
+        break;
+    case 'joinFamily':
+        handleJoinFamily($pdo, $data);
+        break;
+    case 'removeMember':
+        handleRemoveMember($pdo, $data);
+        break;
+    case 'leaveFamily':
+        handleLeaveFamily($pdo, $data);
+        break;
+    case 'updateMemberName':
+        handleUpdateMemberName($pdo, $data);
+        break;
     default:
         sendError('Invalid action', 400);
 }
@@ -304,8 +380,17 @@ function handleRegister($pdo, $data) {
         $userId = (int)$pdo->lastInsertId();
 
         $pdo->beginTransaction();
-        $stmt = $pdo->prepare('INSERT INTO profiles (user_id, name, avatar, color, current_points, total_points) VALUES (?, ?, ?, ?, 0, 0)');
-        $stmt->execute([$userId, '孩子', '⭐', '#FFB300']);
+        // create a solo family for the new user (owner) so every account belongs to a family
+        $code = generateInviteCode($pdo);
+        $local = explode('@', $email)[0];
+        $stmt = $pdo->prepare('INSERT INTO families (name, invite_code, invite_expires_at) VALUES (?, ?, NULL)');
+        $stmt->execute([$local . ' 的家庭', $code]);
+        $familyId = (int)$pdo->lastInsertId();
+        $stmt = $pdo->prepare('INSERT INTO family_members (family_id, user_id, role, display_name) VALUES (?, ?, "owner", ?)');
+        $stmt->execute([$familyId, $userId, $local]);
+
+        $stmt = $pdo->prepare('INSERT INTO profiles (user_id, family_id, name, avatar, color, current_points, total_points) VALUES (?, ?, ?, ?, ?, 0, 0)');
+        $stmt->execute([$userId, $familyId, '孩子', '⭐', '#FFB300']);
         $profileId = (int)$pdo->lastInsertId();
         $stmt = $pdo->prepare('INSERT INTO user_configs (user_id, selected_theme, selected_profile_id) VALUES (?, "classic", ?)');
         $stmt->execute([$userId, $profileId]);
@@ -399,11 +484,17 @@ function handleRefreshToken() {
 
 function handleGetProfile($pdo) {
     $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
     $profileId = getSelectedProfileId($pdo, $userId);
-    if (!$profileId) $profileId = firstProfileId($pdo, $userId);
+    if (!$profileId || !profileBelongsToFamily($pdo, $familyId, $profileId)) {
+        $stmt = $pdo->prepare('SELECT id FROM profiles WHERE family_id = ? ORDER BY id ASC LIMIT 1');
+        $stmt->execute([$familyId]);
+        $row = $stmt->fetch();
+        $profileId = $row ? (int)$row['id'] : null;
+    }
     try {
-        $stmt = $pdo->prepare('SELECT id, name, avatar, color, current_points, total_points FROM profiles WHERE id = ? AND user_id = ?');
-        $stmt->execute([$profileId, $userId]);
+        $stmt = $pdo->prepare('SELECT id, name, avatar, color, current_points, total_points FROM profiles WHERE id = ? AND family_id = ?');
+        $stmt->execute([$profileId, $familyId]);
         $profile = $stmt->fetch();
         if (!$profile) {
             $profile = ['id' => $profileId, 'name' => '孩子', 'avatar' => '⭐', 'color' => '#FFB300', 'current_points' => 0, 'total_points' => 0, 'user_id' => $userId];
@@ -417,9 +508,10 @@ function handleGetProfile($pdo) {
 
 function handleGetProfiles($pdo) {
     $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
     try {
-        $stmt = $pdo->prepare('SELECT id, name, avatar, color, current_points, total_points FROM profiles WHERE user_id = ? ORDER BY id ASC');
-        $stmt->execute([$userId]);
+        $stmt = $pdo->prepare('SELECT id, name, avatar, color, current_points, total_points FROM profiles WHERE family_id = ? ORDER BY id ASC');
+        $stmt->execute([$familyId]);
         sendJson($stmt->fetchAll());
     } catch (Exception $e) {
         sendError('Failed to get profiles', 500, $e->getMessage());
@@ -428,6 +520,7 @@ function handleGetProfiles($pdo) {
 
 function handleAddProfile($pdo, $data) {
     $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
     $name = trim($data['name'] ?? '');
     if ($name === '') sendError('Child name required', 400);
     if (strlen($name) > 50) sendError('Name too long (max 50)', 400);
@@ -436,8 +529,8 @@ function handleAddProfile($pdo, $data) {
     $color = isset($data['color']) ? trim($data['color']) : '#FFB300';
     if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) $color = '#FFB300';
     try {
-        $stmt = $pdo->prepare('INSERT INTO profiles (user_id, name, avatar, color, current_points, total_points) VALUES (?, ?, ?, ?, 0, 0)');
-        $stmt->execute([$userId, $name, $avatar, $color]);
+        $stmt = $pdo->prepare('INSERT INTO profiles (user_id, family_id, name, avatar, color, current_points, total_points) VALUES (?, ?, ?, ?, ?, 0, 0)');
+        $stmt->execute([$userId, $familyId, $name, $avatar, $color]);
         $id = (int)$pdo->lastInsertId();
         sendJson(['success' => true, 'id' => $id, 'name' => $name, 'avatar' => $avatar, 'color' => $color, 'current_points' => 0, 'total_points' => 0], 201);
     } catch (Exception $e) {
@@ -447,9 +540,10 @@ function handleAddProfile($pdo, $data) {
 
 function handleUpdateProfile($pdo, $data) {
     $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
     $profileId = isset($data['profile_id']) ? (int)$data['profile_id'] : 0;
     if ($profileId <= 0) sendError('Invalid profile id', 400);
-    if (!profileBelongsToUser($pdo, $userId, $profileId)) sendError('Profile not found', 404);
+    if (!profileBelongsToFamily($pdo, $familyId, $profileId)) sendError('Profile not found', 404);
 
     $fields = [];
     $params = [];
@@ -474,10 +568,10 @@ function handleUpdateProfile($pdo, $data) {
     if (empty($fields)) sendError('Nothing to update', 400);
     $fields[] = 'updated_at = NOW()';
     $params[] = $profileId;
-    $params[] = $userId;
+    $params[] = $familyId;
 
     try {
-        $stmt = $pdo->prepare('UPDATE profiles SET ' . implode(', ', $fields) . ' WHERE id = ? AND user_id = ?');
+        $stmt = $pdo->prepare('UPDATE profiles SET ' . implode(', ', $fields) . ' WHERE id = ? AND family_id = ?');
         $stmt->execute($params);
         sendJson(['success' => true]);
     } catch (Exception $e) {
@@ -487,12 +581,13 @@ function handleUpdateProfile($pdo, $data) {
 
 function handleDeleteProfile($pdo, $data) {
     $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
     $profileId = isset($data['profile_id']) ? (int)$data['profile_id'] : 0;
     if ($profileId <= 0) sendError('Invalid profile id', 400);
-    if (!profileBelongsToUser($pdo, $userId, $profileId)) sendError('Profile not found', 404);
+    if (!profileBelongsToFamily($pdo, $familyId, $profileId)) sendError('Profile not found', 404);
 
-    $stmt = $pdo->prepare('SELECT COUNT(*) AS cnt FROM profiles WHERE user_id = ?');
-    $stmt->execute([$userId]);
+    $stmt = $pdo->prepare('SELECT COUNT(*) AS cnt FROM profiles WHERE family_id = ?');
+    $stmt->execute([$familyId]);
     if ((int)$stmt->fetch()['cnt'] <= 1) {
         sendError('Cannot delete the only child profile', 400);
     }
@@ -501,15 +596,15 @@ function handleDeleteProfile($pdo, $data) {
         $pdo->beginTransaction();
         $sel = getSelectedProfileId($pdo, $userId);
         if ($sel == $profileId) {
-            $stmt = $pdo->prepare('SELECT id FROM profiles WHERE user_id = ? AND id != ? ORDER BY id ASC LIMIT 1');
-            $stmt->execute([$userId, $profileId]);
+            $stmt = $pdo->prepare('SELECT id FROM profiles WHERE family_id = ? AND id != ? ORDER BY id ASC LIMIT 1');
+            $stmt->execute([$familyId, $profileId]);
             $next = $stmt->fetch();
             $nextId = $next ? (int)$next['id'] : null;
             $stmt = $pdo->prepare('UPDATE user_configs SET selected_profile_id = ? WHERE user_id = ?');
             $stmt->execute([$nextId, $userId]);
         }
-        $stmt = $pdo->prepare('DELETE FROM profiles WHERE id = ? AND user_id = ?');
-        $stmt->execute([$profileId, $userId]);
+        $stmt = $pdo->prepare('DELETE FROM profiles WHERE id = ? AND family_id = ?');
+        $stmt->execute([$profileId, $familyId]);
         $pdo->commit();
         sendJson(['success' => true]);
     } catch (Exception $e) {
@@ -520,9 +615,10 @@ function handleDeleteProfile($pdo, $data) {
 
 function handleSetSelectedProfile($pdo, $data) {
     $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
     $profileId = isset($data['profile_id']) ? (int)$data['profile_id'] : 0;
     if ($profileId <= 0) sendError('Invalid profile id', 400);
-    if (!profileBelongsToUser($pdo, $userId, $profileId)) sendError('Profile not found', 404);
+    if (!profileBelongsToFamily($pdo, $familyId, $profileId)) sendError('Profile not found', 404);
     try {
         $stmt = $pdo->prepare('INSERT INTO user_configs (user_id, selected_profile_id, updated_at) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE selected_profile_id = VALUES(selected_profile_id), updated_at = VALUES(updated_at)');
         $stmt->execute([$userId, $profileId]);
@@ -534,10 +630,13 @@ function handleSetSelectedProfile($pdo, $data) {
 
 function handleGetBehaviors($pdo, $data) {
     $userId = getUserId();
-    $profileId = resolveProfileId($pdo, $userId, $data);
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
     try {
-        $stmt = $pdo->prepare('SELECT id, profile_id, description, points, timestamp FROM behaviors WHERE user_id = ? AND profile_id = ? ORDER BY timestamp DESC LIMIT 500');
-        $stmt->execute([$userId, $profileId]);
+        $stmt = $pdo->prepare('SELECT b.id, b.profile_id, b.description, b.points, b.timestamp, fm.display_name AS added_by_name
+            FROM behaviors b LEFT JOIN family_members fm ON fm.user_id = b.user_id AND fm.family_id = b.family_id
+            WHERE b.family_id = ? AND b.profile_id = ? ORDER BY b.timestamp DESC LIMIT 500');
+        $stmt->execute([$familyId, $profileId]);
         sendJson($stmt->fetchAll());
     } catch (Exception $e) {
         sendError('Failed to get behaviors', 500, $e->getMessage());
@@ -546,7 +645,8 @@ function handleGetBehaviors($pdo, $data) {
 
 function handleAddBehavior($pdo, $data) {
     $userId = getUserId();
-    $profileId = resolveProfileId($pdo, $userId, $data);
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
     $description = trim($data['description'] ?? '');
     $points = isset($data['points']) ? (int)$data['points'] : 0;
 
@@ -557,8 +657,8 @@ function handleAddBehavior($pdo, $data) {
 
     try {
         $pdo->beginTransaction();
-        $stmt = $pdo->prepare('INSERT INTO behaviors (user_id, profile_id, description, points) VALUES (?, ?, ?, ?)');
-        $stmt->execute([$userId, $profileId, $description, $points]);
+        $stmt = $pdo->prepare('INSERT INTO behaviors (user_id, family_id, profile_id, description, points) VALUES (?, ?, ?, ?, ?)');
+        $stmt->execute([$userId, $familyId, $profileId, $description, $points]);
         // 必须在 UPDATE 之前取值：该环境的 PDO 驱动在 UPDATE 后 lastInsertId() 会返回 0
         $behaviorId = (int)$pdo->lastInsertId();
 
@@ -569,12 +669,12 @@ function handleAddBehavior($pdo, $data) {
             SET current_points = current_points + ?, 
                 total_points = total_points + ?,
                 updated_at = NOW() 
-            WHERE id = ? AND user_id = ?');
-        $stmt->execute([$currentDelta, $totalDelta, $profileId, $userId]);
+            WHERE id = ? AND family_id = ?');
+        $stmt->execute([$currentDelta, $totalDelta, $profileId, $familyId]);
 
         // Fetch updated points
-        $stmt = $pdo->prepare('SELECT current_points, total_points FROM profiles WHERE id = ? AND user_id = ?');
-        $stmt->execute([$profileId, $userId]);
+        $stmt = $pdo->prepare('SELECT current_points, total_points FROM profiles WHERE id = ? AND family_id = ?');
+        $stmt->execute([$profileId, $familyId]);
         $profile = $stmt->fetch();
 
         $pdo->commit();
@@ -592,10 +692,13 @@ function handleAddBehavior($pdo, $data) {
 
 function handleGetGifts($pdo, $data) {
     $userId = getUserId();
-    $profileId = resolveProfileId($pdo, $userId, $data);
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
     try {
-        $stmt = $pdo->prepare('SELECT id, profile_id, name, points, description, image_url, original_url, created_at FROM gifts WHERE user_id = ? AND profile_id = ? ORDER BY created_at DESC');
-        $stmt->execute([$userId, $profileId]);
+        $stmt = $pdo->prepare('SELECT g.id, g.profile_id, g.name, g.points, g.description, g.image_url, g.original_url, g.created_at, fm.display_name AS added_by_name
+            FROM gifts g LEFT JOIN family_members fm ON fm.user_id = g.user_id AND fm.family_id = g.family_id
+            WHERE g.family_id = ? AND g.profile_id = ? ORDER BY g.created_at DESC');
+        $stmt->execute([$familyId, $profileId]);
         sendJson($stmt->fetchAll());
     } catch (Exception $e) {
         sendError('Failed to get gifts', 500, $e->getMessage());
@@ -604,7 +707,8 @@ function handleGetGifts($pdo, $data) {
 
 function handleAddGift($pdo, $data) {
     $userId = getUserId();
-    $profileId = resolveProfileId($pdo, $userId, $data);
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
     $name = trim($data['name'] ?? '');
     $points = isset($data['points']) ? (int)$data['points'] : 0;
     $description = trim($data['description'] ?? '');
@@ -620,8 +724,8 @@ function handleAddGift($pdo, $data) {
     if (strlen($originalUrl) > 2048) sendError('Original URL too long', 400);
 
     try {
-        $stmt = $pdo->prepare('INSERT INTO gifts (user_id, profile_id, name, points, description, image_url, original_url) VALUES (?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$userId, $profileId, $name, $points, $description, $imageUrl, $originalUrl]);
+        $stmt = $pdo->prepare('INSERT INTO gifts (user_id, family_id, profile_id, name, points, description, image_url, original_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$userId, $familyId, $profileId, $name, $points, $description, $imageUrl, $originalUrl]);
         sendJson(['success' => true, 'id' => (int)$pdo->lastInsertId()], 201);
     } catch (Exception $e) {
         sendError('Failed to add gift', 500, $e->getMessage());
@@ -630,7 +734,8 @@ function handleAddGift($pdo, $data) {
 
 function handleRedeemGift($pdo, $data) {
     $userId = getUserId();
-    $profileId = resolveProfileId($pdo, $userId, $data);
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
     $giftId = isset($data['gift_id']) ? (int)$data['gift_id'] : 0;
 
     if ($giftId <= 0) sendError('Invalid gift id', 400);
@@ -638,13 +743,13 @@ function handleRedeemGift($pdo, $data) {
     try {
         $pdo->beginTransaction();
 
-        $stmt = $pdo->prepare('SELECT id, name, points, description, image_url, original_url FROM gifts WHERE id = ? AND user_id = ? AND profile_id = ? LIMIT 1 FOR UPDATE');
-        $stmt->execute([$giftId, $userId, $profileId]);
+        $stmt = $pdo->prepare('SELECT id, name, points, description, image_url, original_url FROM gifts WHERE id = ? AND family_id = ? AND profile_id = ? LIMIT 1 FOR UPDATE');
+        $stmt->execute([$giftId, $familyId, $profileId]);
         $gift = $stmt->fetch();
         if (!$gift) sendError('Gift not found', 404);
 
-        $stmt = $pdo->prepare('SELECT current_points FROM profiles WHERE id = ? AND user_id = ? LIMIT 1 FOR UPDATE');
-        $stmt->execute([$profileId, $userId]);
+        $stmt = $pdo->prepare('SELECT current_points FROM profiles WHERE id = ? AND family_id = ? LIMIT 1 FOR UPDATE');
+        $stmt->execute([$profileId, $familyId]);
         $profile = $stmt->fetch();
         if (!$profile || (int)$profile['current_points'] < (int)$gift['points']) {
             sendError('Insufficient points', 400);
@@ -654,10 +759,11 @@ function handleRedeemGift($pdo, $data) {
         $stmt->execute([$giftId]);
 
         $stmt = $pdo->prepare('INSERT INTO redeemed_gifts 
-            (user_id, profile_id, gift_id, name, points, description, image_url, original_url, redeem_date) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
+            (user_id, family_id, profile_id, gift_id, name, points, description, image_url, original_url, redeem_date) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
         $stmt->execute([
             $userId,
+            $familyId,
             $profileId,
             $giftId,
             $gift['name'],
@@ -667,14 +773,14 @@ function handleRedeemGift($pdo, $data) {
             $gift['original_url'] ?? ''
         ]);
 
-        $stmt = $pdo->prepare('UPDATE profiles SET current_points = current_points - ?, updated_at = NOW() WHERE id = ? AND user_id = ?');
-        $stmt->execute([(int)$gift['points'], $profileId, $userId]);
+        $stmt = $pdo->prepare('UPDATE profiles SET current_points = current_points - ?, updated_at = NOW() WHERE id = ? AND family_id = ?');
+        $stmt->execute([(int)$gift['points'], $profileId, $familyId]);
 
-        $stmt = $pdo->prepare('SELECT id, current_points FROM profiles WHERE id = ? AND user_id = ?');
-        $stmt->execute([$profileId, $userId]);
+        $stmt = $pdo->prepare('SELECT id, current_points FROM profiles WHERE id = ? AND family_id = ?');
+        $stmt->execute([$profileId, $familyId]);
         $profile = $stmt->fetch();
-        $stmt = $pdo->prepare('SELECT id FROM redeemed_gifts WHERE user_id = ? AND profile_id = ? AND gift_id = ? ORDER BY id DESC LIMIT 1');
-        $stmt->execute([$userId, $profileId, $giftId]);
+        $stmt = $pdo->prepare('SELECT id FROM redeemed_gifts WHERE family_id = ? AND profile_id = ? AND gift_id = ? ORDER BY id DESC LIMIT 1');
+        $stmt->execute([$familyId, $profileId, $giftId]);
         $redeemedRow = $stmt->fetch();
 
         $pdo->commit();
@@ -700,10 +806,13 @@ function handleRedeemGift($pdo, $data) {
 
 function handleGetRedeemedGifts($pdo, $data) {
     $userId = getUserId();
-    $profileId = resolveProfileId($pdo, $userId, $data);
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
     try {
-        $stmt = $pdo->prepare('SELECT id, profile_id, name, points, description, image_url, original_url, redeem_date FROM redeemed_gifts WHERE user_id = ? AND profile_id = ? ORDER BY redeem_date DESC LIMIT 500');
-        $stmt->execute([$userId, $profileId]);
+        $stmt = $pdo->prepare('SELECT r.id, r.profile_id, r.name, r.points, r.description, r.image_url, r.original_url, r.redeem_date, fm.display_name AS added_by_name
+            FROM redeemed_gifts r LEFT JOIN family_members fm ON fm.user_id = r.user_id AND fm.family_id = r.family_id
+            WHERE r.family_id = ? AND r.profile_id = ? ORDER BY r.redeem_date DESC LIMIT 500');
+        $stmt->execute([$familyId, $profileId]);
         sendJson($stmt->fetchAll());
     } catch (Exception $e) {
         sendError('Failed to get redeemed gifts', 500, $e->getMessage());
@@ -743,14 +852,15 @@ function handleGetUserConfig($pdo) {
 
 function handleDeleteBehavior($pdo, $data) {
     $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
     $behaviorId = isset($data['id']) ? (int)$data['id'] : 0;
     if ($behaviorId <= 0) sendError('Invalid behavior ID', 400);
 
     try {
-        $stmt = $pdo->prepare('DELETE FROM behaviors WHERE id = ? AND user_id = ?');
-        $stmt->execute([$behaviorId, $userId]);
+        $stmt = $pdo->prepare('DELETE FROM behaviors WHERE id = ? AND family_id = ?');
+        $stmt->execute([$behaviorId, $familyId]);
         if ($stmt->rowCount() === 0) {
-            sendError('Behavior not found or not owned by you', 404);
+            sendError('Behavior not found', 404);
         }
         sendJson(['success' => true]);
     } catch (Exception $e) {
@@ -760,14 +870,15 @@ function handleDeleteBehavior($pdo, $data) {
 
 function handleDeleteGift($pdo, $data) {
     $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
     $giftId = isset($data['id']) ? (int)$data['id'] : 0;
     if ($giftId <= 0) sendError('Invalid gift ID', 400);
 
     try {
-        $stmt = $pdo->prepare('DELETE FROM gifts WHERE id = ? AND user_id = ?');
-        $stmt->execute([$giftId, $userId]);
+        $stmt = $pdo->prepare('DELETE FROM gifts WHERE id = ? AND family_id = ?');
+        $stmt->execute([$giftId, $familyId]);
         if ($stmt->rowCount() === 0) {
-            sendError('Gift not found or not owned by you', 404);
+            sendError('Gift not found', 404);
         }
         sendJson(['success' => true]);
     } catch (Exception $e) {
@@ -894,4 +1005,140 @@ function resolveRelativeUrl($path, $baseUrl) {
     if (strpos($path, '/') === 0) return $origin . $path;
     $dir = isset($parts['path']) ? substr($parts['path'], 0, strrpos($parts['path'], '/') + 1) : '/';
     return $origin . $dir . $path;
+}
+
+// ── Family sharing actions ──
+function handleGetFamily($pdo) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    try {
+        $info = getFamilyInfo($pdo, $familyId, $userId);
+        if (!$info) sendError('Family not found', 404);
+        sendJson($info);
+    } catch (Exception $e) {
+        sendError('Failed to get family', 500, $e->getMessage());
+    }
+}
+
+function handleInviteMember($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    rateLimit('inviteMember', 10, 3600);
+    try {
+        $stmt = $pdo->prepare('SELECT role FROM family_members WHERE family_id = ? AND user_id = ?');
+        $stmt->execute([$familyId, $userId]);
+        $m = $stmt->fetch();
+        if (!$m || $m['role'] !== 'owner') sendError('Only the family owner can invite', 403);
+        $code = generateInviteCode($pdo);
+        $stmt = $pdo->prepare('UPDATE families SET invite_code = ?, invite_expires_at = NULL WHERE id = ?');
+        $stmt->execute([$code, $familyId]);
+        sendJson([
+            'success' => true,
+            'invite_code' => $code,
+            'invite_link' => 'https://stellar.gaocaihk.com/?invite=' . $code
+        ]);
+    } catch (Exception $e) {
+        sendError('Failed to create invite', 500, $e->getMessage());
+    }
+}
+
+function handleJoinFamily($pdo, $data) {
+    $userId = getUserId();
+    $code = strtoupper(trim($data['code'] ?? ''));
+    if (!preg_match('/^[0-9A-Z]{6}$/', $code)) sendError('Invalid invite code (6 characters)', 400);
+    if (getFamilyIdOfUser($pdo, $userId)) sendError('You are already in a family. Leave it first.', 409);
+
+    $displayName = isset($data['display_name']) ? trim($data['display_name']) : '';
+    try {
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare('SELECT id, invite_expires_at FROM families WHERE invite_code = ? LIMIT 1 FOR UPDATE');
+        $stmt->execute([$code]);
+        $family = $stmt->fetch();
+        if (!$family) sendError('Invite code not found', 404);
+        if ($family['invite_expires_at'] && strtotime($family['invite_expires_at']) < time()) sendError('Invite code expired', 410);
+        $familyId = (int)$family['id'];
+
+        $stmt = $pdo->prepare('SELECT COUNT(*) AS cnt FROM family_members WHERE family_id = ?');
+        $stmt->execute([$familyId]);
+        if ((int)$stmt->fetch()['cnt'] >= FAMILY_MAX_MEMBERS) sendError('Family is full (max ' . FAMILY_MAX_MEMBERS . ')', 403);
+
+        if ($displayName === '' || strlen($displayName) > 60) {
+            $stmt = $pdo->prepare('SELECT email FROM users WHERE id = ?');
+            $stmt->execute([$userId]);
+            $u = $stmt->fetch();
+            $displayName = $u ? explode('@', $u['email'])[0] : '成员';
+        }
+
+        $stmt = $pdo->prepare('INSERT INTO family_members (family_id, user_id, role, display_name) VALUES (?, ?, "member", ?)');
+        $stmt->execute([$familyId, $userId, $displayName]);
+
+        // move the joining user's existing profiles + their records into the new family (preserve data)
+        $stmt = $pdo->prepare('UPDATE profiles SET family_id = ? WHERE user_id = ?');
+        $stmt->execute([$familyId, $userId]);
+        $stmt = $pdo->prepare('UPDATE behaviors b JOIN profiles p ON b.profile_id = p.id SET b.family_id = ? WHERE p.user_id = ?');
+        $stmt->execute([$familyId, $userId]);
+        $stmt = $pdo->prepare('UPDATE gifts g JOIN profiles p ON g.profile_id = p.id SET g.family_id = ? WHERE p.user_id = ?');
+        $stmt->execute([$familyId, $userId]);
+        $stmt = $pdo->prepare('UPDATE redeemed_gifts r JOIN profiles p ON r.profile_id = p.id SET r.family_id = ? WHERE p.user_id = ?');
+        $stmt->execute([$familyId, $userId]);
+
+        $pdo->commit();
+        sendJson(getFamilyInfo($pdo, $familyId, $userId));
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        sendError('Failed to join family', 500, $e->getMessage());
+    }
+}
+
+function handleRemoveMember($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $targetId = isset($data['user_id']) ? (int)$data['user_id'] : 0;
+    if ($targetId <= 0) sendError('Invalid member', 400);
+    if ($targetId === (int)$userId) sendError('Use leave instead of removing yourself', 400);
+    try {
+        $stmt = $pdo->prepare('SELECT role FROM family_members WHERE family_id = ? AND user_id = ?');
+        $stmt->execute([$familyId, $userId]);
+        $m = $stmt->fetch();
+        if (!$m || $m['role'] !== 'owner') sendError('Only the family owner can remove members', 403);
+        $stmt = $pdo->prepare('DELETE FROM family_members WHERE family_id = ? AND user_id = ?');
+        $stmt->execute([$familyId, $targetId]);
+        if ($stmt->rowCount() === 0) sendError('Member not found', 404);
+        // The removed member's profiles stay in the family (shared assets); they lose access.
+        sendJson(['success' => true]);
+    } catch (Exception $e) {
+        sendError('Failed to remove member', 500, $e->getMessage());
+    }
+}
+
+function handleLeaveFamily($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    try {
+        $stmt = $pdo->prepare('SELECT role FROM family_members WHERE family_id = ? AND user_id = ?');
+        $stmt->execute([$familyId, $userId]);
+        $m = $stmt->fetch();
+        if (!$m) sendError('You are not in this family', 404);
+        if ($m['role'] === 'owner') sendError('Owner cannot leave. Remove other members or transfer ownership first.', 400);
+        $stmt = $pdo->prepare('DELETE FROM family_members WHERE family_id = ? AND user_id = ?');
+        $stmt->execute([$familyId, $userId]);
+        // The member's profiles stay in the family (shared). They lose access.
+        sendJson(['success' => true, 'left' => true]);
+    } catch (Exception $e) {
+        sendError('Failed to leave family', 500, $e->getMessage());
+    }
+}
+
+function handleUpdateMemberName($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $name = trim($data['display_name'] ?? '');
+    if ($name === '' || strlen($name) > 60) sendError('Invalid display name', 400);
+    try {
+        $stmt = $pdo->prepare('UPDATE family_members SET display_name = ? WHERE family_id = ? AND user_id = ?');
+        $stmt->execute([$name, $familyId, $userId]);
+        sendJson(['success' => true, 'display_name' => $name]);
+    } catch (Exception $e) {
+        sendError('Failed to update name', 500, $e->getMessage());
+    }
 }

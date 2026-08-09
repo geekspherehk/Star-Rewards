@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=6">
     <link rel="stylesheet" href="i18n.css">
     <!-- API Client for Hostinger MySQL -->
     <script src="api/api-client.js"></script>
     <!-- 多语言支持 -->
-    <script src="i18n.js?v=16"></script>
+    <script src="i18n.js?v=17"></script>
     <script src="utils.js"></script>
     <script src="pwa-manager.js"></script>
     <script src="themes.js"></script>
@@ -291,7 +291,7 @@
             signOut();
         }
     </script>
-    <script src="script.js?v=16"></script>
+    <script src="script.js?v=17"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
@@ -338,10 +338,68 @@
             <div class="poster-preview-wrap">
                 <canvas id="poster-canvas" width="750" height="1200"></canvas>
             </div>
+            <div class="poster-invite-box" id="poster-invite-box">
+                <span data-i18n="home.family.shareInvite">邀请家人一起记录</span>
+                <button type="button" class="secondary-btn" id="poster-copy-invite-btn" onclick="copyPosterInvite()" data-i18n="home.family.copyLink">复制邀请链接</button>
+            </div>
             <div class="modal-actions">
                 <button class="primary-btn" onclick="downloadPoster()" data-i18n="home.posterDownload">💾 保存图片</button>
                 <button class="secondary-btn" id="poster-share-btn" style="display:none" onclick="sharePoster()" data-i18n="home.posterShare">📤 分享</button>
                 <button class="secondary-btn" onclick="closePosterModal()" data-i18n="common.cancel">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 家庭共享弹窗 -->
+    <div id="family-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h3 data-i18n="home.family.myFamily">我的家庭</h3>
+            <div class="form-group">
+                <label data-i18n="home.family.members">成员</label>
+                <div id="family-members" class="family-members"></div>
+            </div>
+            <div class="family-invite-box">
+                <label data-i18n="home.family.inviteLink">邀请链接</label>
+                <div class="family-invite-row">
+                    <input type="text" id="family-invite-link" readonly>
+                    <button type="button" class="secondary-btn" onclick="copyFamilyInvite()" data-i18n="home.family.copyLink">复制</button>
+                </div>
+                <div class="family-invite-code">
+                    <span data-i18n="home.family.inviteCode">邀请码</span>: <b id="family-invite-code">-</b>
+                    <button type="button" class="secondary-btn" onclick="copyFamilyCode()" data-i18n="home.family.copyCode">复制码</button>
+                    <button type="button" class="primary-btn" id="family-new-invite-btn" onclick="familyNewInvite()" data-i18n="home.family.newInvite">生成新邀请码</button>
+                </div>
+            </div>
+            <div class="family-invite-box">
+                <label data-i18n="home.family.yourName">我的昵称</label>
+                <div class="family-invite-row">
+                    <input type="text" id="family-my-name" maxlength="60">
+                    <button type="button" class="secondary-btn" onclick="familyUpdateName()" data-i18n="home.family.updateName">保存</button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="danger-btn" id="family-leave-btn" style="display:none" onclick="familyLeave()" data-i18n="home.family.leave">退出家庭</button>
+                <button type="button" class="secondary-btn" onclick="closeFamilyModal()" data-i18n="common.cancel">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加入家庭弹窗 -->
+    <div id="join-family-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h3 data-i18n="home.family.joinTitle">加入家庭</h3>
+            <p class="family-join-desc" data-i18n="home.family.joinDesc">输入邀请码，与家人共同记录孩子的积分成长。</p>
+            <div class="form-group">
+                <label data-i18n="home.family.inviteCode">邀请码</label>
+                <input type="text" id="join-code" maxlength="6" style="text-transform:uppercase" data-i18n-placeholder="home.family.codePlaceholder" placeholder="6 位邀请码">
+            </div>
+            <div class="form-group">
+                <label data-i18n="home.family.yourName">你的昵称</label>
+                <input type="text" id="join-name" maxlength="60" data-i18n-placeholder="home.family.namePlaceholder" placeholder="例如：爸爸">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="primary-btn" onclick="submitJoinFamily()" data-i18n="home.family.joinFamily">加入</button>
+                <button type="button" class="secondary-btn" onclick="closeJoinFamilyModal()" data-i18n="common.cancel">取消</button>
             </div>
         </div>
     </div>

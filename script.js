@@ -54,6 +54,9 @@ let diaryEntries = [];
 let profiles = [];
 let selectedProfileId = null;
 
+// 家庭共享
+let currentFamily = null; // { family, members, invite_link }
+
 // 当前登录用户信息
 let currentUser = null;
 
@@ -325,6 +328,10 @@ function openPosterModal() {
     if (shareBtn) {
         shareBtn.style.display = (navigator.share && navigator.canShare) ? 'inline-block' : 'none';
     }
+    const inviteBox = document.getElementById('poster-invite-box');
+    if (inviteBox) {
+        inviteBox.style.display = (currentFamily && currentFamily.family) ? 'flex' : 'none';
+    }
 }
 
 function closePosterModal() {
@@ -494,6 +501,19 @@ function renderPoster() {
     ctx.font = '22px ' + fontFamily;
     ctx.fillStyle = textSub;
     ctx.fillText('stellar.gaocaihk.com', W / 2, H - 58);
+
+    // 家庭邀请码（海报裂变）
+    if (currentFamily && currentFamily.family && currentFamily.family.invite_code) {
+        ctx.font = '20px ' + fontFamily;
+        ctx.fillStyle = textSub;
+        ctx.fillText(t('home.family.inviteCode') + '：' + currentFamily.family.invite_code, W / 2, H - 30);
+    }
+}
+
+function copyPosterInvite() {
+    const link = currentFamily && currentFamily.family ? currentFamily.family.invite_link : '';
+    if (link) copyText(link, t('home.family.copied'));
+    else showTemporaryMessage(t('home.family.invalidCode'), 'error');
 }
 
 function downloadPoster() {
@@ -698,6 +718,7 @@ function updateBehaviorLog() {
                 <div class="behavior-meta">
                     <span class="behavior-points ${pointsClass}">${behavior.points}</span>
                     <span class="behavior-date">${formatBehaviorDate(behavior.timestamp)}</span>
+                    ${behavior.added_by_name ? `<span class="behavior-by">· ${escapeHtml(behavior.added_by_name)}</span>` : ''}
                 </div>
             </div>
         `;
@@ -826,6 +847,12 @@ function updateGiftList() {
         
         infoDiv.appendChild(headerDiv);
         infoDiv.appendChild(pointsDiv);
+        if (gift.added_by_name) {
+            const byDiv = document.createElement('div');
+            byDiv.className = 'item-by';
+            byDiv.textContent = t('home.family.addedBy') + '：' + gift.added_by_name;
+            infoDiv.appendChild(byDiv);
+        }
         
         contentDiv.appendChild(imageDiv);
         contentDiv.appendChild(infoDiv);
@@ -1014,6 +1041,12 @@ function updateRedeemedList() {
         
         infoDiv.appendChild(pointsSpan);
         infoDiv.appendChild(dateSpan);
+        if (item.added_by_name) {
+            const bySpan = document.createElement('span');
+            bySpan.className = 'redeemed-by';
+            bySpan.textContent = t('home.family.addedBy') + '：' + item.added_by_name;
+            infoDiv.appendChild(bySpan);
+        }
         
         contentDiv.appendChild(headerDiv);
         contentDiv.appendChild(infoDiv);
@@ -1549,7 +1582,20 @@ async function initializeApp() {
         showLoggedInState(currentUser);
         
         updateUI();
-        
+
+        // 处理分享海报/邀请链接带来的 ?invite=CODE 深链
+        const inviteCode = new URLSearchParams(window.location.search).get('invite');
+        if (inviteCode) {
+            try {
+                const code = inviteCode.toUpperCase().trim();
+                if (!currentFamily || (currentFamily.family && currentFamily.family.invite_code !== code)) {
+                    openJoinFamilyModal(code);
+                }
+            } catch (e) {
+                console.warn('处理邀请链接失败', e);
+            }
+        }
+
         console.log('Script.js: 应用初始化完成');
         
     } catch (error) {
@@ -1566,12 +1612,13 @@ async function loadDataFromCloud() {
         if (!api.getToken()) {
             throw new Error(t('common.notLoggedIn'));        }
         
-        const [profile, profilesData, behaviorsData, giftsData, redeemedGiftsData] = await Promise.all([
+        const [profile, profilesData, behaviorsData, giftsData, redeemedGiftsData, familyData] = await Promise.all([
             api.getProfile(),
             api.getProfiles(),
             api.getBehaviors(),
             api.getGifts(),
-            api.getRedeemedGifts()
+            api.getRedeemedGifts(),
+            api.getFamily().catch(() => null)
         ]);
         
         console.log('Script.js: 数据加载成功:');
@@ -1605,7 +1652,9 @@ async function loadDataFromCloud() {
             image_url: gift.image_url || '',
             original_url: gift.original_url || ''
         }));
-        
+
+        currentFamily = familyData && familyData.family ? familyData : null;
+
         console.log('Script.js: 云端数据加载完成');
         return true;
         
@@ -1621,6 +1670,16 @@ function renderProfileSwitcher() {
     if (!container) return;
     container.innerHTML = '';
     if (!profiles || profiles.length === 0) return;
+
+    // 家庭共享入口按钮
+    const famBtn = document.createElement('button');
+    famBtn.type = 'button';
+    famBtn.className = 'profile-chip profile-chip-family';
+    famBtn.setAttribute('title', t('home.family.open'));
+    famBtn.innerHTML = `<span class="profile-chip-avatar">👨‍👩‍👧</span><span class="profile-chip-name">${t('home.family.open')}</span>`;
+    famBtn.onclick = () => openFamilyModal();
+    container.appendChild(famBtn);
+
 
     profiles.forEach(p => {
         const chip = document.createElement('button');
@@ -1666,6 +1725,198 @@ async function switchProfile(profileId) {
     } catch (error) {
         console.error('切换孩子失败:', error);
         showTemporaryMessage(`${t('home.profile.switchFailed')}: ${escapeHtml(error.message)}`, 'error');
+    }
+}
+
+// ── 家庭共享 ──
+function openFamilyModal() {
+    const modal = document.getElementById('family-modal');
+    if (!modal) return;
+    if (!currentFamily || !currentFamily.family) {
+        api.getFamily().then(d => {
+            currentFamily = d && d.family ? d : null;
+            openFamilyModal();
+        }).catch(e => showTemporaryMessage(String(e.message || e), 'error'));
+        return;
+    }
+    renderFamilyModal();
+    modal.style.display = 'flex';
+}
+
+function closeFamilyModal() {
+    const modal = document.getElementById('family-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function renderFamilyModal() {
+    if (!currentFamily || !currentFamily.family) return;
+    const fam = currentFamily.family;
+    const myId = parseInt(localStorage.getItem('user_id') || '0', 10);
+    const myMember = currentFamily.members.find(m => parseInt(m.user_id, 10) === myId);
+    const isOwner = myMember && myMember.role === 'owner';
+
+    const listEl = document.getElementById('family-members');
+    if (listEl) {
+        listEl.innerHTML = '';
+        (currentFamily.members || []).forEach(m => {
+            const row = document.createElement('div');
+            row.className = 'family-member' + (parseInt(m.user_id, 10) === myId ? ' is-self' : '');
+            const roleLabel = m.role === 'owner' ? t('home.family.owner') : '';
+            const selfLabel = parseInt(m.user_id, 10) === myId ? '（' + t('home.family.me') + '）' : '';
+            row.innerHTML = `<span class="family-member-avatar">👤</span>` +
+                `<span class="family-member-name">${escapeHtml(m.display_name || '成员')}${selfLabel}</span>` +
+                (roleLabel ? `<span class="family-member-role">${roleLabel}</span>` : '');
+            if (isOwner && parseInt(m.user_id, 10) !== myId) {
+                const rm = document.createElement('button');
+                rm.type = 'button';
+                rm.className = 'family-member-remove';
+                rm.textContent = t('home.family.removeMember');
+                rm.onclick = () => familyRemoveMember(parseInt(m.user_id, 10));
+                row.appendChild(rm);
+            }
+            listEl.appendChild(row);
+        });
+    }
+
+    const codeEl = document.getElementById('family-invite-code');
+    const linkEl = document.getElementById('family-invite-link');
+    const newBtn = document.getElementById('family-new-invite-btn');
+    const leaveBtn = document.getElementById('family-leave-btn');
+    if (codeEl) codeEl.textContent = fam.invite_code || '-';
+    if (linkEl) linkEl.value = fam.invite_link || '';
+    if (newBtn) newBtn.style.display = isOwner ? 'inline-block' : 'none';
+    if (leaveBtn) leaveBtn.style.display = isOwner ? 'none' : 'inline-block';
+
+    const nameEl = document.getElementById('family-my-name');
+    if (nameEl) nameEl.value = myMember ? (myMember.display_name || '') : '';
+}
+
+async function familyNewInvite() {
+    try {
+        const r = await api.inviteMember();
+        if (currentFamily && currentFamily.family) {
+            currentFamily.family.invite_code = r.invite_code;
+            currentFamily.family.invite_link = r.invite_link;
+        }
+        renderFamilyModal();
+        showTemporaryMessage(t('home.family.newInvite') + ' ✓', 'success');
+    } catch (e) {
+        showTemporaryMessage(String(e.message || e), 'error');
+    }
+}
+
+function copyFamilyInvite() {
+    const el = document.getElementById('family-invite-link');
+    if (el) copyText(el.value, t('home.family.copied'));
+}
+
+function copyFamilyCode() {
+    const el = document.getElementById('family-invite-code');
+    if (el) copyText(el.textContent, t('home.family.copied'));
+}
+
+function copyText(text, okMsg) {
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => showTemporaryMessage(okMsg, 'success')).catch(() => fallbackCopy(text, okMsg));
+    } else {
+        fallbackCopy(text, okMsg);
+    }
+}
+
+function fallbackCopy(text, okMsg) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); showTemporaryMessage(okMsg, 'success'); } catch (e) { showTemporaryMessage('复制失败', 'error'); }
+    document.body.removeChild(ta);
+}
+
+async function familyUpdateName() {
+    const el = document.getElementById('family-my-name');
+    const name = el ? el.value.trim() : '';
+    if (!name) { showTemporaryMessage(t('home.profile.nameRequired'), 'error'); return; }
+    try {
+        await api.updateMemberName(name);
+        if (currentFamily && currentFamily.members) {
+            const myId = parseInt(localStorage.getItem('user_id') || '0', 10);
+            const m = currentFamily.members.find(x => parseInt(x.user_id, 10) === myId);
+            if (m) m.display_name = name;
+        }
+        renderFamilyModal();
+        showTemporaryMessage(t('home.family.updateNameSuccess'), 'success');
+    } catch (e) {
+        showTemporaryMessage(String(e.message || e), 'error');
+    }
+}
+
+async function familyRemoveMember(targetId) {
+    if (!confirm(t('home.family.removeConfirm'))) return;
+    try {
+        await api.removeMember(targetId);
+        const r = await api.getFamily();
+        currentFamily = r && r.family ? r : currentFamily;
+        renderFamilyModal();
+        showTemporaryMessage(t('home.family.removeSuccess'), 'success');
+    } catch (e) {
+        showTemporaryMessage(String(e.message || e), 'error');
+    }
+}
+
+async function familyLeave() {
+    if (!confirm(t('home.family.leaveConfirm'))) return;
+    try {
+        await api.leaveFamily();
+        currentFamily = null;
+        closeFamilyModal();
+        await loadDataFromCloud();
+        updateUI();
+        showTemporaryMessage(t('home.family.leaveSuccess'), 'success');
+    } catch (e) {
+        showTemporaryMessage(String(e.message || e), 'error');
+    }
+}
+
+function openJoinFamilyModal(code) {
+    const modal = document.getElementById('join-family-modal');
+    if (!modal) return;
+    const codeEl = document.getElementById('join-code');
+    if (codeEl) codeEl.value = code || '';
+    const nameEl = document.getElementById('join-name');
+    if (nameEl && !nameEl.value) {
+        const email = localStorage.getItem('user_email') || '';
+        nameEl.value = email ? email.split('@')[0] : '';
+    }
+    modal.style.display = 'flex';
+}
+
+function closeJoinFamilyModal() {
+    const modal = document.getElementById('join-family-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function submitJoinFamily() {
+    const codeEl = document.getElementById('join-code');
+    const nameEl = document.getElementById('join-name');
+    const code = (codeEl ? codeEl.value : '').trim().toUpperCase();
+    const name = (nameEl ? nameEl.value : '').trim();
+    if (!/^[0-9A-Z]{6}$/.test(code)) {
+        showTemporaryMessage(t('home.family.invalidCode'), 'error');
+        return;
+    }
+    try {
+        const r = await api.joinFamily(code, name);
+        currentFamily = r && r.family ? r : currentFamily;
+        closeJoinFamilyModal();
+        await loadDataFromCloud();
+        updateUI();
+        showTemporaryMessage(t('home.family.joinSuccess'), 'success');
+    } catch (e) {
+        const msg = (e.message || String(e));
+        showTemporaryMessage(msg.indexOf('409') >= 0 ? t('home.family.alreadyInFamily') : t('home.family.joinFailed') + ': ' + escapeHtml(msg), 'error');
     }
 }
 

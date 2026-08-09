@@ -251,6 +251,30 @@ class ApiClient {
         return await this.request('fetchProductInfo', { url });
     }
 
+    async getFamily() {
+        return await this.request('getFamily');
+    }
+
+    async inviteMember() {
+        return await this.request('inviteMember');
+    }
+
+    async joinFamily(code, displayName = '') {
+        return await this.request('joinFamily', { code, display_name: displayName });
+    }
+
+    async removeMember(userId) {
+        return await this.request('removeMember', { user_id: userId });
+    }
+
+    async leaveFamily() {
+        return await this.request('leaveFamily');
+    }
+
+    async updateMemberName(displayName) {
+        return await this.request('updateMemberName', { display_name: displayName });
+    }
+
     async updateTheme(theme) {
         return await this.request('updateTheme', { theme });
     }

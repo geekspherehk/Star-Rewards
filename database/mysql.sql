@@ -1,85 +1,130 @@
 -- MySQL Database Schema for Star-Rewards App
--- Version 2 (security + feature fixes)
+-- Version 3 (family sharing + multi-child + added_by attribution)
+-- Regenerated from live DB on 2026-08-09. Canonical schema source.
 
--- 1. 创建 users 表
-CREATE TABLE IF NOT EXISTS users (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_users_email (email)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- users
+CREATE TABLE `users` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `email` varchar(255) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. 创建 profiles 表
-CREATE TABLE IF NOT EXISTS profiles (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL UNIQUE,
-  current_points INT NOT NULL DEFAULT 0,
-  total_points INT NOT NULL DEFAULT 0,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT chk_current_points CHECK (current_points >= 0),
-  CONSTRAINT chk_total_points CHECK (total_points >= 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- families
+CREATE TABLE `families` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL DEFAULT '我的家庭',
+  `invite_code` varchar(8) NOT NULL,
+  `invite_expires_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_invite` (`invite_code`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3. 创建 gifts 表
-CREATE TABLE IF NOT EXISTS gifts (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  points INT NOT NULL,
-  description TEXT,
-  image_url VARCHAR(2048) DEFAULT '',
-  original_url VARCHAR(2048) DEFAULT '',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  INDEX idx_gifts_user_created (user_id, created_at DESC),
-  CONSTRAINT chk_gifts_points CHECK (points > 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- family_members
+CREATE TABLE `family_members` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `family_id` bigint(20) NOT NULL,
+  `user_id` bigint(20) NOT NULL,
+  `role` enum('owner','member') NOT NULL DEFAULT 'member',
+  `display_name` varchar(60) NOT NULL DEFAULT '',
+  `joined_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_family_user` (`family_id`,`user_id`),
+  KEY `idx_fm_user` (`user_id`),
+  CONSTRAINT `fk_fm_family` FOREIGN KEY (`family_id`) REFERENCES `families` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_fm_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4. 创建 redeemed_gifts 表
-CREATE TABLE IF NOT EXISTS redeemed_gifts (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL,
-  gift_id BIGINT,
-  name VARCHAR(255) NOT NULL,
-  points INT NOT NULL,
-  description TEXT,
-  image_url VARCHAR(2048) DEFAULT '',
-  original_url VARCHAR(2048) DEFAULT '',
-  redeem_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  INDEX idx_redeemed_user_date (user_id, redeem_date DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- profiles
+CREATE TABLE `profiles` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL,
+  `name` varchar(50) NOT NULL DEFAULT '孩子',
+  `avatar` varchar(20) NOT NULL DEFAULT '⭐',
+  `color` varchar(20) NOT NULL DEFAULT '#FFB300',
+  `current_points` int(11) DEFAULT 0,
+  `total_points` int(11) DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `family_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_profile_family` (`family_id`),
+  CONSTRAINT `fk_profile_family` FOREIGN KEY (`family_id`) REFERENCES `families` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `profiles_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. 创建 behaviors 表
-CREATE TABLE IF NOT EXISTS behaviors (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL,
-  description TEXT NOT NULL,
-  points INT NOT NULL,
-  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  INDEX idx_behaviors_user_time (user_id, timestamp DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- user_configs
+CREATE TABLE `user_configs` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL,
+  `selected_theme` varchar(50) DEFAULT 'classic',
+  `selected_profile_id` bigint(20) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_id` (`user_id`),
+  CONSTRAINT `user_configs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 6. 创建 user_configs 表
-CREATE TABLE IF NOT EXISTS user_configs (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL UNIQUE,
-  selected_theme VARCHAR(50) DEFAULT 'classic',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- behaviors
+CREATE TABLE `behaviors` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL,
+  `profile_id` bigint(20) NOT NULL,
+  `description` text NOT NULL,
+  `points` int(11) NOT NULL,
+  `timestamp` timestamp NULL DEFAULT current_timestamp(),
+  `family_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `fk_behavior_profile` (`profile_id`),
+  KEY `idx_behavior_family` (`family_id`),
+  CONSTRAINT `behaviors_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_behavior_profile` FOREIGN KEY (`profile_id`) REFERENCES `profiles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. Migration: 为现有表补充缺失字段（幂等安全）
---    升级 V1 -> V2 时运行（忽略重复字段错误）
--- ALTER TABLE gifts ADD COLUMN image_url VARCHAR(2048) DEFAULT '';
--- ALTER TABLE gifts ADD COLUMN original_url VARCHAR(2048) DEFAULT '';
--- ALTER TABLE redeemed_gifts ADD COLUMN image_url VARCHAR(2048) DEFAULT '';
--- ALTER TABLE redeemed_gifts ADD COLUMN original_url VARCHAR(2048) DEFAULT '';
--- ALTER TABLE profiles MODIFY COLUMN current_points INT NOT NULL DEFAULT 0;
--- ALTER TABLE profiles MODIFY COLUMN total_points INT NOT NULL DEFAULT 0;
+-- gifts
+CREATE TABLE `gifts` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL,
+  `profile_id` bigint(20) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `points` int(11) NOT NULL,
+  `description` text DEFAULT NULL,
+  `image_url` varchar(2048) DEFAULT '',
+  `original_url` varchar(2048) DEFAULT '',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `family_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `fk_gift_profile` (`profile_id`),
+  KEY `idx_gift_family` (`family_id`),
+  CONSTRAINT `fk_gift_profile` FOREIGN KEY (`profile_id`) REFERENCES `profiles` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `gifts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- redeemed_gifts
+CREATE TABLE `redeemed_gifts` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL,
+  `profile_id` bigint(20) NOT NULL,
+  `gift_id` bigint(20) DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  `points` int(11) NOT NULL,
+  `description` text DEFAULT NULL,
+  `image_url` varchar(2048) DEFAULT '',
+  `original_url` varchar(2048) DEFAULT '',
+  `redeem_date` timestamp NULL DEFAULT current_timestamp(),
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `family_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `fk_redeemed_profile` (`profile_id`),
+  KEY `idx_redeemed_family` (`family_id`),
+  CONSTRAINT `fk_redeemed_profile` FOREIGN KEY (`profile_id`) REFERENCES `profiles` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `redeemed_gifts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
