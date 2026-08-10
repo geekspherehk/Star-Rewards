@@ -332,6 +332,7 @@ function openPosterModal() {
     if (inviteBox) {
         inviteBox.style.display = (currentFamily && currentFamily.family) ? 'flex' : 'none';
     }
+    track('view_poster');
 }
 
 function closePosterModal() {
@@ -537,6 +538,7 @@ function downloadPoster() {
 }
 
 async function sharePoster() {
+    track('share_poster');
     if (!navigator.share) return;
     const canvas = document.getElementById('poster-canvas');
     if (!canvas) return;
@@ -1132,7 +1134,8 @@ async function addPoints() {
         showLoading('Adding points...');
 
         const result = await api.addBehavior(desc, change);
-        
+        track('add_behavior', { points: change });
+
         // Incremental update - no full reload needed
         currentPoints = result.current_points || currentPoints;
         totalPoints = result.total_points || totalPoints;
@@ -1286,6 +1289,7 @@ async function addGift() {
         showLoading('Adding gift...');
 
         const result = await api.addGift(name, giftPoints, description, imageUrl, originalUrl);
+        track('add_gift', { points: giftPoints });
 
         // Incremental update - add locally, no full reload
         const newGift = {
@@ -1373,7 +1377,8 @@ async function redeemGift(giftId) {
 
             showLoading('Redeeming...');
             const result = await api.redeemGift(gift.id);
-            
+            track('redeem', { gift_id: gift.id, points: gift.points });
+
             // Incremental update - no full reload needed
             currentPoints = result.current_points || currentPoints;
             
@@ -1741,6 +1746,7 @@ function openFamilyModal() {
     }
     renderFamilyModal();
     modal.style.display = 'flex';
+    track('open_family');
 }
 
 function closeFamilyModal() {
@@ -1794,6 +1800,7 @@ function renderFamilyModal() {
 async function familyNewInvite() {
     try {
         const r = await api.inviteMember();
+        track('create_invite');
         if (currentFamily && currentFamily.family) {
             currentFamily.family.invite_code = r.invite_code;
             currentFamily.family.invite_link = r.invite_link;
@@ -1909,6 +1916,7 @@ async function submitJoinFamily() {
     }
     try {
         const r = await api.joinFamily(code, name);
+        track('join_family', { code: code });
         currentFamily = r && r.family ? r : currentFamily;
         closeJoinFamilyModal();
         await loadDataFromCloud();

@@ -275,6 +275,10 @@ class ApiClient {
         return await this.request('updateMemberName', { display_name: displayName });
     }
 
+    async track(event, meta = {}) {
+        return await this.request('track', { event, meta });
+    }
+
     async updateTheme(theme) {
         return await this.request('updateTheme', { theme });
     }
@@ -289,3 +293,12 @@ class ApiClient {
 }
 
 const api = new ApiClient();
+
+// Fire-and-forget analytics event (埋点). Never blocks the UI; failures are ignored.
+function track(event, meta = {}) {
+    try {
+        api.track(event, meta).catch(() => {});
+    } catch (e) {
+        /* analytics must never break the app */
+    }
+}

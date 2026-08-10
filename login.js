@@ -73,6 +73,7 @@ async function handleSignUp() {
     }
     try {
         await signUp(email, password);
+        track('register');
         showTemporaryMessage(t('common.registerSuccess'), 'success');
         toggleAuthForm('login');
         document.getElementById('register-email').value = '';
@@ -93,6 +94,7 @@ async function handleSignIn() {
     try {
         console.log('调用API登录接口...');
         let data = await signIn(email, password);
+        track('login');
         console.log('登录成功，返回数据:', data);
         document.getElementById('login-email').value = '';
         document.getElementById('login-password').value = '';

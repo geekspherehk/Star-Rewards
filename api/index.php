@@ -1,6 +1,13 @@
 <?php
 require_once 'config.php';
 
+// ── Analytics event tracking (埋点) ──
+define('TRACK_ALLOWED_EVENTS', [
+    'register', 'login', 'add_behavior', 'add_gift', 'redeem',
+    'view_poster', 'share_poster', 'create_invite', 'join_family',
+    'open_family', 'view_seo_article', 'first_session'
+]);
+
 header('Content-Type: application/json; charset=utf-8');
 
 $allowedOrigin = getenv('ALLOWED_ORIGIN') ?: '';
@@ -354,6 +361,9 @@ switch ($action) {
         break;
     case 'updateMemberName':
         handleUpdateMemberName($pdo, $data);
+        break;
+    case 'track':
+        handleTrackEvent($pdo, $data);
         break;
     default:
         sendError('Invalid action', 400);
@@ -1140,5 +1150,38 @@ function handleUpdateMemberName($pdo, $data) {
         sendJson(['success' => true, 'display_name' => $name]);
     } catch (Exception $e) {
         sendError('Failed to update name', 500, $e->getMessage());
+    }
+}
+
+function handleTrackEvent($pdo, $data) {
+    try {
+    $userId = getUserId();
+    rateLimit('track', 120, 60); // generous: up to 120 events / minute / IP
+    $event = trim($data['event'] ?? '');
+    if ($event === '' || !in_array($event, TRACK_ALLOWED_EVENTS, true)) {
+        sendError('Invalid event', 400);
+    }
+    $meta = $data['meta'] ?? null;
+    if ($meta !== null && !is_array($meta)) {
+        $meta = null;
+    }
+    if ($meta !== null) {
+        // bound payload size (defensive)
+        $encoded = json_encode($meta, JSON_UNESCAPED_UNICODE);
+        if ($encoded === false || strlen($encoded) > 2000) {
+            $meta = null;
+        }
+    }
+    $familyId = getFamilyIdOfUser($pdo, $userId);
+        $stmt = $pdo->prepare('INSERT INTO analytics_events (user_id, family_id, event, meta) VALUES (?, ?, ?, ?)');
+        $stmt->execute([
+            $userId,
+            $familyId,
+            $event,
+            $meta === null ? null : json_encode($meta, JSON_UNESCAPED_UNICODE)
+        ]);
+        sendJson(['success' => true]);
+    } catch (Throwable $e) {
+        sendError('Failed to record event', 500, $e->getMessage());
     }
 }
