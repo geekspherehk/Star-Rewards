@@ -1606,10 +1606,12 @@ function openGrowthAdd(type) {
     document.getElementById('ga-milestone-fields').style.display = (growthAddType === 'milestone') ? '' : 'none';
     document.getElementById('ga-note-fields').style.display = (growthAddType === 'note') ? '' : 'none';
     document.getElementById('ga-voice-fields').style.display = (growthAddType === 'voice') ? '' : 'none';
-    ['ga-title', 'ga-detail', 'ga-note-title', 'ga-note-body', 'ga-voice-content'].forEach(id => {
+    ['ga-title', 'ga-detail', 'ga-note-title', 'ga-note-body', 'ga-voice-content', 'ga-date'].forEach(id => {
         const e = document.getElementById(id);
         if (e) e.value = '';
     });
+    const cat = document.getElementById('ga-cat');
+    if (cat) cat.value = '其他';
     const mood = document.getElementById('ga-note-mood');
     if (mood) mood.value = 'happy';
     document.getElementById('growth-add-modal').style.display = 'flex';
@@ -1626,7 +1628,10 @@ async function submitGrowthAdd() {
         if (growthAddType === 'milestone') {
             const title = (document.getElementById('ga-title').value || '').trim();
             if (!title) { showTemporaryMessage(t('keepsake.milestoneTitle') + t('common.required')); return; }
-            await api.addMilestone('其他', title, (document.getElementById('ga-detail').value || '').trim());
+            const cat = (document.getElementById('ga-cat').value || '其他').trim();
+            const date = (document.getElementById('ga-date').value || '').trim();
+            const detail = (document.getElementById('ga-detail').value || '').trim();
+            await api.addMilestone(cat, title, detail, date || null);
             ok = true;
         } else if (growthAddType === 'note') {
             const title = (document.getElementById('ga-note-title').value || '').trim();

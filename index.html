@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=8">
+    <link rel="stylesheet" href="style.css?v=9">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=19"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=20"></script>
+    <script defer src="i18n.js?v=21"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -338,7 +338,7 @@
             signOut();
         }
     </script>
-    <script defer src="script.js?v=21"></script>
+    <script defer src="script.js?v=22"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
@@ -426,6 +426,23 @@
                 <div class="form-group">
                     <label data-i18n="keepsake.milestoneTitle">标题</label>
                     <input type="text" id="ga-title" maxlength="255" data-i18n-placeholder="keepsake.milestoneTitlePlaceholder" placeholder="例如：第一次自己系鞋带">
+                </div>
+                <div class="form-group milestone-row">
+                    <div>
+                        <label data-i18n="keepsake.milestoneCat">分类</label>
+                        <select id="ga-cat">
+                            <option value="首次" data-i18n="keepsake.mcatFirst">首次</option>
+                            <option value="成长" data-i18n="keepsake.mcatGrowth">成长</option>
+                            <option value="获奖" data-i18n="keepsake.mcatAward">获奖</option>
+                            <option value="习惯" data-i18n="keepsake.mcatHabit">习惯</option>
+                            <option value="学习" data-i18n="keepsake.mcatLearn">学习</option>
+                            <option value="其他" data-i18n="keepsake.mcatOther" selected>其他</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label data-i18n="keepsake.milestoneDate">日期</label>
+                        <input type="date" id="ga-date">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label data-i18n="keepsake.milestoneDetail">描述</label>

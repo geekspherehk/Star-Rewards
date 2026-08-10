@@ -234,7 +234,15 @@ const translations = {
             moodSad: '😢 略难过',
             emptyMilestones: '还没有里程碑，记录孩子成长的闪光时刻吧！',
             emptyNotes: '还没有成长手记，写下来吧！',
-            emptyVoice: '还没有记录童言童语，孩子的一句话也许最珍贵。'
+            emptyVoice: '还没有记录童言童语，孩子的一句话也许最珍贵。',
+            milestoneCat: '分类',
+            milestoneDate: '日期',
+            mcatFirst: '首次',
+            mcatGrowth: '成长',
+            mcatAward: '获奖',
+            mcatHabit: '习惯',
+            mcatLearn: '学习',
+            mcatOther: '其他'
         },
         common: {
             save: '保存',
@@ -666,7 +674,15 @@ const translations = {
             moodSad: '😢 A bit sad',
             emptyMilestones: 'No milestones yet. Capture a shining moment of growth!',
             emptyNotes: 'No growth notes yet. Write one!',
-            emptyVoice: "No kid's words yet. A single sentence from them may be the most precious."
+            emptyVoice: "No kid's words yet. A single sentence from them may be the most precious.",
+            milestoneCat: 'Category',
+            milestoneDate: 'Date',
+            mcatFirst: 'First',
+            mcatGrowth: 'Growth',
+            mcatAward: 'Award',
+            mcatHabit: 'Habit',
+            mcatLearn: 'Learning',
+            mcatOther: 'Other'
         },
         common: {
             save: 'Save',
