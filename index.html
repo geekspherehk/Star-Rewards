@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=7">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=18"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=17"></script>
+    <script defer src="i18n.js?v=19"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -99,6 +99,12 @@
                 <h3 data-i18n="home.diary">成长日记</h3>
                 <p data-i18n="home.diaryDesc">回顾足迹，见证成长</p>
                 <div class="module-stat" id="stat-diary"></div>
+            </div>
+            <div class="module-card" onclick="showModule('growth-module')">
+                <div style="font-size: 2.5rem; margin-bottom: 10px;">📔</div>
+                <h3 data-i18n="home.keepsake">成长纪念册</h3>
+                <p data-i18n="home.keepsakeDesc">珍藏点滴，见证成长</p>
+                <div class="module-stat" id="stat-keepsake"></div>
             </div>
         </div>
 
@@ -226,6 +232,24 @@
                     <div class="achievements-grid" id="achievements-grid"></div>
                 </div>
             </div>
+
+            <!-- 成长纪念册模块（时间轴 + 月度报告 + 可打印/分享） -->
+            <div id="growth-module" class="module-content">
+                <div class="keepsake-header">
+                    <h3 data-i18n="keepsake.title">📔 成长纪念册</h3>
+                    <p class="keepsake-subtitle" data-i18n="keepsake.subtitle">每一颗星星，都是成长的印记</p>
+                </div>
+
+                <div class="keepsake-actions">
+                    <button type="button" class="poster-btn" onclick="printKeepsake()"><span data-i18n="keepsake.print">🖨️ 打印 / 保存纪念册</span></button>
+                    <button type="button" class="export-btn" onclick="openPosterModal()"><span data-i18n="keepsake.share">📤 分享成长</span></button>
+                </div>
+
+                <div class="keepsake-month" id="keepsake-month"></div>
+
+                <h4 class="keepsake-section-title" data-i18n="keepsake.timelineTitle">✨ 成长时间轴</h4>
+                <div id="keepsake-timeline" class="keepsake-timeline"></div>
+            </div>
         </div>
     </main>
     
@@ -290,7 +314,7 @@
             signOut();
         }
     </script>
-    <script defer src="script.js?v=18"></script>
+    <script defer src="script.js?v=20"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
@@ -341,10 +365,30 @@
                 <span data-i18n="home.family.shareInvite">邀请家人一起记录</span>
                 <button type="button" class="secondary-btn" id="poster-copy-invite-btn" onclick="copyPosterInvite()" data-i18n="home.family.copyLink">复制邀请链接</button>
             </div>
+            <div class="poster-share-row">
+                <button type="button" class="share-chip" onclick="shareToWeChat()" data-i18n="common.shareWeChat">💬 微信</button>
+                <button type="button" class="share-chip" onclick="shareToWhatsApp()" data-i18n="common.shareWhatsApp">🟢 WhatsApp</button>
+                <button type="button" class="share-chip" onclick="shareToPinterest()" data-i18n="common.sharePinterest">📌 Pinterest</button>
+            </div>
             <div class="modal-actions">
                 <button class="primary-btn" onclick="downloadPoster()" data-i18n="home.posterDownload">💾 保存图片</button>
                 <button class="secondary-btn" id="poster-share-btn" style="display:none" onclick="sharePoster()" data-i18n="home.posterShare">📤 分享</button>
                 <button class="secondary-btn" onclick="closePosterModal()" data-i18n="common.cancel">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成长成就证书弹窗 -->
+    <div id="certificate-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content cert-modal">
+            <h3 data-i18n="common.certTitle">🎉 成长成就证书</h3>
+            <div class="cert-preview-wrap">
+                <canvas id="cert-canvas" width="800" height="600"></canvas>
+            </div>
+            <p class="cert-sub" data-i18n="common.certSub">这是对你努力与坚持的见证</p>
+            <div class="modal-actions">
+                <button class="primary-btn" onclick="downloadCertificate()">💾 保存证书</button>
+                <button class="secondary-btn" onclick="closeCertificateModal()" data-i18n="common.cancel">关闭</button>
             </div>
         </div>
     </div>

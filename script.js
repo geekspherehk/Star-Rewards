@@ -891,7 +891,7 @@ function updateGiftList() {
         // 兑换按钮
         const redeemBtn = document.createElement('button');
         redeemBtn.className = 'redeem-btn';
-        redeemBtn.textContent = t('common.redeemButton');
+        redeemBtn.textContent = t('common.achieveButton');
         redeemBtn.disabled = currentPoints < gift.points;
         redeemBtn.onclick = async () => {
             await redeemGift(index);
@@ -1439,7 +1439,8 @@ async function redeemGift(giftId) {
             updateRedeemedList();
 
             hideLoading();
-            showTemporaryMessage(t('common.redeemSuccess'), 'success');
+            showTemporaryMessage(t('common.achieveSuccess'), 'success');
+            showCelebrationCertificate(gift);
 
         } catch (error) {
             console.error('兑换礼物失败:', error);
@@ -1447,6 +1448,202 @@ async function redeemGift(giftId) {
             showTemporaryMessage(t('common.redeemFailed') + (error.message ? `: ${escapeHtml(error.message)}` : ''), 'error');
         }
     });
+}
+
+// ── 成长纪念册（战略核心资产：纵向成长记录 + 情感纪念，可打印/分享驱动裂变） ──
+function buildGrowthEvents() {
+    const events = [];
+    (Array.isArray(behaviors) ? behaviors : []).forEach(b => {
+        events.push({ type: 'earn', date: b.timestamp || b.created_at, text: b.description || t('home.behaviors'), points: b.points || 0, by: b.added_by_name });
+    });
+    (Array.isArray(redeemedGifts) ? redeemedGifts : []).forEach(r => {
+        events.push({ type: 'redeem', date: r.redeem_date || r.created_at, text: r.name || t('gifts.title'), points: r.points || 0, by: r.added_by_name });
+    });
+    events.sort((a, b) => new Date(b.date) - new Date(a.date));
+    return events;
+}
+
+function computeBestStreak() {
+    const days = new Set((Array.isArray(behaviors) ? behaviors : []).map(b => {
+        const d = new Date(b.timestamp || b.created_at);
+        return isNaN(d) ? null : d.toISOString().slice(0, 10);
+    }).filter(Boolean));
+    if (days.size === 0) return 0;
+    let best = 1, cur = 1;
+    const sorted = [...days].sort();
+    for (let i = 1; i < sorted.length; i++) {
+        const prev = new Date(sorted[i - 1]), now = new Date(sorted[i]);
+        const diff = Math.round((now - prev) / 86400000);
+        if (diff === 1) { cur++; best = Math.max(best, cur); }
+        else if (diff > 1) { cur = 1; }
+    }
+    return best;
+}
+
+function renderGrowthRecord() {
+    const profile = getSelectedProfile();
+    const name = profile.name || t('home.profile.add');
+    const events = buildGrowthEvents();
+    const now = new Date();
+    const ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+    const earnedThisMonth = events.filter(e => e.type === 'earn' && (e.date || '').slice(0, 7) === ym)
+        .reduce((s, e) => s + (e.points || 0), 0);
+    const achievedThisMonth = events.filter(e => e.type === 'redeem' && (e.date || '').slice(0, 7) === ym).length;
+    const bestStreak = computeBestStreak();
+
+    const monthEl = document.getElementById('keepsake-month');
+    if (monthEl) {
+        monthEl.innerHTML = `
+            <div class="km-card"><div class="km-value">${earnedThisMonth}</div><div class="km-label">${t('keepsake.earned')}</div></div>
+            <div class="km-card"><div class="km-value">${achievedThisMonth}</div><div class="km-label">${t('keepsake.achieved')}</div></div>
+            <div class="km-card"><div class="km-value">${bestStreak}</div><div class="km-label">${t('keepsake.bestStreak')}</div></div>`;
+    }
+
+    const tl = document.getElementById('keepsake-timeline');
+    if (!tl) return;
+    if (events.length === 0) {
+        tl.innerHTML = `<div class="kt-empty">${t('keepsake.noData')}</div>`;
+        return;
+    }
+    tl.innerHTML = events.slice(0, 60).map(e => {
+        const d = new Date(e.date);
+        const dateStr = isNaN(d) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const pts = e.type === 'earn' ? `+${e.points}` : `-${e.points}`;
+        const by = e.by ? ` <span class="kt-by">· ${escapeHtml(e.by)}</span>` : '';
+        return `<div class="kt-item ${e.type === 'redeem' ? 'kt-redeem' : ''}">
+            <div class="kt-date">${dateStr}</div>
+            <div class="kt-text">${escapeHtml(e.text)} <span class="kt-pts">${pts}</span>${by}</div>
+        </div>`;
+    }).join('');
+}
+
+function printKeepsake() {
+    const profile = getSelectedProfile();
+    const name = profile.name || t('home.profile.add');
+    const events = buildGrowthEvents();
+    const now = new Date();
+    const ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const earnedThisMonth = events.filter(e => e.type === 'earn' && (e.date || '').slice(0, 7) === ym).reduce((s, e) => s + (e.points || 0), 0);
+    const achievedThisMonth = events.filter(e => e.type === 'redeem' && (e.date || '').slice(0, 7) === ym).length;
+    const rows = events.slice(0, 200).map(e => {
+        const d = new Date(e.date);
+        const ds = isNaN(d) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const tag = e.type === 'earn' ? '⭐ 记录' : '🎁 达成';
+        const pts = e.type === 'earn' ? `+${e.points}` : `-${e.points}`;
+        return `<tr><td>${ds}</td><td>${tag}</td><td>${escapeHtml(e.text)}</td><td style="text-align:right;color:${e.type === 'earn' ? '#6c5ce7' : '#ff9a3c'}">${pts}</td></tr>`;
+    }).join('');
+    const win = window.open('', '_blank');
+    if (!win) { showTemporaryMessage(t('common.error'), 'error'); return; }
+    win.document.write(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
+<title>${escapeHtml(name)} · ${t('keepsake.title')}</title>
+<style>
+ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;color:#333;max-width:720px;margin:0 auto;padding:32px;}
+ h1{text-align:center;color:#6c5ce7;margin:0 0 4px;} .sub{text-align:center;color:#ff9a3c;margin:0 0 24px;}
+ .summary{display:flex;gap:12px;justify-content:center;margin-bottom:24px;}
+ .card{flex:1;border:1px solid #eee;border-radius:12px;padding:14px;text-align:center;}
+ .card b{display:block;font-size:22px;color:#6c5ce7;} .card span{font-size:12px;color:#999;}
+ table{width:100%;border-collapse:collapse;} td,th{padding:8px 6px;border-bottom:1px solid #f0f0f0;font-size:14px;}
+ th{color:#999;text-align:left;} .foot{text-align:center;color:#bbb;font-size:12px;margin-top:28px;}
+</style></head><body>
+<h1>${escapeHtml(name)} · ${t('keepsake.title')}</h1>
+<p class="sub">${t('keepsake.subtitle')}</p>
+<div class="summary">
+ <div class="card"><b>${earnedThisMonth}</b><span>${t('keepsake.earned')}</span></div>
+ <div class="card"><b>${achievedThisMonth}</b><span>${t('keepsake.achieved')}</span></div>
+ <div class="card"><b>${events.length}</b><span>${t('keepsake.events')}</span></div>
+</div>
+<table><thead><tr><th>日期</th><th>类型</th><th>内容</th><th style="text-align:right">积分</th></tr></thead>
+<tbody>${rows}</tbody></table>
+<p class="foot">${t('common.certFoot')} · ${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}</p>
+<script>window.onload=function(){setTimeout(function(){window.print();},300);};<\/script>
+</body></html>`);
+    win.document.close();
+}
+
+// ── 成就证书（达成即庆祝，而非交易兑换） ──
+function showCelebrationCertificate(gift) {
+    const canvas = document.getElementById('cert-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const profile = getSelectedProfile();
+    const childName = profile.name || t('home.profile.add');
+    const giftName = gift.name || '';
+    const dateStr = new Date().toLocaleDateString('zh-CN');
+
+    const grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, '#667eea'); grad.addColorStop(1, '#764ba2');
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    ctx.fillRect(28, 28, W - 56, H - 56);
+    ctx.strokeStyle = '#ffb300'; ctx.lineWidth = 4; ctx.strokeRect(44, 44, W - 88, H - 88);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#6c5ce7'; ctx.font = 'bold 40px sans-serif';
+    ctx.fillText('🏆 ' + t('common.certTitle'), W / 2, 130);
+
+    ctx.fillStyle = '#333'; ctx.font = '22px sans-serif';
+    ctx.fillText(childName, W / 2, 220);
+
+    ctx.fillStyle = '#888'; ctx.font = '18px sans-serif';
+    ctx.fillText(t('common.certSub'), W / 2, 260);
+
+    ctx.fillStyle = '#764ba2'; ctx.font = 'bold 30px sans-serif';
+    ctx.fillText('「' + (giftName || '') + '」', W / 2, 330);
+
+    ctx.font = '60px sans-serif';
+    ctx.fillText('⭐', W / 2, 430);
+
+    ctx.fillStyle = '#bbb'; ctx.font = '16px sans-serif';
+    ctx.fillText(dateStr, W / 2, H - 80);
+    ctx.fillText(t('common.certFoot'), W / 2, H - 56);
+
+    document.getElementById('certificate-modal').style.display = 'flex';
+    track('achieve_cert', { gift_id: gift.id });
+}
+
+function downloadCertificate() {
+    const canvas = document.getElementById('cert-canvas');
+    if (!canvas) return;
+    canvas.toBlob(blob => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'star-rewards-cert-' + (getSelectedProfile().name || 'cert') + '.png';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, 'image/png');
+}
+
+function closeCertificateModal() {
+    const m = document.getElementById('certificate-modal');
+    if (m) m.style.display = 'none';
+}
+
+// ── 裂变硬化：海报一键分享到微信 / WhatsApp / Pinterest ──
+function getInviteShareText() {
+    const profile = getSelectedProfile();
+    return t('home.family.shareInvite') + ' · ' + (profile.name || '') + ' ' + location.origin;
+}
+function shareToWeChat() {
+    const link = currentFamily && currentFamily.family ? currentFamily.family.invite_link : location.origin;
+    copyText(link, t('common.shareCopied'));
+    track('share_wechat');
+}
+function shareToWhatsApp() {
+    const link = currentFamily && currentFamily.family ? currentFamily.family.invite_link : location.origin;
+    const text = getInviteShareText();
+    window.open('https://wa.me/?text=' + encodeURIComponent(text + ' ' + link), '_blank');
+    track('share_whatsapp');
+}
+function shareToPinterest() {
+    const link = currentFamily && currentFamily.family ? currentFamily.family.invite_link : location.origin;
+    const text = getInviteShareText();
+    window.open('https://pinterest.com/pin/create/button/?url=' + encodeURIComponent(link) + '&description=' + encodeURIComponent(text), '_blank');
+    track('share_pinterest');
 }
 
 // Delete a behavior record
@@ -2295,6 +2492,11 @@ function showModule(moduleId) {
         renderCalendarDayDetail();
         renderPointsChart();
         renderAchievements();
+    }
+
+    // 成长纪念册：切到该页时聚合行为 + 兑换，生成时间轴与月度报告
+    if (moduleId === 'growth-module') {
+        renderGrowthRecord();
     }
 
     // 悬浮快速记分按钮只在积分页显示

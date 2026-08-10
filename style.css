@@ -2407,3 +2407,60 @@ li {
     color: var(--text-muted, #888);
     margin-left: 4px;
 }
+
+/* ── 成长纪念册模块 ── */
+.keepsake-header { text-align: center; margin-bottom: 12px; }
+.keepsake-header h3 { font-size: 1.4rem; margin: 0; }
+.keepsake-subtitle { color: var(--text-muted, #888); font-size: 13px; margin: 4px 0 0; }
+.keepsake-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+.keepsake-month {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+}
+.keepsake-month .km-card {
+    background: var(--card-bg, #f7f8fc);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+}
+.keepsake-month .km-value { font-size: 1.5rem; font-weight: 700; color: var(--primary, #6c5ce7); }
+.keepsake-month .km-label { font-size: 12px; color: var(--text-muted, #888); margin-top: 4px; }
+.keepsake-section-title { font-size: 1.1rem; margin: 8px 0 12px; }
+.keepsake-timeline { position: relative; padding-left: 18px; }
+.keepsake-timeline::before {
+    content: ''; position: absolute; left: 5px; top: 4px; bottom: 4px; width: 2px;
+    background: linear-gradient(var(--primary, #6c5ce7), var(--accent, #ffb300));
+}
+.kt-item { position: relative; padding: 8px 0 14px 12px; }
+.kt-item::before {
+    content: ''; position: absolute; left: -16px; top: 12px; width: 10px; height: 10px;
+    border-radius: 50%; background: var(--primary, #6c5ce7); box-shadow: 0 0 0 3px rgba(108,92,231,.15);
+}
+.kt-item.kt-redeem::before { background: var(--accent, #ffb300); }
+.kt-date { font-size: 12px; color: var(--text-muted, #888); }
+.kt-text { font-size: 14px; margin-top: 2px; }
+.kt-text .kt-pts { font-weight: 700; color: var(--primary, #6c5ce7); }
+.kt-item.kt-redeem .kt-text .kt-pts { color: var(--accent, #ffb300); }
+.kt-empty { text-align: center; color: var(--text-muted, #888); padding: 30px 10px; font-size: 14px; }
+
+/* ── 海报分享按钮 ── */
+.poster-share-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 10px 4px 0; }
+.share-chip {
+    border: 1px solid var(--primary, #6c5ce7); background: transparent; color: var(--primary, #6c5ce7);
+    border-radius: 20px; padding: 6px 14px; font-size: 13px; cursor: pointer; font-weight: 600;
+}
+.share-chip:hover { background: var(--primary, #6c5ce7); color: #fff; }
+
+/* ── 成就证书弹窗 ── */
+.cert-modal { max-width: 460px; }
+.cert-preview-wrap { margin: 10px auto; max-width: 400px; }
+.cert-preview-wrap canvas { width: 100%; height: auto; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.15); }
+.cert-sub { text-align: center; color: var(--text-muted, #888); font-size: 13px; margin: 6px 0 14px; }
+
+/* ── 家庭勋章提示 ── */
+.family-medal {
+    display: flex; align-items: center; gap: 10px; margin: 10px 0; padding: 10px 12px;
+    background: linear-gradient(45deg, #ffd86b, #ff9a3c); color: #5a3b00; border-radius: 12px; font-size: 14px; font-weight: 600;
+}
