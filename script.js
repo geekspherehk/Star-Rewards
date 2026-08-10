@@ -1484,6 +1484,7 @@ function renderGrowthRecord() {
     const profile = getSelectedProfile();
     const name = profile.name || t('home.profile.add');
     const events = buildGrowthEvents();
+    fetchGrowthExtras();
     const now = new Date();
     const ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
 
@@ -1516,6 +1517,140 @@ function renderGrowthRecord() {
             <div class="kt-text">${escapeHtml(e.text)} <span class="kt-pts">${pts}</span>${by}</div>
         </div>`;
     }).join('');
+}
+
+// ── Plan A: longitudinal growth data layer (milestones / growth_notes / child_voice) ──
+let growthExtras = { milestones: [], growth_notes: [], child_voice: [] };
+
+async function fetchGrowthExtras() {
+    try {
+        const data = await api.getGrowthExtras();
+        growthExtras = {
+            milestones: data.milestones || [],
+            growth_notes: data.growth_notes || [],
+            child_voice: data.child_voice || []
+        };
+    } catch (e) {
+        growthExtras = { milestones: [], growth_notes: [], child_voice: [] };
+    }
+    renderGrowthLists();
+}
+
+function renderGrowthLists() {
+    const mEl = document.getElementById('keepsake-milestones');
+    if (mEl) {
+        if (!growthExtras.milestones.length) {
+            mEl.innerHTML = `<div class="kt-empty">${t('keepsake.emptyMilestones')}</div>`;
+        } else {
+            mEl.innerHTML = growthExtras.milestones.map(m => `
+                <div class="gl-item">
+                    <div class="gl-cat">${escapeHtml(m.category || '')}</div>
+                    <div class="gl-title">${escapeHtml(m.title || '')}</div>
+                    ${m.detail ? `<div class="gl-detail">${escapeHtml(m.detail)}</div>` : ''}
+                    ${m.occurred_on ? `<div class="gl-date">${escapeHtml(m.occurred_on)}</div>` : ''}
+                </div>`).join('');
+        }
+    }
+    const nEl = document.getElementById('keepsake-notes');
+    if (nEl) {
+        if (!growthExtras.growth_notes.length) {
+            nEl.innerHTML = `<div class="kt-empty">${t('keepsake.emptyNotes')}</div>`;
+        } else {
+            nEl.innerHTML = growthExtras.growth_notes.map(n => `
+                <div class="gl-item">
+                    <div class="gl-title">${escapeHtml(n.title || '')}</div>
+                    ${n.body ? `<div class="gl-detail">${escapeHtml(n.body)}</div>` : ''}
+                    <div class="gl-meta">${noteMoodLabel(n.mood)} ${n.occurred_on ? '· ' + escapeHtml(n.occurred_on) : ''}</div>
+                </div>`).join('');
+        }
+    }
+    const vEl = document.getElementById('keepsake-voice');
+    if (vEl) {
+        if (!growthExtras.child_voice.length) {
+            vEl.innerHTML = `<div class="kt-empty">${t('keepsake.emptyVoice')}</div>`;
+        } else {
+            vEl.innerHTML = growthExtras.child_voice.map(c => `
+                <div class="gl-item gl-voice">
+                    <div class="gl-detail">“${escapeHtml(c.content || '')}”</div>
+                    ${c.recorded_on ? `<div class="gl-date">${escapeHtml(c.recorded_on)}</div>` : ''}
+                </div>`).join('');
+        }
+    }
+}
+
+function noteMoodLabel(mood) {
+    const map = { happy: '😊', proud: '🥰', calm: '😌', thinking: '🤔', sad: '😢' };
+    return map[mood] || '😊';
+}
+
+function switchKeepsakeTab(tab) {
+    document.querySelectorAll('.ktab').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-tab') === tab);
+    });
+    ['timeline', 'milestones', 'notes', 'voice'].forEach(t => {
+        const p = document.getElementById('ktab-' + t);
+        if (p) p.style.display = (t === tab) ? '' : 'none';
+    });
+}
+
+let growthAddType = 'milestone';
+function openGrowthAdd(type) {
+    growthAddType = type || 'milestone';
+    const titleEl = document.getElementById('growth-add-title');
+    const titles = {
+        milestone: t('keepsake.addMilestone'),
+        note: t('keepsake.addNote'),
+        voice: t('keepsake.addVoice')
+    };
+    if (titleEl) titleEl.textContent = titles[growthAddType] || '';
+    document.getElementById('ga-milestone-fields').style.display = (growthAddType === 'milestone') ? '' : 'none';
+    document.getElementById('ga-note-fields').style.display = (growthAddType === 'note') ? '' : 'none';
+    document.getElementById('ga-voice-fields').style.display = (growthAddType === 'voice') ? '' : 'none';
+    ['ga-title', 'ga-detail', 'ga-note-title', 'ga-note-body', 'ga-voice-content'].forEach(id => {
+        const e = document.getElementById(id);
+        if (e) e.value = '';
+    });
+    const mood = document.getElementById('ga-note-mood');
+    if (mood) mood.value = 'happy';
+    document.getElementById('growth-add-modal').style.display = 'flex';
+}
+
+function closeGrowthAddModal() {
+    const m = document.getElementById('growth-add-modal');
+    if (m) m.style.display = 'none';
+}
+
+async function submitGrowthAdd() {
+    let ok = false;
+    try {
+        if (growthAddType === 'milestone') {
+            const title = (document.getElementById('ga-title').value || '').trim();
+            if (!title) { showTemporaryMessage(t('keepsake.milestoneTitle') + t('common.required')); return; }
+            await api.addMilestone('其他', title, (document.getElementById('ga-detail').value || '').trim());
+            ok = true;
+        } else if (growthAddType === 'note') {
+            const title = (document.getElementById('ga-note-title').value || '').trim();
+            if (!title) { showTemporaryMessage(t('keepsake.noteTitle') + t('common.required')); return; }
+            const body = (document.getElementById('ga-note-body').value || '').trim();
+            const mood = document.getElementById('ga-note-mood').value;
+            await api.addGrowthNote(title, body, mood);
+            ok = true;
+        } else if (growthAddType === 'voice') {
+            const content = (document.getElementById('ga-voice-content').value || '').trim();
+            if (!content) { showTemporaryMessage(t('keepsake.voiceContent') + t('common.required')); return; }
+            await api.addChildVoice(content);
+            ok = true;
+        }
+    } catch (e) {
+        showTemporaryMessage((e.message || t('common.error')), 'error');
+        return;
+    }
+    if (ok) {
+        closeGrowthAddModal();
+        showTemporaryMessage(t('common.success'));
+        track('growth_add', { type: growthAddType });
+        await fetchGrowthExtras();
+    }
 }
 
 function printKeepsake() {

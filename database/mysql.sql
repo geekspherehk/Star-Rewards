@@ -1,5 +1,5 @@
 -- MySQL Database Schema for Star-Rewards App
--- Version 4 (family sharing + multi-child + added_by + analytics_events)
+-- Version 5 (Version 4 + growth data layer: profiles.birth_date/bio_note, behaviors.dimension, milestones/growth_notes/child_voice)
 -- Regenerated from live DB on 2026-08-10. Canonical schema source.
 
 -- users
@@ -47,6 +47,8 @@ CREATE TABLE `profiles` (
   `color` varchar(20) NOT NULL DEFAULT '#FFB300',
   `current_points` int(11) DEFAULT 0,
   `total_points` int(11) DEFAULT 0,
+  `birth_date` date DEFAULT NULL,
+  `bio_note` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `family_id` bigint(20) NOT NULL,
@@ -64,6 +66,7 @@ CREATE TABLE `behaviors` (
   `profile_id` bigint(20) NOT NULL,
   `description` text NOT NULL,
   `points` int(11) NOT NULL,
+  `dimension` varchar(20) DEFAULT NULL,
   `timestamp` timestamp NULL DEFAULT current_timestamp(),
   `family_id` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
@@ -142,3 +145,57 @@ CREATE TABLE `user_configs` (
   UNIQUE KEY `user_id` (`user_id`),
   CONSTRAINT `user_configs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- milestones (non-transactional growth moments — the longitudinal core)
+CREATE TABLE `milestones` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `family_id` bigint(20) NOT NULL,
+  `profile_id` bigint(20) NOT NULL,
+  `user_id` bigint(20) NOT NULL,
+  `category` varchar(40) NOT NULL DEFAULT '其他',
+  `title` varchar(255) NOT NULL,
+  `detail` text DEFAULT NULL,
+  `occurred_on` date DEFAULT NULL,
+  `photo_url` varchar(2048) DEFAULT '',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_ms_family` (`family_id`),
+  KEY `idx_ms_profile` (`profile_id`),
+  CONSTRAINT `fk_ms_family` FOREIGN KEY (`family_id`) REFERENCES `families` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ms_profile` FOREIGN KEY (`profile_id`) REFERENCES `profiles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- growth_notes (parent narrative — the emotional switch-cost asset)
+CREATE TABLE `growth_notes` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `family_id` bigint(20) NOT NULL,
+  `profile_id` bigint(20) NOT NULL,
+  `user_id` bigint(20) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `body` text DEFAULT NULL,
+  `mood` varchar(20) DEFAULT 'happy',
+  `occurred_on` date DEFAULT NULL,
+  `photo_urls` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_gn_family` (`family_id`),
+  KEY `idx_gn_profile` (`profile_id`),
+  CONSTRAINT `fk_gn_family` FOREIGN KEY (`family_id`) REFERENCES `families` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_gn_profile` FOREIGN KEY (`profile_id`) REFERENCES `profiles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- child_voice (child's own words — differentiation vs adult-only competitors)
+CREATE TABLE `child_voice` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `family_id` bigint(20) NOT NULL,
+  `profile_id` bigint(20) NOT NULL,
+  `user_id` bigint(20) NOT NULL,
+  `content` text NOT NULL,
+  `recorded_on` date DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_cv_family` (`family_id`),
+  KEY `idx_cv_profile` (`profile_id`),
+  CONSTRAINT `fk_cv_family` FOREIGN KEY (`family_id`) REFERENCES `families` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_cv_profile` FOREIGN KEY (`profile_id`) REFERENCES `profiles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -365,6 +365,18 @@ switch ($action) {
     case 'track':
         handleTrackEvent($pdo, $data);
         break;
+    case 'get_growth_extras':
+        handleGetGrowthExtras($pdo, $data);
+        break;
+    case 'add_milestone':
+        handleAddMilestone($pdo, $data);
+        break;
+    case 'add_growth_note':
+        handleAddGrowthNote($pdo, $data);
+        break;
+    case 'add_child_voice':
+        handleAddChildVoice($pdo, $data);
+        break;
     default:
         sendError('Invalid action', 400);
 }
@@ -786,6 +798,18 @@ function handleRedeemGift($pdo, $data) {
         $stmt = $pdo->prepare('UPDATE profiles SET current_points = current_points - ?, updated_at = NOW() WHERE id = ? AND family_id = ?');
         $stmt->execute([(int)$gift['points'], $profileId, $familyId]);
 
+        // Bridge: a redeemed wish becomes a longitudinal growth milestone (category='达成愿望').
+        // Additive only — redeemed_gifts is untouched, gifts/redeemed remain the source of truth for points.
+        $stmt = $pdo->prepare('INSERT INTO milestones (family_id, profile_id, user_id, category, title, detail, occurred_on) VALUES (?, ?, ?, ?, ?, ?, CURDATE())');
+        $stmt->execute([
+            $familyId,
+            $profileId,
+            $userId,
+            '达成愿望',
+            $gift['name'],
+            $gift['description'] ?? ''
+        ]);
+
         $stmt = $pdo->prepare('SELECT id, current_points FROM profiles WHERE id = ? AND family_id = ?');
         $stmt->execute([$profileId, $familyId]);
         $profile = $stmt->fetch();
@@ -826,6 +850,113 @@ function handleGetRedeemedGifts($pdo, $data) {
         sendJson($stmt->fetchAll());
     } catch (Exception $e) {
         sendError('Failed to get redeemed gifts', 500, $e->getMessage());
+    }
+}
+
+// ── Plan A: growth-record data layer (longitudinal asset) ──
+function handleGetGrowthExtras($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    try {
+        $out = [
+            'milestones' => [],
+            'growth_notes' => [],
+            'child_voice' => [],
+        ];
+        if ($profileId) {
+            $q = function($sql) use ($pdo, $familyId, $profileId) {
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([$familyId, $profileId]);
+                return $stmt->fetchAll();
+            };
+            $out['milestones'] = $q('SELECT id, category, title, detail, occurred_on, photo_url, created_at FROM milestones WHERE family_id = ? AND profile_id = ? ORDER BY COALESCE(occurred_on, created_at) DESC LIMIT 500');
+            $out['growth_notes'] = $q('SELECT id, title, body, mood, occurred_on, photo_urls, created_at FROM growth_notes WHERE family_id = ? AND profile_id = ? ORDER BY COALESCE(occurred_on, created_at) DESC LIMIT 500');
+            $out['child_voice'] = $q('SELECT id, content, recorded_on, created_at FROM child_voice WHERE family_id = ? AND profile_id = ? ORDER BY COALESCE(recorded_on, created_at) DESC LIMIT 500');
+        }
+        sendJson($out);
+    } catch (Exception $e) {
+        sendError('Failed to get growth extras', 500, $e->getMessage());
+    }
+}
+
+function handleAddMilestone($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    if (!$profileId) sendError('No profile selected', 400);
+    $category = trim($data['category'] ?? '其他');
+    $title = trim($data['title'] ?? '');
+    $detail = isset($data['detail']) ? trim($data['detail']) : '';
+    $occurredOn = isset($data['occurred_on']) ? trim($data['occurred_on']) : null;
+    $photoUrl = isset($data['photo_url']) ? trim($data['photo_url']) : '';
+
+    if ($title === '') sendError('Title required', 400);
+    if (strlen($title) > 255) sendError('Title too long (max 255)', 400);
+    if (strlen($detail) > 4000) sendError('Detail too long (max 4000)', 400);
+    if (strlen($photoUrl) > 2048) sendError('Photo URL too long', 400);
+    if (!in_array($category, ['首次', '成长', '获奖', '习惯', '学习', '达成愿望', '其他'], true)) {
+        $category = '其他';
+    }
+    if ($occurredOn !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $occurredOn)) {
+        $occurredOn = null;
+    }
+    try {
+        $stmt = $pdo->prepare('INSERT INTO milestones (family_id, profile_id, user_id, category, title, detail, occurred_on, photo_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$familyId, $profileId, $userId, $category, $title, $detail, $occurredOn, $photoUrl]);
+        sendJson(['success' => true, 'id' => (int)$pdo->lastInsertId()], 201);
+    } catch (Exception $e) {
+        sendError('Failed to add milestone', 500, $e->getMessage());
+    }
+}
+
+function handleAddGrowthNote($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    if (!$profileId) sendError('No profile selected', 400);
+    $title = trim($data['title'] ?? '');
+    $body = isset($data['body']) ? trim($data['body']) : '';
+    $mood = isset($data['mood']) ? trim($data['mood']) : 'happy';
+    $occurredOn = isset($data['occurred_on']) ? trim($data['occurred_on']) : null;
+
+    if ($title === '') sendError('Title required', 400);
+    if (strlen($title) > 255) sendError('Title too long (max 255)', 400);
+    if (strlen($body) > 8000) sendError('Body too long (max 8000)', 400);
+    if (!in_array($mood, ['happy', 'proud', 'calm', 'thinking', 'sad'], true)) {
+        $mood = 'happy';
+    }
+    if ($occurredOn !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $occurredOn)) {
+        $occurredOn = null;
+    }
+    try {
+        $stmt = $pdo->prepare('INSERT INTO growth_notes (family_id, profile_id, user_id, title, body, mood, occurred_on) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$familyId, $profileId, $userId, $title, $body, $mood, $occurredOn]);
+        sendJson(['success' => true, 'id' => (int)$pdo->lastInsertId()], 201);
+    } catch (Exception $e) {
+        sendError('Failed to add growth note', 500, $e->getMessage());
+    }
+}
+
+function handleAddChildVoice($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    if (!$profileId) sendError('No profile selected', 400);
+    $content = isset($data['content']) ? trim($data['content']) : '';
+    $recordedOn = isset($data['recorded_on']) ? trim($data['recorded_on']) : null;
+
+    if ($content === '') sendError('Content required', 400);
+    if (strlen($content) > 4000) sendError('Content too long (max 4000)', 400);
+    if ($recordedOn !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $recordedOn)) {
+        $recordedOn = null;
+    }
+    try {
+        $stmt = $pdo->prepare('INSERT INTO child_voice (family_id, profile_id, user_id, content, recorded_on) VALUES (?, ?, ?, ?, ?)');
+        $stmt->execute([$familyId, $profileId, $userId, $content, $recordedOn]);
+        sendJson(['success' => true, 'id' => (int)$pdo->lastInsertId()], 201);
+    } catch (Exception $e) {
+        sendError('Failed to add child voice', 500, $e->getMessage());
     }
 }
 

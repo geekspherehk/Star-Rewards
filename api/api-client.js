@@ -283,6 +283,40 @@ class ApiClient {
         return await this.request('updateTheme', { theme });
     }
 
+    // ── Plan A: growth data layer (longitudinal keepsake) ──
+    async getGrowthExtras() {
+        return await this.request('get_growth_extras', { profile_id: this.selectedProfileId });
+    }
+
+    async addMilestone(category, title, detail = '', occurredOn = null, photoUrl = '') {
+        return await this.request('add_milestone', {
+            category,
+            title,
+            detail,
+            occurred_on: occurredOn,
+            photo_url: photoUrl,
+            profile_id: this.selectedProfileId
+        });
+    }
+
+    async addGrowthNote(title, body = '', mood = 'happy', occurredOn = null) {
+        return await this.request('add_growth_note', {
+            title,
+            body,
+            mood,
+            occurred_on: occurredOn,
+            profile_id: this.selectedProfileId
+        });
+    }
+
+    async addChildVoice(content, recordedOn = null) {
+        return await this.request('add_child_voice', {
+            content,
+            recorded_on: recordedOn,
+            profile_id: this.selectedProfileId
+        });
+    }
+
     async getUserConfig() {
         return await this.request('getUserConfig');
     }
