@@ -100,9 +100,33 @@ function getRequestData() {
     return is_array($data) ? $data : [];
 }
 
+// Resolve the real client IP, accounting for CDN/reverse-proxy headers.
+// Hostinger fronts requests with Cloudflare, so REMOTE_ADDR is the edge IP,
+// not the visitor — keying rate limits on it would penalize everyone behind
+// the same edge. Prefer the forwarded client IP when present.
+function getClientIp() {
+    $candidates = [
+        $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '',
+        $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '',
+        $_SERVER['HTTP_X_REAL_IP'] ?? '',
+        $_SERVER['REMOTE_ADDR'] ?? ''
+    ];
+    foreach ($candidates as $c) {
+        $c = trim($c);
+        if ($c === '') continue;
+        if (strpos($c, ',') !== false) {
+            $c = trim(explode(',', $c)[0]);
+        }
+        if (filter_var($c, FILTER_VALIDATE_IP)) {
+            return $c;
+        }
+    }
+    return 'unknown';
+}
+
 // Simple file-based rate limiter
 function rateLimit($action, $maxAttempts, $windowSeconds) {
-    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $ip = getClientIp();
     $key = $action . '_' . $ip;
     $dir = sys_get_temp_dir() . '/star_ratelimit';
     if (!is_dir($dir)) {
