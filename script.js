@@ -554,6 +554,22 @@ async function sharePoster() {
 
 // 积分趋势图（Chart.js）
 let pointsChart = null;
+let chartLoadPromise = null;
+
+// 懒加载 Chart.js：首屏不加载 196KB 的 chart.min.js，仅在需要渲染趋势图时才注入
+function ensureChartLoaded() {
+    if (typeof Chart !== 'undefined') return Promise.resolve();
+    if (!chartLoadPromise) {
+        chartLoadPromise = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'chart.min.js?v=2';
+            s.onload = () => resolve();
+            s.onerror = () => reject(new Error('Chart.js 加载失败'));
+            document.head.appendChild(s);
+        });
+    }
+    return chartLoadPromise;
+}
 
 function renderPointsChart() {
     const canvas = document.getElementById('points-chart');
@@ -584,7 +600,13 @@ function renderPointsChart() {
     container.style.display = 'block';
 
     if (typeof Chart === 'undefined') {
-        container.style.display = 'none';
+        // 懒加载 Chart.js 后重试渲染
+        ensureChartLoaded()
+            .then(() => renderPointsChart())
+            .catch((err) => {
+                console.warn('趋势图加载失败，已隐藏：', err);
+                container.style.display = 'none';
+            });
         return;
     }
 
@@ -782,8 +804,11 @@ function updateGiftList() {
                 img.src = gift.image_url;
                 img.alt = gift.name;
                 img.className = 'gift-image';
+                img.loading = 'lazy';
+                img.width = 80;
+                img.height = 80;
                 img.onerror = function() {
-                    this.src = 'https://via.placeholder.com/80';
+                    this.src = 'placeholder.svg';
                     this.alt = t('common.giftImage');
                 };
                 
@@ -794,8 +819,11 @@ function updateGiftList() {
                 img.src = gift.image_url;
                 img.alt = gift.name;
                 img.className = 'gift-image';
+                img.loading = 'lazy';
+                img.width = 80;
+                img.height = 80;
                 img.onerror = function() {
-                    this.src = 'https://via.placeholder.com/80';
+                    this.src = 'placeholder.svg';
                     this.alt = '礼物图片';
                 };
                 imageDiv.appendChild(img);
@@ -967,8 +995,11 @@ function updateRedeemedList() {
                 img.src = item.image_url;
                 img.alt = item.name;
                 img.className = 'redeemed-image';
+                img.loading = 'lazy';
+                img.width = 60;
+                img.height = 60;
                 img.onerror = function() {
-                    this.src = 'https://via.placeholder.com/60';
+                    this.src = 'placeholder.svg';
                     this.alt = t('common.giftImage');
                 };
                 
@@ -979,8 +1010,11 @@ function updateRedeemedList() {
                 img.src = item.image_url;
                 img.alt = item.name;
                 img.className = 'redeemed-image';
+                img.loading = 'lazy';
+                img.width = 60;
+                img.height = 60;
                 img.onerror = function() {
-                    this.src = 'https://via.placeholder.com/60';
+                    this.src = 'placeholder.svg';
                     this.alt = t('common.giftImage');
                 };
                 imageDiv.appendChild(img);
@@ -1187,25 +1221,30 @@ function textToHtmlWithLinks(text) {
     const safeProtocols = ['http:', 'https:', 'mailto:', 'tel:'];
     
     // 将匹配到的URL替换为HTML链接
-    return text.replace(urlRegex, function(url) {
-        // 处理URL，添加协议（如果需要）并进行安全检查
-        let href = url;
-        
-        // 检查URL是否包含协议
-        if (!url.includes('://') && !url.startsWith('mailto:') && !url.startsWith('tel:')) {
-            // 为没有协议的URL添加http://
-            href = 'http://' + url;
+    let result = '';
+    let lastIndex = 0;
+    let m;
+    // 逐段处理：非 URL 的纯文本一律先转义，杜绝 <script> 等注入
+    while ((m = urlRegex.exec(text)) !== null) {
+        result += escapeHtml(text.slice(lastIndex, m.index));
+        let href = m[0];
+        if (!href.includes('://') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+            href = 'http://' + href;
         }
-        
-        // 安全检查：验证URL协议是否安全
-        const urlObj = new URL(href);
-        if (!safeProtocols.includes(urlObj.protocol)) {
-            // 如果是不安全的协议，返回原始文本而不是链接
-            return url;
+        try {
+            const urlObj = new URL(href);
+            if (safeProtocols.includes(urlObj.protocol)) {
+                result += `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(m[0])}</a>`;
+            } else {
+                result += escapeHtml(m[0]);
+            }
+        } catch (e) {
+            result += escapeHtml(m[0]);
         }
-        
-        return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`;
-    });
+        lastIndex = urlRegex.lastIndex;
+    }
+    result += escapeHtml(text.slice(lastIndex));
+    return result;
 }
 
 // 从商品链接一键导入标题与图片
