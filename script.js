@@ -853,10 +853,11 @@ function updateGiftList() {
                 media.appendChild(img);
             }
         } else {
-            const placeholder = document.createElement('div');
-            placeholder.className = 'gift-image-placeholder';
-            placeholder.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v11M3 12v8h18v-8"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg>';
-            media.appendChild(placeholder);
+            const img = document.createElement('img');
+            img.src = 'placeholder.svg';
+            img.alt = gift.name || t('common.giftImage');
+            img.loading = 'lazy';
+            media.appendChild(img);
         }
         card.appendChild(media);
 
