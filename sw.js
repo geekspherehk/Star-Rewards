@@ -1,5 +1,5 @@
 // Service Worker 文件
-const CACHE_NAME = 'star-rewards-v31';
+const CACHE_NAME = 'star-rewards-v32';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -7,7 +7,7 @@ const urlsToCache = [
   '/style.css?v=15',
   '/script.js?v=25',
   '/login.js?v=8',
-  '/i18n.js?v=23',
+  '/i18n.js?v=24',
   '/utils.js?v=1',
   '/api/api-client.js?v=19',
   '/themes.js?v=1',

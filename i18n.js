@@ -36,6 +36,7 @@ const translations = {
             streakDays: '连续打卡天数',
             pointsTrend: '积分趋势',
             diary: '成长日记',
+            diaryCalendar: '成长日历',
             profile: {
                 switch: '切换孩子',
                 add: '添加孩子',
@@ -482,6 +483,7 @@ const translations = {
             keepsake: 'Growth Keepsake',
             keepsakeDesc: 'Cherish moments, witness growth',
             diary: 'Growth Diary',
+            diaryCalendar: 'Growth Calendar',
             streakDays: 'Day Streak',
             pointsTrend: 'Points Trend',
             profile: {

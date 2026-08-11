@@ -35,7 +35,7 @@
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=19"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=23"></script>
+    <script defer src="i18n.js?v=24"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -104,7 +104,7 @@
             </div>
             <div class="module-card" onclick="showModule('diary-module')">
                 <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M19 3v18"/><path d="M8 7h6M8 11h6"/></svg></span>
-                <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span data-i18n="home.diary">成长日记</span></h3>
+                <h3 data-i18n="home.diary">成长日记</h3>
                 <p data-i18n="home.diaryDesc">回顾足迹，见证成长</p>
                 <div class="module-stat" id="stat-diary"></div>
             </div>
@@ -231,7 +231,7 @@
             <!-- 成长日记模块（成长日历：积分+兑换按天综合展示） -->
             <div id="diary-module" class="module-content">
                 <div class="diary-header">
-                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span data-i18n="home.diary">成长日历</span></h3>
+                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span data-i18n="home.diaryCalendar">成长日历</span></h3>
                     <button type="button" class="poster-btn" onclick="openPosterModal()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span data-i18n="home.sharePoster">分享海报</span></button>
                 </div>
 
