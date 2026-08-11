@@ -455,7 +455,14 @@ h3 {
 }
 
 .welcome-banner-icon {
-    font-size: 2.4rem;
+    font-size: 0;
+    flex: 0 0 auto;
+    display: flex;
+}
+.welcome-banner-icon svg {
+    width: 40px;
+    height: 40px;
+    color: var(--brand);
     flex: 0 0 auto;
 }
 
@@ -675,9 +682,15 @@ h3 {
 
 /* 区块小标题（如"最近记录"） */
 .section-title {
-    margin: 4px 0 10px;
-    font-size: 1.05rem;
-    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 12px;
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    color: var(--text);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.01em;
 }
 
 /* 成长日历 */
@@ -1212,9 +1225,9 @@ h3 {
 .form-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
-    align-items: end;
-    margin-bottom: 15px;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 14px;
 }
 
 input {
@@ -2532,6 +2545,20 @@ li {
     --sh-xl: 0 22px 60px rgba(16,24,40,.16);
     /* 字体 */
     --font: 'Noto Sans SC', system-ui, -apple-system, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    /* 字号比例（统一排版层级） */
+    --fs-xs: 0.75rem;      /* 12 */
+    --fs-sm: 0.8125rem;    /* 13 */
+    --fs-base: 0.9375rem;  /* 15 */
+    --fs-md: 1rem;         /* 16 */
+    --fs-lg: 1.125rem;     /* 18 */
+    --fs-xl: 1.35rem;      /* 21.6 */
+    --fs-2xl: 1.55rem;     /* 24.8 */
+    /* 行高 */
+    --lh-tight: 1.25;
+    --lh-base: 1.55;
+    /* 间距节奏 */
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+    --sp-5: 20px; --sp-6: 24px; --sp-7: 32px; --sp-8: 40px;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -2539,28 +2566,29 @@ html { -webkit-text-size-adjust: 100%; }
 
 body {
     font-family: var(--font);
+    font-size: var(--fs-base);
     background: var(--bg);
     color: var(--text);
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    line-height: 1.5;
+    line-height: var(--lh-base);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3, h4 { color: var(--text); }
+h1, h2, h3, h4 { color: var(--text); line-height: var(--lh-tight); }
 h1 {
-    font-size: 1.55rem;
+    font-size: var(--fs-2xl);
     font-weight: 800;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
     text-align: left;
-    margin: 0 0 22px;
+    margin: 0 0 20px;
 }
 h1::after { display: none; }            /* 移除 demo 渐变下划线 */
-h2 { font-size: 1.25rem; font-weight: 700; border-left: none; padding-left: 0; margin-top: 26px; margin-bottom: 16px; }
-h3 { font-size: 1.05rem; font-weight: 700; }
+h2 { font-size: var(--fs-xl); font-weight: 700; letter-spacing: -0.01em; border-left: none; padding-left: 0; margin: 26px 0 16px; }
+h3 { font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.01em; }
 
 /* ── 应用顶栏（App Shell） ── */
 .app-topbar {
@@ -2778,10 +2806,10 @@ button:active { transform: translateY(0); }
     border: 1px solid var(--border);
     border-left: none;
     border-radius: var(--r-lg);
-    padding: 18px 20px;
-    margin-bottom: 18px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
 }
-.form-group h3 { margin: 0 0 14px; }
+.form-group h3 { margin: 0 0 12px; }
 input, select, textarea {
     font-family: inherit;
     font-size: 15px;
