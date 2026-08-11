@@ -1539,10 +1539,6 @@ li:hover {
     transform: scale(1.05);
 }
 
-.gift-image-placeholder {
-    font-size: 2.5rem;
-}
-
 .gift-info {
     flex: 1;
     display: flex;
@@ -1597,10 +1593,6 @@ li:hover {
     width: 100%;
     height: 100%;
     object-fit: cover;
-}
-
-.redeemed-image-placeholder {
-    font-size: 2rem;
 }
 
 .redeemed-header {
@@ -1817,10 +1809,6 @@ li:hover {
         width: 50px;
         height: 50px;
         margin-right: 10px;
-    }
-    
-    .gift-image-placeholder {
-        font-size: 1.5rem;
     }
     
     .gift-header {
@@ -2866,7 +2854,36 @@ li, .gift-item, .redeemed-item, .behavior-item {
 }
 .redeemed-stats .stat-item { display: flex; align-items: center; gap: 9px; flex: 1 1 0; min-width: 0; }
 .redeemed-stats .stat-text { font-size: 13px; font-weight: 600; color: var(--text-2); line-height: 1.35; }
-.behavior-stats { background: linear-gradient(135deg, var(--success), var(--success-700)); box-shadow: var(--sh-md); }
+.behavior-stats {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--sh-sm);
+    padding: 13px 15px;
+    margin-bottom: 16px;
+}
+.behavior-stats .stat-item { display: flex; align-items: center; gap: 9px; flex: 1 1 0; min-width: 0; }
+.behavior-stats .stat-text { font-size: 13px; font-weight: 600; color: var(--text-2); line-height: 1.35; }
+.behavior-stats .stat-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto;
+    background: var(--brand-soft); color: var(--brand);
+}
+.behavior-stats .stat-icon.is-plus { background: var(--success-soft); color: var(--success-700); }
+.behavior-stats .stat-icon.is-minus { background: var(--danger-soft); color: var(--danger); }
+.behavior-stats .stat-icon svg { width: 16px; height: 16px; }
+
+/* 行为日志项图标：SVG 取代 emoji */
+.behavior-icon {
+    flex: 0 0 auto;
+    width: 34px; height: 34px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-right: 13px;
+}
+.behavior-icon.is-positive { background: var(--success-soft); color: var(--success-700); }
+.behavior-icon.is-negative { background: var(--danger-soft); color: var(--danger); }
+.behavior-icon svg { width: 18px; height: 18px; display: block; }
 .category-badge { background: var(--accent); color: #3a2600; }
 .points-badge { background: var(--danger); }
 

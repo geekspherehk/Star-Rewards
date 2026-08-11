@@ -707,15 +707,15 @@ function updateBehaviorLog() {
     statsDiv.className = 'behavior-stats';
     statsDiv.innerHTML = `
         <div class="stat-item">
-            <div class="stat-icon">📊</div>
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-2-2"/></svg></div>
             <div class="stat-text">${t('common.totalRecords')}: ${totalBehaviors}</div>
         </div>
         <div class="stat-item">
-            <div class="stat-icon">✅</div>
+            <div class="stat-icon is-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
             <div class="stat-text">${t('common.pointsEarned')}: +${totalPointsGained}</div>
         </div>
         <div class="stat-item">
-            <div class="stat-icon">❌</div>
+            <div class="stat-icon is-minus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
             <div class="stat-text">${t('common.pointsDeducted')}: ${totalPointsLost}</div>
         </div>
     `;
@@ -732,11 +732,13 @@ function updateBehaviorLog() {
         
         // 根据积分正负设置不同的图标和样式
         const isPositive = behavior.points > 0;
-        const icon = isPositive ? '✅' : '❌';
+        const iconSvg = isPositive
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
         const pointsClass = isPositive ? 'positive-points' : 'negative-points';
         
         behaviorDiv.innerHTML = `
-            <div class="behavior-icon">${icon}</div>
+            <div class="behavior-icon ${isPositive ? 'is-positive' : 'is-negative'}">${iconSvg}</div>
             <div class="behavior-content">
                 <div class="behavior-description">${escapeHtml(behavior.description)}</div>
                 <div class="behavior-meta">
@@ -1019,10 +1021,14 @@ function updateRedeemedList() {
                 imageDiv.appendChild(img);
             }
         } else {
-            const placeholder = document.createElement('div');
-            placeholder.className = 'redeemed-image-placeholder';
-            placeholder.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v11M3 12v8h18v-8"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg>';
-            imageDiv.appendChild(placeholder);
+            const img = document.createElement('img');
+            img.src = 'placeholder.svg';
+            img.alt = item.name || t('common.giftImage');
+            img.className = 'redeemed-image';
+            img.loading = 'lazy';
+            img.width = 60;
+            img.height = 60;
+            imageDiv.appendChild(img);
         }
 
         const contentDiv = document.createElement('div');
