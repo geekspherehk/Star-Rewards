@@ -205,16 +205,26 @@ h3 {
     margin-top: 10px;
     font-size: 0.95rem;
     font-weight: 700;
-    color: #5c6bc0;
-    background: rgba(255, 255, 255, 0.65);
+    color: var(--brand);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     border-radius: 14px;
     padding: 4px 10px;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .module-card.active .module-stat {
     color: #fff;
     background: rgba(255, 255, 255, 0.22);
+    border-color: transparent;
+}
+
+.module-stat .stat-ico {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
 }
 
 /* 成就区块头部（标题 + 分享海报按钮） */
@@ -535,12 +545,12 @@ h3 {
 .achievement-card {
     position: relative;
     text-align: center;
-    padding: 14px 10px 12px;
-    border-radius: 12px;
-    border: 2px solid #eee;
-    background: #fafafa;
+    padding: 16px 12px 14px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    min-height: 120px;
+    min-height: 132px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -548,63 +558,102 @@ h3 {
 }
 
 .achievement-card.unlocked {
-    border-color: #ffd54f;
-    background: linear-gradient(135deg, #fffde7 0%, #fff8e1 100%);
-    box-shadow: 0 3px 10px rgba(255, 193, 7, 0.25);
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    box-shadow: 0 4px 14px rgba(245,165,36,0.18);
+}
+
+.achievement-card.unlocked:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sh-md);
 }
 
 .achievement-card.locked {
-    filter: grayscale(0.85);
-    opacity: 0.75;
+    opacity: 0.7;
 }
 
 .achievement-icon {
-    font-size: 1.8rem;
-    line-height: 1;
-    margin-bottom: 6px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+
+.achievement-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.achievement-card.unlocked .achievement-icon {
+    background: var(--brand);
+    color: #fff;
 }
 
 .achievement-name {
     font-weight: 600;
     font-size: 0.85rem;
-    color: #333;
+    color: var(--text);
     margin-bottom: 2px;
 }
 
 .achievement-desc {
     font-size: 0.72rem;
-    color: #8a8a8a;
+    color: var(--muted);
     margin-bottom: 6px;
     line-height: 1.35;
 }
 
 .achievement-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-size: 0.75rem;
-    color: #2e7d32;
+    color: var(--success);
     font-weight: 600;
     margin-top: auto;
 }
 
+.achievement-state svg {
+    width: 14px;
+    height: 14px;
+}
+
 .achievement-progress {
     width: 100%;
-    height: 5px;
-    background: #e8e8e8;
-    border-radius: 3px;
+    height: 6px;
+    background: var(--border);
+    border-radius: var(--r-pill);
     overflow: hidden;
-    margin-bottom: 3px;
+    margin-bottom: 4px;
     margin-top: auto;
 }
 
 .achievement-progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, #ffb300, #ff8f00);
-    border-radius: 3px;
+    background: var(--accent);
+    border-radius: var(--r-pill);
     transition: width 0.4s ease;
 }
 
 .achievement-progress-text {
     font-size: 0.7rem;
-    color: #8a8a8a;
+    color: var(--muted);
+}
+
+/* 成就解锁 toast 内的徽章图标 */
+.temporary-message .toast-badge {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+.temporary-message .toast-badge svg {
+    width: 18px;
+    height: 18px;
 }
 
 /* 数据导出 & 分享海报 */
@@ -846,16 +895,25 @@ h3 {
     text-overflow: ellipsis;
     border-radius: 4px;
     padding: 1px 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+}
+
+.cal-mark-ico {
+    width: 9px;
+    height: 9px;
+    flex: 0 0 auto;
 }
 
 .cal-earned {
-    color: #2e7d32;
-    background: #e8f5e9;
+    color: var(--success);
+    background: var(--success-soft);
 }
 
 .cal-redeemed {
-    color: #e65100;
-    background: #fff3e0;
+    color: var(--danger);
+    background: var(--danger-soft);
 }
 
 /* 日历选中日详情 */
@@ -869,7 +927,7 @@ h3 {
 
 .cal-detail-title {
     font-weight: 700;
-    color: #333;
+    color: var(--text);
     margin-bottom: 10px;
     font-size: 0.95rem;
 }
@@ -879,7 +937,7 @@ h3 {
     align-items: center;
     gap: 8px;
     padding: 7px 0;
-    border-bottom: 1px dashed #eee;
+    border-bottom: 1px dashed var(--border);
     font-size: 0.88rem;
 }
 
@@ -889,6 +947,8 @@ h3 {
 
 .cal-detail-icon {
     flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
 }
 
 .cal-detail-pts {
@@ -897,26 +957,33 @@ h3 {
 }
 
 .cal-detail-pts.pos {
-    color: #2e7d32;
+    color: var(--success);
 }
 
 .cal-detail-pts.neg {
-    color: #e65100;
+    color: var(--danger);
 }
 
 .cal-detail-desc {
     flex: 1;
-    color: #444;
+    color: var(--text);
 }
 
 .cal-detail-del {
     flex: 0 0 auto;
     background: none;
     border: none;
-    font-size: 0.9rem;
+    color: var(--muted);
     cursor: pointer;
     opacity: 0.4;
     padding: 2px 4px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.cal-detail-del svg {
+    width: 16px;
+    height: 16px;
 }
 
 .cal-detail-del:hover {
@@ -1069,6 +1136,12 @@ h3 {
     line-height: 1;
 }
 
+.profile-chip-avatar svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    display: block;
+}
+
 .profile-chip-name {
     max-width: 80px;
     overflow: hidden;
@@ -1081,6 +1154,14 @@ h3 {
     font-size: 0.8rem;
     opacity: 0.6;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+}
+
+.profile-chip-edit svg {
+    width: 0.85rem;
+    height: 0.85rem;
+    display: block;
 }
 
 .profile-chip-edit:hover {
@@ -2391,7 +2472,7 @@ li {
     font-size: 14px;
 }
 .family-invite-code b { letter-spacing: 2px; color: #6c5ce7; }
-.family-join-desc { color: var(--text-muted, #888); font-size: 14px; margin: 8px 0 14px; }
+.family-join-desc { color: var(--muted); font-size: 14px; margin: 8px 0 14px; }
 .poster-invite-box {
     display: flex;
     align-items: center;
@@ -2405,14 +2486,14 @@ li {
 }
 .behavior-by, .item-by, .redeemed-by {
     font-size: 12px;
-    color: var(--text-muted, #888);
+    color: var(--muted);
     margin-left: 4px;
 }
 
 /* ── 成长纪念册模块 ── */
 .keepsake-header { text-align: center; margin-bottom: 12px; }
 .keepsake-header h3 { font-size: 1.4rem; margin: 0; }
-.keepsake-subtitle { color: var(--text-muted, #888); font-size: 13px; margin: 4px 0 0; }
+.keepsake-subtitle { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
 .keepsake-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
 .keepsake-month {
     display: grid;
@@ -2426,37 +2507,37 @@ li {
     padding: 14px 10px;
     text-align: center;
 }
-.keepsake-month .km-value { font-size: 1.5rem; font-weight: 700; color: var(--primary, #6c5ce7); }
-.keepsake-month .km-label { font-size: 12px; color: var(--text-muted, #888); margin-top: 4px; }
+.keepsake-month .km-value { font-size: 1.5rem; font-weight: 700; color: var(--brand); }
+.keepsake-month .km-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
 .keepsake-section-title { font-size: 1.1rem; margin: 8px 0 12px; }
 .keepsake-timeline { position: relative; padding-left: 18px; }
 .keepsake-timeline::before {
     content: ''; position: absolute; left: 5px; top: 4px; bottom: 4px; width: 2px;
-    background: linear-gradient(var(--primary, #6c5ce7), var(--accent, #ffb300));
+    background: linear-gradient(var(--brand), var(--accent));
 }
 .kt-item { position: relative; padding: 8px 0 14px 12px; }
 .kt-item::before {
     content: ''; position: absolute; left: -16px; top: 12px; width: 10px; height: 10px;
-    border-radius: 50%; background: var(--primary, #6c5ce7); box-shadow: 0 0 0 3px rgba(108,92,231,.15);
+    border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 3px rgba(108,92,231,.15);
 }
-.kt-item.kt-redeem::before { background: var(--accent, #ffb300); }
-.kt-date { font-size: 12px; color: var(--text-muted, #888); }
+.kt-item.kt-redeem::before { background: var(--accent); }
+.kt-date { font-size: 12px; color: var(--muted); }
 .kt-text { font-size: 14px; margin-top: 2px; }
-.kt-text .kt-pts { font-weight: 700; color: var(--primary, #6c5ce7); }
-.kt-item.kt-redeem .kt-text .kt-pts { color: var(--accent, #ffb300); }
-.kt-empty { text-align: center; color: var(--text-muted, #888); padding: 30px 10px; font-size: 14px; }
+.kt-text .kt-pts { font-weight: 700; color: var(--brand); }
+.kt-item.kt-redeem .kt-text .kt-pts { color: var(--accent); }
+.kt-empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 14px; }
 
 /* ── Plan A: 成长记录标签页 / 列表 / 添加弹窗 ── */
 .keepsake-tabs { display: flex; gap: 6px; margin: 16px 0 10px; flex-wrap: wrap; }
 .ktab {
     flex: 1 1 auto; min-width: 64px; border: 1px solid var(--border, #eee); background: transparent;
-    color: var(--text-muted, #888); border-radius: 18px; padding: 7px 10px; font-size: 13px;
+    color: var(--muted); border-radius: 18px; padding: 7px 10px; font-size: 13px;
     cursor: pointer; font-weight: 600; transition: all .15s;
 }
-.ktab.active { background: var(--primary, #6c5ce7); color: #fff; border-color: var(--primary, #6c5ce7); }
+.ktab.active { background: var(--brand); color: #fff; border-color: var(--brand); }
 .keepsake-add-row { margin: 10px 0 4px; }
 .add-line-btn {
-    border: 1px dashed var(--primary, #6c5ce7); background: rgba(108,92,231,.06); color: var(--primary, #6c5ce7);
+    border: 1px dashed var(--brand); background: rgba(108,92,231,.06); color: var(--brand);
     border-radius: 12px; padding: 9px 14px; font-size: 14px; cursor: pointer; font-weight: 600; width: 100%;
 }
 .add-line-btn:hover { background: rgba(108,92,231,.12); }
@@ -2467,28 +2548,28 @@ li {
     border: 1px solid var(--border, #eee); border-radius: 12px; padding: 12px 14px; background: #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,.04);
 }
-.gl-cat { display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent, #ffb300);
+.gl-cat { display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent);
     background: rgba(255,179,0,.12); border-radius: 10px; padding: 2px 8px; margin-bottom: 6px; }
 .gl-title { font-size: 15px; font-weight: 700; color: var(--text, #333); }
-.gl-detail { font-size: 13px; color: var(--text-muted, #888); margin-top: 4px; line-height: 1.5; white-space: pre-wrap; }
+.gl-detail { font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.5; white-space: pre-wrap; }
 .gl-voice .gl-detail { font-style: italic; }
-.gl-meta { font-size: 12px; color: var(--text-muted, #888); margin-top: 6px; }
-.gl-date { font-size: 12px; color: var(--text-muted, #888); margin-top: 4px; }
+.gl-meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.gl-date { font-size: 12px; color: var(--muted); margin-top: 4px; }
 #growth-add-modal .form-group textarea { min-height: 80px; resize: vertical; }
 
 /* ── 海报分享按钮 ── */
 .poster-share-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 10px 4px 0; }
 .share-chip {
-    border: 1px solid var(--primary, #6c5ce7); background: transparent; color: var(--primary, #6c5ce7);
+    border: 1px solid var(--brand); background: transparent; color: var(--brand);
     border-radius: 20px; padding: 6px 14px; font-size: 13px; cursor: pointer; font-weight: 600;
 }
-.share-chip:hover { background: var(--primary, #6c5ce7); color: #fff; }
+.share-chip:hover { background: var(--brand); color: #fff; }
 
 /* ── 成就证书弹窗 ── */
 .cert-modal { max-width: 460px; }
 .cert-preview-wrap { margin: 10px auto; max-width: 400px; }
 .cert-preview-wrap canvas { width: 100%; height: auto; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.15); }
-.cert-sub { text-align: center; color: var(--text-muted, #888); font-size: 13px; margin: 6px 0 14px; }
+.cert-sub { text-align: center; color: var(--muted); font-size: 13px; margin: 6px 0 14px; }
 
 /* ── 家庭勋章提示 ── */
 .family-medal {

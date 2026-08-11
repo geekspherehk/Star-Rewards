@@ -14,13 +14,13 @@ function escapeHtml(text) {
 }
 
 // 显示临时消息
-function showTemporaryMessage(message, type) {
+function showTemporaryMessage(message, type, isHtml) {
     const existing = document.querySelector('.temporary-message');
     if (existing) existing.remove();
 
     const el = document.createElement('div');
     el.className = 'temporary-message ' + (type || 'info');
-    el.textContent = message;
+    if (isHtml) el.innerHTML = message; else el.textContent = message;
     el.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:15px 25px;border-radius:8px;color:white;font-weight:bold;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
     
     if (type === 'success') {

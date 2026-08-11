@@ -170,20 +170,21 @@ function calculateStreak(behaviorList) {
 }
 
 // ── 成就徽章系统（从现有数据计算，无需额外存储）──
+const ACH_SVG = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
 const ACHIEVEMENTS = [
-    { id: 'first_star', icon: '⭐', metric: 'behaviors', target: 1 },
-    { id: 'ten_actions', icon: '🌱', metric: 'behaviors', target: 10 },
-    { id: 'fifty_actions', icon: '🌳', metric: 'behaviors', target: 50 },
-    { id: 'hundred_points', icon: '💯', metric: 'totalPoints', target: 100 },
-    { id: 'five_hundred', icon: '🏅', metric: 'totalPoints', target: 500 },
-    { id: 'thousand_pts', icon: '👑', metric: 'currentPoints', target: 1000 },
-    { id: 'streak3', icon: '🔥', metric: 'streak', target: 3 },
-    { id: 'streak7', icon: '⚡', metric: 'streak', target: 7 },
-    { id: 'streak30', icon: '📅', metric: 'streak', target: 30 },
-    { id: 'first_redeem', icon: '🎁', metric: 'redeemed', target: 1 },
-    { id: 'five_redeems', icon: '🎉', metric: 'redeemed', target: 5 },
-    { id: 'multi_child', icon: '👨‍👩‍👧', metric: 'profiles', target: 2 },
-    { id: 'variety', icon: '🎨', metric: 'days', target: 5 }
+    { id: 'first_star', icon: `<svg ${ACH_SVG}><polygon points="12 3 14.7 9.3 21.5 10.1 16.3 14.6 17.8 21.3 12 18 6.2 21.3 7.7 14.6 2.5 10.1 9.3 9.3 12 3"/></svg>`, metric: 'behaviors', target: 1 },
+    { id: 'ten_actions', icon: `<svg ${ACH_SVG}><path d="M12 22V11"/><path d="M12 11C12 7 9 5 5 5c0 4 3 6 7 6z"/><path d="M12 13c0-3.5 3-5.5 7-5.5 0 4-3 6-7 6z"/></svg>`, metric: 'behaviors', target: 10 },
+    { id: 'fifty_actions', icon: `<svg ${ACH_SVG}><path d="M12 2 6 10h3l-4 6h14l-4-6h3z"/><path d="M12 16v6"/></svg>`, metric: 'behaviors', target: 50 },
+    { id: 'hundred_points', icon: `<svg ${ACH_SVG}><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>`, metric: 'totalPoints', target: 100 },
+    { id: 'five_hundred', icon: `<svg ${ACH_SVG}><circle cx="12" cy="9" r="5"/><path d="M9.5 13.5 7 21l5-3 5 3-2.5-7.5"/></svg>`, metric: 'totalPoints', target: 500 },
+    { id: 'thousand_pts', icon: `<svg ${ACH_SVG}><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/></svg>`, metric: 'currentPoints', target: 1000 },
+    { id: 'streak3', icon: `<svg ${ACH_SVG}><path d="M12 22a7 7 0 0 0 7-7c0-3-2-5-3-6 .3 1.5-.5 2.5-1.5 3.2-1-3-3-4.2-3-7-3 2.5-5 5.5-5 10a7 7 0 0 0 5.5 6.8z"/></svg>`, metric: 'streak', target: 3 },
+    { id: 'streak7', icon: `<svg ${ACH_SVG}><polygon points="13 2 4 14 11 14 10 22 20 9 13 9 13 2"/></svg>`, metric: 'streak', target: 7 },
+    { id: 'streak30', icon: `<svg ${ACH_SVG}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`, metric: 'streak', target: 30 },
+    { id: 'first_redeem', icon: `<svg ${ACH_SVG}><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg>`, metric: 'redeemed', target: 1 },
+    { id: 'five_redeems', icon: `<svg ${ACH_SVG}><path d="M5 21 13 13"/><path d="M13 13l7-7"/><path d="M14 3l.8 2.5L17 6l-2.2.8L14 9l-.8-2.2L11 6l2.2-.5z"/><path d="M19 13l.6 1.8L21 15l-1.4.6L19 17l-.6-1.4L17 15l1.4-.4z"/></svg>`, metric: 'redeemed', target: 5 },
+    { id: 'multi_child', icon: `<svg ${ACH_SVG}><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.2"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M15 20c0-2 1-3.2 2-3.2s2 1.2 2 3.2"/></svg>`, metric: 'profiles', target: 2 },
+    { id: 'variety', icon: `<svg ${ACH_SVG}><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2 0-1.5 1-2 2.5-2H19a3 3 0 0 0 3-3c0-5-4-9-10-9z"/><circle cx="7.5" cy="11" r="1"/><circle cx="11" cy="7.5" r="1"/><circle cx="15.5" cy="8.5" r="1"/><circle cx="9" cy="14.5" r="1"/></svg>`, metric: 'days', target: 5 }
 ];
 
 function computeAchievements() {
@@ -247,7 +248,7 @@ function renderAchievements() {
             <div class="achievement-name">${escapeHtml(t('home.achievements.' + a.id + '.name'))}</div>
             <div class="achievement-desc">${escapeHtml(t('home.achievements.' + a.id + '.desc'))}</div>
             ${a.unlocked
-                ? `<div class="achievement-state">✓ ${t('home.achievements.unlocked')}</div>`
+                ? `<div class="achievement-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>${t('home.achievements.unlocked')}</div>`
                 : `<div class="achievement-progress"><div class="achievement-progress-bar" style="width:${a.pct}%"></div></div>
                    <div class="achievement-progress-text">${t('home.achievements.progress', { current: a.current, target: a.target })}</div>`}
         `;
@@ -259,7 +260,7 @@ function renderAchievements() {
         setTimeout(() => {
             const badge = list.find(a => a.id === id);
             if (badge) {
-                showTemporaryMessage(`🏆 ${badge.icon} ${t('home.achievements.' + id + '.name')} ${t('home.achievements.unlocked')}！`, 'success');
+                showTemporaryMessage(`<span class="toast-badge">${badge.icon}</span>${escapeHtml(t('home.achievements.' + id + '.name'))} ${t('home.achievements.unlocked')}！`, 'success', true);
             }
         }, 400 * (i + 1));
     });
@@ -1665,7 +1666,7 @@ function printKeepsake() {
     const rows = events.slice(0, 200).map(e => {
         const d = new Date(e.date);
         const ds = isNaN(d) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        const tag = e.type === 'earn' ? '⭐ 记录' : '🎁 达成';
+        const tag = e.type === 'earn' ? '记录' : '达成';
         const pts = e.type === 'earn' ? `+${e.points}` : `-${e.points}`;
         return `<tr><td>${ds}</td><td>${tag}</td><td>${escapeHtml(e.text)}</td><td style="text-align:right;color:${e.type === 'earn' ? '#6c5ce7' : '#ff9a3c'}">${pts}</td></tr>`;
     }).join('');
@@ -1698,6 +1699,22 @@ function printKeepsake() {
 }
 
 // ── 成就证书（达成即庆祝，而非交易兑换） ──
+function drawCertStar(ctx, cx, cy, r) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+        const a = (Math.PI * 2 / 5) * i - Math.PI / 2;
+        const a2 = a + Math.PI / 5;
+        ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        ctx.lineTo(Math.cos(a2) * r * 0.45, Math.sin(a2) * r * 0.45);
+    }
+    ctx.closePath();
+    ctx.fillStyle = '#ffb300';
+    ctx.fill();
+    ctx.restore();
+}
+
 function showCelebrationCertificate(gift) {
     const canvas = document.getElementById('cert-canvas');
     if (!canvas) return;
@@ -1718,7 +1735,7 @@ function showCelebrationCertificate(gift) {
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#6c5ce7'; ctx.font = 'bold 40px sans-serif';
-    ctx.fillText('🏆 ' + t('common.certTitle'), W / 2, 130);
+    ctx.fillText(t('common.certTitle'), W / 2, 130);
 
     ctx.fillStyle = '#333'; ctx.font = '22px sans-serif';
     ctx.fillText(childName, W / 2, 220);
@@ -1729,8 +1746,7 @@ function showCelebrationCertificate(gift) {
     ctx.fillStyle = '#764ba2'; ctx.font = 'bold 30px sans-serif';
     ctx.fillText('「' + (giftName || '') + '」', W / 2, 330);
 
-    ctx.font = '60px sans-serif';
-    ctx.fillText('⭐', W / 2, 430);
+    drawCertStar(ctx, W / 2, 425, 46);
 
     ctx.fillStyle = '#bbb'; ctx.font = '16px sans-serif';
     ctx.fillText(dateStr, W / 2, H - 80);
@@ -1839,14 +1855,20 @@ function updateUI() {
     updateModuleStats();
 }
 
-// 顶部模块卡迷你仪表盘：实时数据一眼可见（emoji+数字，语言无关）
+// 顶部模块卡迷你仪表盘：实时数据一眼可见（SVG 图标 + 数字，语言无关）
+const STAT_ICO = {
+    star: '<svg class="stat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 3 14.7 9.3 21.5 10.1 16.3 14.6 17.8 21.3 12 18 6.2 21.3 7.7 14.6 2.5 10.1 9.3 9.3 12 3"/></svg>',
+    gift: '<svg class="stat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg>',
+    check: '<svg class="stat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    note: '<svg class="stat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
+};
 function updateModuleStats() {
     const sP = document.getElementById('stat-points');
-    if (sP) sP.textContent = `🌟 ${currentPoints} 分`;
+    if (sP) sP.innerHTML = `${STAT_ICO.star}${currentPoints} 分`;
     const sG = document.getElementById('stat-gifts');
-    if (sG) sG.textContent = `🎁 ${(Array.isArray(gifts) ? gifts : []).length} · ✅ ${(Array.isArray(redeemedGifts) ? redeemedGifts : []).length} 已兑换`;
+    if (sG) sG.innerHTML = `${STAT_ICO.gift}${(Array.isArray(gifts) ? gifts : []).length} · ${STAT_ICO.check}${(Array.isArray(redeemedGifts) ? redeemedGifts : []).length} 已兑换`;
     const sD = document.getElementById('stat-diary');
-    if (sD) sD.textContent = `📝 ${(Array.isArray(behaviors) ? behaviors : []).length} 条记录`;
+    if (sD) sD.innerHTML = `${STAT_ICO.note}${(Array.isArray(behaviors) ? behaviors : []).length} 条记录`;
 }
 
 // 新用户空状态引导横幅
@@ -2053,7 +2075,7 @@ function renderProfileSwitcher() {
     famBtn.type = 'button';
     famBtn.className = 'profile-chip profile-chip-family';
     famBtn.setAttribute('title', t('home.family.open'));
-    famBtn.innerHTML = `<span class="profile-chip-avatar">👨‍👩‍👧</span><span class="profile-chip-name">${t('home.family.open')}</span>`;
+    famBtn.innerHTML = `<span class="profile-chip-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="profile-chip-name">${t('home.family.open')}</span>`;
     famBtn.onclick = () => openFamilyModal();
     container.appendChild(famBtn);
 
@@ -2069,7 +2091,7 @@ function renderProfileSwitcher() {
 
         const editBtn = document.createElement('span');
         editBtn.className = 'profile-chip-edit';
-        editBtn.textContent = '✎';
+        editBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
         editBtn.setAttribute('title', t('home.profile.edit'));
         editBtn.onclick = (e) => {
             e.stopPropagation();
@@ -2726,7 +2748,7 @@ function renderCalendar() {
         if (day && (day.earned > 0 || day.redeemed > 0)) {
             inner += '<span class="cal-day-marks">';
             if (day.earned > 0) inner += `<span class="cal-mark cal-earned">+${day.earned}</span>`;
-            if (day.redeemed > 0) inner += `<span class="cal-mark cal-redeemed">🎁${day.redeemed}</span>`;
+            if (day.redeemed > 0) inner += `<span class="cal-mark cal-redeemed"><svg class="cal-mark-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg>${day.redeemed}</span>`;
             inner += '</span>';
         }
         html += `<span class="${cls}" onclick="calendarSelectDay('${key}')" title="${key}">${inner}</span>`;
@@ -2776,17 +2798,20 @@ function renderCalendarDayDetail() {
         return;
     }
     const title = new Date(calendarSelectedDay + 'T00:00:00').toLocaleDateString(getCalendarLocale(), { month: 'long', day: 'numeric', weekday: 'long' });
-    let html = `<div class="cal-detail-title">📌 ${title}</div>`;
+    let html = `<div class="cal-detail-title">${title}</div>`;
     items.forEach(it => {
         if (it.type === 'b') {
             const pos = Number(it.points) > 0;
-            html += `<div class="cal-detail-item behavior"><span class="cal-detail-icon">${pos ? '✅' : '❌'}</span><span class="cal-detail-pts ${pos ? 'pos' : 'neg'}">${pos ? '+' : ''}${it.points}</span><span class="cal-detail-desc">${escapeHtml(it.desc)}</span>`;
+            const ico = pos
+                ? '<svg class="cal-detail-icon" viewBox="0 0 24 24" fill="none" stroke="#1FA971" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+                : '<svg class="cal-detail-icon" viewBox="0 0 24 24" fill="none" stroke="#E5484D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+            html += `<div class="cal-detail-item behavior">${ico}<span class="cal-detail-pts ${pos ? 'pos' : 'neg'}">${pos ? '+' : ''}${it.points}</span><span class="cal-detail-desc">${escapeHtml(it.desc)}</span>`;
             if (it.id) {
-                html += `<button class="cal-detail-del" onclick="deleteBehavior(${it.id})" title="Delete">🗑</button>`;
+                html += `<button class="cal-detail-del" onclick="deleteBehavior(${it.id})" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>`;
             }
             html += '</div>';
         } else {
-            html += `<div class="cal-detail-item gift"><span class="cal-detail-icon">🏆</span><span class="cal-detail-pts neg">-${it.points}</span><span class="cal-detail-desc">${escapeHtml(it.desc)}</span></div>`;
+            html += `<div class="cal-detail-item gift"><svg class="cal-detail-icon" viewBox="0 0 24 24" fill="none" stroke="#E5484D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg><span class="cal-detail-pts neg">-${it.points}</span><span class="cal-detail-desc">${escapeHtml(it.desc)}</span></div>`;
         }
     });
     panel.innerHTML = html;
