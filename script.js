@@ -172,19 +172,20 @@ function calculateStreak(behaviorList) {
 // ── 成就徽章系统（从现有数据计算，无需额外存储）──
 const ACH_SVG = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
 const ACHIEVEMENTS = [
-    { id: 'first_star', icon: `<svg ${ACH_SVG}><polygon points="12 3 14.7 9.3 21.5 10.1 16.3 14.6 17.8 21.3 12 18 6.2 21.3 7.7 14.6 2.5 10.1 9.3 9.3 12 3"/></svg>`, metric: 'behaviors', target: 1 },
-    { id: 'ten_actions', icon: `<svg ${ACH_SVG}><path d="M12 22V11"/><path d="M12 11C12 7 9 5 5 5c0 4 3 6 7 6z"/><path d="M12 13c0-3.5 3-5.5 7-5.5 0 4-3 6-7 6z"/></svg>`, metric: 'behaviors', target: 10 },
-    { id: 'fifty_actions', icon: `<svg ${ACH_SVG}><path d="M12 2 6 10h3l-4 6h14l-4-6h3z"/><path d="M12 16v6"/></svg>`, metric: 'behaviors', target: 50 },
-    { id: 'hundred_points', icon: `<svg ${ACH_SVG}><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>`, metric: 'totalPoints', target: 100 },
-    { id: 'five_hundred', icon: `<svg ${ACH_SVG}><circle cx="12" cy="9" r="5"/><path d="M9.5 13.5 7 21l5-3 5 3-2.5-7.5"/></svg>`, metric: 'totalPoints', target: 500 },
-    { id: 'thousand_pts', icon: `<svg ${ACH_SVG}><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/></svg>`, metric: 'currentPoints', target: 1000 },
-    { id: 'streak3', icon: `<svg ${ACH_SVG}><path d="M12 22a7 7 0 0 0 7-7c0-3-2-5-3-6 .3 1.5-.5 2.5-1.5 3.2-1-3-3-4.2-3-7-3 2.5-5 5.5-5 10a7 7 0 0 0 5.5 6.8z"/></svg>`, metric: 'streak', target: 3 },
-    { id: 'streak7', icon: `<svg ${ACH_SVG}><polygon points="13 2 4 14 11 14 10 22 20 9 13 9 13 2"/></svg>`, metric: 'streak', target: 7 },
-    { id: 'streak30', icon: `<svg ${ACH_SVG}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`, metric: 'streak', target: 30 },
-    { id: 'first_redeem', icon: `<svg ${ACH_SVG}><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg>`, metric: 'redeemed', target: 1 },
-    { id: 'five_redeems', icon: `<svg ${ACH_SVG}><path d="M5 21 13 13"/><path d="M13 13l7-7"/><path d="M14 3l.8 2.5L17 6l-2.2.8L14 9l-.8-2.2L11 6l2.2-.5z"/><path d="M19 13l.6 1.8L21 15l-1.4.6L19 17l-.6-1.4L17 15l1.4-.4z"/></svg>`, metric: 'redeemed', target: 5 },
-    { id: 'multi_child', icon: `<svg ${ACH_SVG}><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.2"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M15 20c0-2 1-3.2 2-3.2s2 1.2 2 3.2"/></svg>`, metric: 'profiles', target: 2 },
-    { id: 'variety', icon: `<svg ${ACH_SVG}><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2 0-1.5 1-2 2.5-2H19a3 3 0 0 0 3-3c0-5-4-9-10-9z"/><circle cx="7.5" cy="11" r="1"/><circle cx="11" cy="7.5" r="1"/><circle cx="15.5" cy="8.5" r="1"/><circle cx="9" cy="14.5" r="1"/></svg>`, metric: 'days', target: 5 }
+    // glyph: 海报/canvas 用字符图徽（画布不绘制 SVG 源码，避免乱码）；web 仍用 SVG icon
+    { id: 'first_star', icon: `<svg ${ACH_SVG}><polygon points="12 3 14.7 9.3 21.5 10.1 16.3 14.6 17.8 21.3 12 18 6.2 21.3 7.7 14.6 2.5 10.1 9.3 9.3 12 3"/></svg>`, glyph: '★', metric: 'behaviors', target: 1 },
+    { id: 'ten_actions', icon: `<svg ${ACH_SVG}><path d="M12 22V11"/><path d="M12 11C12 7 9 5 5 5c0 4 3 6 7 6z"/><path d="M12 13c0-3.5 3-5.5 7-5.5 0 4-3 6-7 6z"/></svg>`, glyph: '✿', metric: 'behaviors', target: 10 },
+    { id: 'fifty_actions', icon: `<svg ${ACH_SVG}><path d="M12 2 6 10h3l-4 6h14l-4-6h3z"/><path d="M12 16v6"/></svg>`, glyph: '✦', metric: 'behaviors', target: 50 },
+    { id: 'hundred_points', icon: `<svg ${ACH_SVG}><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>`, glyph: '✓', metric: 'totalPoints', target: 100 },
+    { id: 'five_hundred', icon: `<svg ${ACH_SVG}><circle cx="12" cy="9" r="5"/><path d="M9.5 13.5 7 21l5-3 5 3-2.5-7.5"/></svg>`, glyph: '◉', metric: 'totalPoints', target: 500 },
+    { id: 'thousand_pts', icon: `<svg ${ACH_SVG}><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/></svg>`, glyph: '♛', metric: 'currentPoints', target: 1000 },
+    { id: 'streak3', icon: `<svg ${ACH_SVG}><path d="M12 22a7 7 0 0 0 7-7c0-3-2-5-3-6 .3 1.5-.5 2.5-1.5 3.2-1-3-3-4.2-3-7-3 2.5-5 5.5-5 10a7 7 0 0 0 5.5 6.8z"/></svg>`, glyph: '♨', metric: 'streak', target: 3 },
+    { id: 'streak7', icon: `<svg ${ACH_SVG}><polygon points="13 2 4 14 11 14 10 22 20 9 13 9 13 2"/></svg>`, glyph: '⚡', metric: 'streak', target: 7 },
+    { id: 'streak30', icon: `<svg ${ACH_SVG}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`, glyph: '☼', metric: 'streak', target: 30 },
+    { id: 'first_redeem', icon: `<svg ${ACH_SVG}><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg>`, glyph: '♢', metric: 'redeemed', target: 1 },
+    { id: 'five_redeems', icon: `<svg ${ACH_SVG}><path d="M5 21 13 13"/><path d="M13 13l7-7"/><path d="M14 3l.8 2.5L17 6l-2.2.8L14 9l-.8-2.2L11 6l2.2-.5z"/><path d="M19 13l.6 1.8L21 15l-1.4.6L19 17l-.6-1.4L17 15l1.4-.4z"/></svg>`, glyph: '✺', metric: 'redeemed', target: 5 },
+    { id: 'multi_child', icon: `<svg ${ACH_SVG}><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.2"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M15 20c0-2 1-3.2 2-3.2s2 1.2 2 3.2"/></svg>`, glyph: '♣', metric: 'profiles', target: 2 },
+    { id: 'variety', icon: `<svg ${ACH_SVG}><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2 0-1.5 1-2 2.5-2H19a3 3 0 0 0 3-3c0-5-4-9-10-9z"/><circle cx="7.5" cy="11" r="1"/><circle cx="11" cy="7.5" r="1"/><circle cx="15.5" cy="8.5" r="1"/><circle cx="9" cy="14.5" r="1"/></svg>`, glyph: '✧', metric: 'days', target: 5 }
 ];
 
 function computeAchievements() {
@@ -378,6 +379,11 @@ function roundRectPath(ctx, x, y, w, h, r) {
     ctx.closePath();
 }
 
+// ── 海报字符徽章 ──
+// 海报用 Unicode 字符（glyph）渲染徽章，避免画布把 SVG 源码当文本绘制（乱码）。
+// 网页端仍用 ACHIEVEMENTS 的 SVG icon；这里只给海报兜底。
+const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",serif';
+
 function renderPoster() {
     const canvas = document.getElementById('poster-canvas');
     if (!canvas) return;
@@ -431,7 +437,7 @@ function renderPoster() {
     ctx.arc(W / 2, cy, cr, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255,255,255,0.95)';
     ctx.fill();
-    ctx.font = '108px serif';
+    ctx.font = '108px ' + EMOJI_FONT;
     ctx.textBaseline = 'middle';
     ctx.fillText(p.avatar || '⭐', W / 2, cy + 10);
     ctx.textBaseline = 'alphabetic';
@@ -483,16 +489,24 @@ function renderPoster() {
         const rowCount = Math.ceil(shown.length / cols);
         const baseY = 872;
         ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
         shown.forEach((a, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
             const x = (W - totalW) / 2 + col * (iconSize + 18);
             const y = baseY + row * (iconSize + 14) + (rowCount === 1 ? (iconSize + 14) / 4 : 0);
-            ctx.font = '52px serif';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(a.icon, x + iconSize / 2, y + iconSize / 2 + 4);
-            ctx.textBaseline = 'alphabetic';
+            const cx = x + iconSize / 2;
+            const cy = y + iconSize / 2 + 2;
+            // 品牌色圆底 + 白色字符徽章（画布稳健方案：不画 SVG 源码）
+            ctx.beginPath();
+            ctx.arc(cx, cy, iconSize / 2 + 5, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(108,92,231,0.95)';
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.98)';
+            ctx.font = '40px ' + fontFamily;
+            ctx.fillText(a.glyph || '★', cx, cy + 2);
         });
+        ctx.textBaseline = 'alphabetic';
         ctx.textAlign = 'center';
     }
 
