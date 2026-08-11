@@ -10,6 +10,7 @@ const translations = {
             registerButton: '注册',
             emailPlaceholder: '请输入邮箱',
             passwordPlaceholder: '请输入密码',
+            invitePlaceholder: '邀请码（可选，有家人邀请时填写）',
             emailRequired: '请输入邮箱',
             passwordRequired: '请输入密码',
             loginSuccess: '登录成功',
@@ -144,7 +145,8 @@ const translations = {
                 expired: '邀请码已过期',
                 invalidCode: '邀请码无效',
                 addedBy: '记录人',
-                shareInvite: '邀请家人一起记录'
+                shareInvite: '邀请家人一起记录',
+                genFirst: '请先生成邀请码'
             }
         },
         behaviors: {
@@ -324,15 +326,16 @@ const translations = {
             notLoggedIn: '用户未登录',
             deleted: '已删除',
             deleteFailed: '删除失败',
-            pointsAdded: '✅ 成功添加 {points} 分！',
-            pointsDeductedMessage: '⚠️ 扣除 {points} 分',
-            enterEmailAndPassword: '⚠️ 请输入邮箱和密码',
-            passwordMinLength: '⚠️ 密码至少需要6位字符',
-            registerSuccess: '✅ 注册成功！请登录',
-            registerFailed: '❌ 注册失败',
-            loginSuccessMessage: '✅ 登录成功！正在跳转...',
-            alreadyLoggedIn: '✅ 检测到已登录状态，正在跳转...',
-            enterEmailFirst: '⚠️ 请先输入您的邮箱地址'
+            pointsAdded: '成功添加 {points} 分！',
+            pointsDeductedMessage: '扣除 {points} 分',
+            enterEmailAndPassword: '请输入邮箱和密码',
+            passwordMinLength: '密码至少需要6位字符',
+            registerSuccess: '注册成功！请登录',
+            registerFailed: '注册失败',
+            invalidInviteCode: '邀请码无效或已过期，请检查后重试（也可留空直接注册）',
+            loginSuccessMessage: '登录成功！正在跳转...',
+            alreadyLoggedIn: '检测到已登录状态，正在跳转...',
+            enterEmailFirst: '请先输入您的邮箱地址'
         },
         theme: {
             title: '选择你的主题',
@@ -459,6 +462,7 @@ const translations = {
             registerButton: 'Register',
             emailPlaceholder: 'Enter email',
             passwordPlaceholder: 'Enter password',
+            invitePlaceholder: 'Invite code (optional)',
             emailRequired: 'Please enter email',
             passwordRequired: 'Please enter password',
             loginSuccess: 'Login successful',
@@ -593,7 +597,8 @@ const translations = {
                 expired: 'Invite code expired',
                 invalidCode: 'Invalid invite code',
                 addedBy: 'Recorded by',
-                shareInvite: 'Invite family to record together'
+                shareInvite: 'Invite family to record together',
+                genFirst: 'Generate an invite code first'
             }
         },
         behaviors: {
@@ -773,15 +778,16 @@ const translations = {
             notLoggedIn: 'Not logged in',
             deleted: 'Deleted',
             deleteFailed: 'Delete failed',
-            pointsAdded: '✅ Successfully added {points} points!',
-            pointsDeductedMessage: '⚠️ Deducted {points} points',
-            enterEmailAndPassword: '⚠️ Please enter email and password',
-            passwordMinLength: '⚠️ Password must be at least 6 characters',
-            registerSuccess: '✅ Registration successful! Please log in',
-            registerFailed: '❌ Registration failed',
-            loginSuccessMessage: '✅ Login successful! Redirecting...',
-            alreadyLoggedIn: '✅ Already logged in, redirecting...',
-            enterEmailFirst: '⚠️ Please enter your email first'
+            pointsAdded: 'Successfully added {points} points!',
+            pointsDeductedMessage: 'Deducted {points} points',
+            enterEmailAndPassword: 'Please enter email and password',
+            passwordMinLength: 'Password must be at least 6 characters',
+            registerSuccess: 'Registration successful! Please log in',
+            registerFailed: 'Registration failed',
+            invalidInviteCode: 'Invalid or expired invite code. Check it and try again (or leave it blank to register).',
+            loginSuccessMessage: 'Login successful! Redirecting...',
+            alreadyLoggedIn: 'Already logged in, redirecting...',
+            enterEmailFirst: 'Please enter your email first'
         },
         theme: {
             title: 'Choose Your Theme',

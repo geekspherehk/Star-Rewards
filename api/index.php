@@ -5,7 +5,8 @@ require_once 'config.php';
 define('TRACK_ALLOWED_EVENTS', [
     'register', 'login', 'add_behavior', 'add_gift', 'redeem',
     'view_poster', 'share_poster', 'create_invite', 'join_family',
-    'open_family', 'view_seo_article', 'first_session'
+    'open_family', 'view_seo_article', 'first_session',
+    'growth_add', 'achieve_cert', 'share_wechat', 'share_whatsapp', 'share_pinterest'
 ]);
 
 header('Content-Type: application/json; charset=utf-8');
@@ -271,10 +272,12 @@ function getFamilyInfo($pdo, $familyId, $userId) {
     }
     $family['member_count'] = count($members);
     $family['max_members'] = FAMILY_MAX_MEMBERS;
+    // 把 invite_link 一并放进 family 对象，前端统一从 currentFamily.family.invite_link 读取
+    $family['invite_link'] = 'https://stellar.gaocaihk.com/?invite=' . $family['invite_code'];
     return [
         'family' => $family,
         'members' => $members,
-        'invite_link' => 'https://stellar.gaocaihk.com/?invite=' . $family['invite_code']
+        'invite_link' => $family['invite_link']
     ];
 }
 
@@ -409,9 +412,11 @@ function handleRegister($pdo, $data) {
     rateLimit('register', 5, 60); // 5 attempts per 60 seconds
     $email = validateEmail($data['email'] ?? '');
     $password = $data['password'] ?? '';
+    $inviteCode = strtoupper(trim($data['family_code'] ?? ($data['invite'] ?? '')));
 
     if (!$email) sendError('Invalid email format', 400);
     if (!validatePassword($password)) sendError('Password must be 6-255 characters', 400);
+    if ($inviteCode !== '' && !preg_match('/^[0-9A-Z]{6}$/', $inviteCode)) sendError('Invalid invite code (6 characters)', 400);
 
     try {
         $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
@@ -426,14 +431,29 @@ function handleRegister($pdo, $data) {
         $userId = (int)$pdo->lastInsertId();
 
         $pdo->beginTransaction();
-        // create a solo family for the new user (owner) so every account belongs to a family
-        $code = generateInviteCode($pdo);
         $local = explode('@', $email)[0];
-        $stmt = $pdo->prepare('INSERT INTO families (name, invite_code, invite_expires_at) VALUES (?, ?, NULL)');
-        $stmt->execute([$local . ' 的家庭', $code]);
-        $familyId = (int)$pdo->lastInsertId();
-        $stmt = $pdo->prepare('INSERT INTO family_members (family_id, user_id, role, display_name) VALUES (?, ?, "owner", ?)');
-        $stmt->execute([$familyId, $userId, $local]);
+        if ($inviteCode !== '') {
+            // 注册即加入邀请的家庭（不创建 solo 家庭）
+            $stmt = $pdo->prepare('SELECT id, invite_expires_at FROM families WHERE invite_code = ? LIMIT 1 FOR UPDATE');
+            $stmt->execute([$inviteCode]);
+            $family = $stmt->fetch();
+            if (!$family) sendError('Invite code not found', 404);
+            if ($family['invite_expires_at'] && strtotime($family['invite_expires_at']) < time()) sendError('Invite code expired', 410);
+            $familyId = (int)$family['id'];
+            $stmt = $pdo->prepare('SELECT COUNT(*) AS cnt FROM family_members WHERE family_id = ?');
+            $stmt->execute([$familyId]);
+            if ((int)$stmt->fetch()['cnt'] >= FAMILY_MAX_MEMBERS) sendError('Family is full (max ' . FAMILY_MAX_MEMBERS . ')', 403);
+            $stmt = $pdo->prepare('INSERT INTO family_members (family_id, user_id, role, display_name) VALUES (?, ?, "member", ?)');
+            $stmt->execute([$familyId, $userId, $local]);
+        } else {
+            // create a solo family for the new user (owner) so every account belongs to a family
+            $code = generateInviteCode($pdo);
+            $stmt = $pdo->prepare('INSERT INTO families (name, invite_code, invite_expires_at) VALUES (?, ?, NULL)');
+            $stmt->execute([$local . ' 的家庭', $code]);
+            $familyId = (int)$pdo->lastInsertId();
+            $stmt = $pdo->prepare('INSERT INTO family_members (family_id, user_id, role, display_name) VALUES (?, ?, "owner", ?)');
+            $stmt->execute([$familyId, $userId, $local]);
+        }
 
         $stmt = $pdo->prepare('INSERT INTO profiles (user_id, family_id, name, avatar, color, current_points, total_points) VALUES (?, ?, ?, ?, ?, 0, 0)');
         $stmt->execute([$userId, $familyId, '孩子', '⭐', '#FFB300']);
@@ -448,6 +468,7 @@ function handleRegister($pdo, $data) {
             'user_id' => $userId,
             'email' => $email,
             'expires_in' => TOKEN_TTL,
+            'family_id' => $familyId,
             'profiles' => [
                 ['id' => $profileId, 'name' => '孩子', 'avatar' => '⭐', 'color' => '#FFB300', 'current_points' => 0, 'total_points' => 0]
             ],
@@ -806,7 +827,7 @@ function handleRedeemGift($pdo, $data) {
 
         $stmt = $pdo->prepare('INSERT INTO redeemed_gifts 
             (user_id, family_id, profile_id, gift_id, name, points, description, image_url, original_url, redeem_date) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
         $stmt->execute([
             $userId,
             $familyId,
@@ -1022,13 +1043,24 @@ function handleDeleteBehavior($pdo, $data) {
     if ($behaviorId <= 0) sendError('Invalid behavior ID', 400);
 
     try {
-        $stmt = $pdo->prepare('DELETE FROM behaviors WHERE id = ? AND family_id = ?');
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare('SELECT points, profile_id FROM behaviors WHERE id = ? AND family_id = ? LIMIT 1 FOR UPDATE');
         $stmt->execute([$behaviorId, $familyId]);
-        if ($stmt->rowCount() === 0) {
+        $row = $stmt->fetch();
+        if (!$row) {
+            $pdo->rollBack();
             sendError('Behavior not found', 404);
         }
-        sendJson(['success' => true]);
+        $stmt = $pdo->prepare('DELETE FROM behaviors WHERE id = ? AND family_id = ?');
+        $stmt->execute([$behaviorId, $familyId]);
+        // 积分回滚：删除一条行为记录时把当时产生的积分变动从 current_points 中扣除
+        // （points 可正可负：+10 的记录删除后 current_points -10；-5 的记录删除后 current_points +5）
+        $stmt = $pdo->prepare('UPDATE profiles SET current_points = GREATEST(current_points - ?, 0), updated_at = NOW() WHERE id = ? AND family_id = ?');
+        $stmt->execute([(int)$row['points'], (int)$row['profile_id'], $familyId]);
+        $pdo->commit();
+        sendJson(['success' => true, 'points_rolled_back' => (int)$row['points']]);
     } catch (Exception $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
         sendError('Failed to delete behavior', 500, $e->getMessage());
     }
 }
@@ -1211,7 +1243,6 @@ function handleJoinFamily($pdo, $data) {
     $userId = getUserId();
     $code = strtoupper(trim($data['code'] ?? ''));
     if (!preg_match('/^[0-9A-Z]{6}$/', $code)) sendError('Invalid invite code (6 characters)', 400);
-    if (getFamilyIdOfUser($pdo, $userId)) sendError('You are already in a family. Leave it first.', 409);
 
     $displayName = isset($data['display_name']) ? trim($data['display_name']) : '';
     try {
@@ -1222,6 +1253,40 @@ function handleJoinFamily($pdo, $data) {
         if (!$family) sendError('Invite code not found', 404);
         if ($family['invite_expires_at'] && strtotime($family['invite_expires_at']) < time()) sendError('Invite code expired', 410);
         $familyId = (int)$family['id'];
+
+        // 已在家庭中的处理：仅当现有家庭是「solo 家庭」（自己一人且为 owner）时允许转换加入；
+        // 否则必须先退出当前家庭（owner 需先移除其他成员）。
+        $currentFid = getFamilyIdOfUser($pdo, $userId);
+        if ($currentFid === $familyId) sendError('You are already in this family', 409);
+        if ($currentFid) {
+            $stmt = $pdo->prepare('SELECT role FROM family_members WHERE family_id = ? AND user_id = ?');
+            $stmt->execute([$currentFid, $userId]);
+            $me = $stmt->fetch();
+            $stmt = $pdo->prepare('SELECT COUNT(*) AS cnt FROM family_members WHERE family_id = ?');
+            $stmt->execute([$currentFid]);
+            $cnt = (int)$stmt->fetch()['cnt'];
+            if (!($me && $me['role'] === 'owner' && $cnt === 1)) {
+                sendError('You are already in a family. Leave it first.', 409);
+            }
+            // 先把数据迁移到新家庭，再解散旧的 solo 家庭（profiles.family_id 是 ON DELETE CASCADE，
+            // 顺序必须是：迁移 → 删除旧家庭，否则档案会被级联删除）
+            $stmt = $pdo->prepare('UPDATE profiles SET family_id = ? WHERE user_id = ?');
+            $stmt->execute([$familyId, $userId]);
+            $stmt = $pdo->prepare('UPDATE behaviors b JOIN profiles p ON b.profile_id = p.id SET b.family_id = ? WHERE p.user_id = ?');
+            $stmt->execute([$familyId, $userId]);
+            $stmt = $pdo->prepare('UPDATE gifts g JOIN profiles p ON g.profile_id = p.id SET g.family_id = ? WHERE p.user_id = ?');
+            $stmt->execute([$familyId, $userId]);
+            $stmt = $pdo->prepare('UPDATE redeemed_gifts r JOIN profiles p ON r.profile_id = p.id SET r.family_id = ? WHERE p.user_id = ?');
+            $stmt->execute([$familyId, $userId]);
+            $stmt = $pdo->prepare('UPDATE milestones SET family_id = ? WHERE family_id = ?');
+            $stmt->execute([$familyId, $currentFid]);
+            $stmt = $pdo->prepare('UPDATE analytics_events SET family_id = ? WHERE family_id = ?');
+            $stmt->execute([$familyId, $currentFid]);
+            $stmt = $pdo->prepare('DELETE FROM family_members WHERE family_id = ?');
+            $stmt->execute([$currentFid]);
+            $stmt = $pdo->prepare('DELETE FROM families WHERE id = ?');
+            $stmt->execute([$currentFid]);
+        }
 
         $stmt = $pdo->prepare('SELECT COUNT(*) AS cnt FROM family_members WHERE family_id = ?');
         $stmt->execute([$familyId]);
@@ -1238,14 +1303,15 @@ function handleJoinFamily($pdo, $data) {
         $stmt->execute([$familyId, $userId, $displayName]);
 
         // move the joining user's existing profiles + their records into the new family (preserve data)
-        $stmt = $pdo->prepare('UPDATE profiles SET family_id = ? WHERE user_id = ?');
-        $stmt->execute([$familyId, $userId]);
-        $stmt = $pdo->prepare('UPDATE behaviors b JOIN profiles p ON b.profile_id = p.id SET b.family_id = ? WHERE p.user_id = ?');
-        $stmt->execute([$familyId, $userId]);
-        $stmt = $pdo->prepare('UPDATE gifts g JOIN profiles p ON g.profile_id = p.id SET g.family_id = ? WHERE p.user_id = ?');
-        $stmt->execute([$familyId, $userId]);
-        $stmt = $pdo->prepare('UPDATE redeemed_gifts r JOIN profiles p ON r.profile_id = p.id SET r.family_id = ? WHERE p.user_id = ?');
-        $stmt->execute([$familyId, $userId]);
+        // (solo 家庭转换时上方已迁移；此处兜底覆盖无家庭/普通加入场景)
+        $stmt = $pdo->prepare('UPDATE profiles SET family_id = ? WHERE user_id = ? AND family_id <> ?');
+        $stmt->execute([$familyId, $userId, $familyId]);
+        $stmt = $pdo->prepare('UPDATE behaviors b JOIN profiles p ON b.profile_id = p.id SET b.family_id = ? WHERE p.user_id = ? AND b.family_id <> ?');
+        $stmt->execute([$familyId, $userId, $familyId]);
+        $stmt = $pdo->prepare('UPDATE gifts g JOIN profiles p ON g.profile_id = p.id SET g.family_id = ? WHERE p.user_id = ? AND g.family_id <> ?');
+        $stmt->execute([$familyId, $userId, $familyId]);
+        $stmt = $pdo->prepare('UPDATE redeemed_gifts r JOIN profiles p ON r.profile_id = p.id SET r.family_id = ? WHERE p.user_id = ? AND r.family_id <> ?');
+        $stmt->execute([$familyId, $userId, $familyId]);
 
         $pdo->commit();
         sendJson(getFamilyInfo($pdo, $familyId, $userId));

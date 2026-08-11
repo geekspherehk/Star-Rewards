@@ -18,25 +18,9 @@ async function checkUserLoggedIn() {
     }
 }
 
-function buildConfirmEmailUrl() {
-    const origin = window.location.origin;
-    const pathname = window.location.pathname;
-    let basePath = '';
-    if (pathname.includes('/Star-Rewards/')) {
-        basePath = '/Star-Rewards';
-    } else if (pathname.includes('/rewards/') || pathname.includes('/app/')) {
-        const pathParts = pathname.split('/');
-        const projectIndex = pathParts.findIndex(part => part === 'rewards' || part === 'app' || part === 'Star-Rewards');
-        if (projectIndex !== -1) {
-            basePath = '/' + pathParts.slice(0, projectIndex + 1).join('/');
-        }
-    }
-    return origin + basePath + '/confirm-email.html';
-}
-
-async function signUp(email, password) {
+async function signUp(email, password, inviteCode) {
     if (!email || !password) throw new Error(t('common.enterEmailAndPassword'));    console.log('SignUp: 调用API注册...');
-    const result = await api.register(email, password);
+    const result = await api.register(email, password, inviteCode || '');
     console.log('SignUp: API响应:', result);
     return result;
 }
@@ -63,6 +47,8 @@ function toggleAuthForm(formType) {
 async function handleSignUp() {
     const email = document.getElementById('register-email').value.trim();
     const password = document.getElementById('register-password').value;
+    const inviteInput = document.getElementById('register-invite');
+    const inviteCode = inviteInput ? inviteInput.value.trim().toUpperCase() : '';
     if (!email || !password) {
         showTemporaryMessage(t('common.enterEmailAndPassword'), 'error');
         return;
@@ -72,14 +58,23 @@ async function handleSignUp() {
         return;
     }
     try {
-        await signUp(email, password);
+        await signUp(email, password, inviteCode);
         track('register');
+        if (inviteCode) track('register_with_invite', { code: inviteCode });
         showTemporaryMessage(t('common.registerSuccess'), 'success');
+        sessionStorage.removeItem('pending_invite');
+        if (inviteInput) inviteInput.value = '';
         toggleAuthForm('login');
         document.getElementById('register-email').value = '';
         document.getElementById('register-password').value = '';
     } catch (error) {
-        showTemporaryMessage(t('common.registerFailed') + ': ' + escapeHtml(error.message), 'error');
+        const msg = String(error.message || error);
+        // 填了邀请码但注册失败 → 多半是邀请码无效/已过期/家庭已满，给更明确的提示
+        if (inviteCode && /404|410|403|400/.test(msg)) {
+            showTemporaryMessage(t('common.invalidInviteCode'), 'error');
+        } else {
+            showTemporaryMessage(t('common.registerFailed') + ': ' + escapeHtml(msg), 'error');
+        }
     }
 }
 
@@ -143,36 +138,11 @@ async function initAuth() {
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('=== Login.js: 登录页面加载完成 ===');
+    // 捕获 URL 上的 ?invite=CODE（邀请链接直达登录页时），存入 sessionStorage 供注册表单使用
+    const urlInvite = (new URLSearchParams(window.location.search).get('invite') || '').trim().toUpperCase();
+    if (urlInvite) sessionStorage.setItem('pending_invite', urlInvite);
+    const pending = sessionStorage.getItem('pending_invite') || '';
+    const inviteInput = document.getElementById('register-invite');
+    if (inviteInput && pending) inviteInput.value = pending;
     initAuth();
 });
-
-async function resendConfirmationEmail(email) {
-    if (!email) throw new Error(t('common.enterEmailFirst'));
-    try {
-        const result = await api.resendConfirmation(email);
-        return result;
-    } catch (error) {
-        console.error('重新发送确认邮件失败:', error);
-        throw error;
-    }
-}
-
-async function handleResendConfirmation() {
-    const email = document.getElementById('login-email').value.trim();
-    if (!email) {
-        showTemporaryMessage(t('common.enterEmailFirst'), 'warning');
-        return;
-    }
-    try {
-        showTemporaryMessage('📧 正在重新发送确认邮件...', 'info');
-        await resendConfirmationEmail(email);
-        showTemporaryMessage('✅ 确认邮件已重新发送！请检查您的邮箱（包括垃圾邮件箱）', 'success');
-    } catch (error) {
-        console.error('重新发送确认邮件失败:', error);
-        if (error.message && error.message.toLowerCase().includes('user already registered')) {
-            showTemporaryMessage('📧 该邮箱已注册！如果无法登录，请尝试重置密码或联系支持。', 'warning');
-        } else {
-            showTemporaryMessage(`❌ 重新发送失败: ${escapeHtml(error.message)}`, 'error');
-        }
-    }
-}

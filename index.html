@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=16">
+    <link rel="stylesheet" href="style.css?v=17">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
-    <script defer src="api/api-client.js?v=19"></script>
+    <script defer src="api/api-client.js?v=21"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=24"></script>
+    <script defer src="i18n.js?v=25"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -365,7 +365,7 @@
             signOut();
         }
     </script>
-    <script defer src="script.js?v=26"></script>
+    <script defer src="script.js?v=27"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
@@ -540,6 +540,7 @@
                 </div>
             </div>
             <div class="modal-actions">
+                <button type="button" class="primary-btn" id="family-join-btn" style="display:none" onclick="openJoinFamilyModal()" data-i18n="home.family.joinFamily">加入家庭</button>
                 <button type="button" class="danger-btn" id="family-leave-btn" style="display:none" onclick="familyLeave()" data-i18n="home.family.leave">退出家庭</button>
                 <button type="button" class="secondary-btn" onclick="closeFamilyModal()" data-i18n="common.cancel">取消</button>
             </div>

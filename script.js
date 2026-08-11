@@ -1965,8 +1965,11 @@ async function initializeApp() {
         initLanguage();
         
         const token = api.getToken();
+        const inviteParam = (new URLSearchParams(window.location.search).get('invite') || '').trim().toUpperCase();
         if (!token) {
             console.log('Script.js: 用户未登录');
+            // 未登录访客点开邀请链接 → 记住邀请码，跳转登录/注册页后用于预填注册表单
+            if (inviteParam) sessionStorage.setItem('pending_invite', inviteParam);
             showNotLoggedInState();
             return;
         }
@@ -2052,7 +2055,7 @@ async function loadDataFromCloud() {
             original_url: gift.original_url || ''
         }));
 
-        currentFamily = familyData && familyData.family ? familyData : null;
+        currentFamily = normalizeFamily(familyData && familyData.family ? familyData : null);
 
         console.log('Script.js: 云端数据加载完成');
         return true;
@@ -2128,14 +2131,27 @@ async function switchProfile(profileId) {
 }
 
 // ── 家庭共享 ──
+// 统一：邀请链接挂到 family 对象上（API 顶层返回 invite_link，归一化到 family.invite_link，
+// 保证所有 currentFamily.family.invite_link 读取点一致可用）
+function normalizeFamily(d) {
+    if (d && d.family && d.invite_link && !d.family.invite_link) {
+        d.family.invite_link = d.invite_link;
+    }
+    return d;
+}
+
 function openFamilyModal() {
     const modal = document.getElementById('family-modal');
     if (!modal) return;
     if (!currentFamily || !currentFamily.family) {
         api.getFamily().then(d => {
-            currentFamily = d && d.family ? d : null;
+            currentFamily = normalizeFamily(d && d.family ? d : null);
             openFamilyModal();
-        }).catch(e => showTemporaryMessage(String(e.message || e), 'error'));
+        }).catch(e => {
+            const msg = String(e.message || e);
+            if (/not in a family/i.test(msg)) { openJoinFamilyModal(); return; }
+            showTemporaryMessage(msg, 'error');
+        });
         return;
     }
     renderFamilyModal();
@@ -2182,10 +2198,13 @@ function renderFamilyModal() {
     const linkEl = document.getElementById('family-invite-link');
     const newBtn = document.getElementById('family-new-invite-btn');
     const leaveBtn = document.getElementById('family-leave-btn');
+    const joinBtn = document.getElementById('family-join-btn');
     if (codeEl) codeEl.textContent = fam.invite_code || '-';
-    if (linkEl) linkEl.value = fam.invite_link || '';
+    if (linkEl) linkEl.value = fam.invite_link || currentFamily.invite_link || '';
     if (newBtn) newBtn.style.display = isOwner ? 'inline-block' : 'none';
     if (leaveBtn) leaveBtn.style.display = isOwner ? 'none' : 'inline-block';
+    // solo 家庭（自己一人且为 owner）时显示「加入家庭」入口，支持用邀请码加入其他家庭
+    if (joinBtn) joinBtn.style.display = (isOwner && fam.member_count <= 1) ? 'inline-block' : 'none';
 
     const nameEl = document.getElementById('family-my-name');
     if (nameEl) nameEl.value = myMember ? (myMember.display_name || '') : '';
@@ -2208,12 +2227,14 @@ async function familyNewInvite() {
 
 function copyFamilyInvite() {
     const el = document.getElementById('family-invite-link');
-    if (el) copyText(el.value, t('home.family.copied'));
+    if (el && el.value) copyText(el.value, t('home.family.copied'));
+    else showTemporaryMessage(t('home.family.genFirst'), 'warning');
 }
 
 function copyFamilyCode() {
     const el = document.getElementById('family-invite-code');
-    if (el) copyText(el.textContent, t('home.family.copied'));
+    if (el && el.textContent && el.textContent !== '-') copyText(el.textContent, t('home.family.copied'));
+    else showTemporaryMessage(t('home.family.genFirst'), 'warning');
 }
 
 function copyText(text, okMsg) {
@@ -2311,7 +2332,7 @@ async function submitJoinFamily() {
     try {
         const r = await api.joinFamily(code, name);
         track('join_family', { code: code });
-        currentFamily = r && r.family ? r : currentFamily;
+        currentFamily = normalizeFamily(r && r.family ? r : currentFamily);
         closeJoinFamilyModal();
         await loadDataFromCloud();
         updateUI();

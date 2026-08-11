@@ -147,8 +147,10 @@ class ApiClient {
         return result;
     }
 
-    async register(email, password) {
-        const result = await this.request('register', { email, password });
+    async register(email, password, familyCode = '') {
+        const payload = { email, password };
+        if (familyCode) payload.family_code = familyCode;
+        const result = await this.request('register', payload);
         if (result.token) {
             this.setToken(result.token, result.expires_in);
             localStorage.setItem(USER_ID_KEY, String(result.user_id));
