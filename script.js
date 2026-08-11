@@ -768,229 +768,234 @@ function updateBehaviorLog() {
     }
 }
 
+function updateWishlistSummary() {
+    const wsWishes = document.getElementById('ws-wishes');
+    const wsTarget = document.getElementById('ws-target');
+    const wsClosest = document.getElementById('ws-closest');
+    if (!wsWishes || !wsTarget || !wsClosest) return;
+
+    const totalWishes = gifts.length;
+    const totalTarget = gifts.reduce((sum, g) => sum + (Number(g.points) || 0), 0);
+    let closestPct = 0;
+    gifts.forEach(g => {
+        const pts = Number(g.points) || 0;
+        if (pts <= 0) return;
+        const p = Math.min(100, Math.round((currentPoints / pts) * 100));
+        if (p > closestPct) closestPct = p;
+    });
+    wsWishes.textContent = totalWishes;
+    wsTarget.textContent = totalTarget;
+    wsClosest.textContent = closestPct + '%';
+}
+
 function updateGiftList() {
     const giftList = document.getElementById('gift-list');
-    
-    // 如果元素不存在，直接返回
+
     if (!giftList) {
         console.log('gift-list元素不存在，跳过更新');
         return;
     }
-    
+
+    updateWishlistSummary();
+
     giftList.innerHTML = '';
+
+    if (gifts.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'gift-empty';
+        empty.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v11M3 12v8h18v-8"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg>' +
+            '<div>' + escapeHtml(t('gifts.emptyHint')) + '</div>';
+        giftList.appendChild(empty);
+        return;
+    }
+
     gifts.forEach((gift, index) => {
-        const li = document.createElement('li');
-        li.className = 'gift-item';
-        
-        // 礼物内容容器
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'item-content';
-        
-        // 礼物图片区域
-        const imageDiv = document.createElement('div');
-        imageDiv.className = 'gift-image-container';
+        const card = document.createElement('div');
+        card.className = 'gift-card';
+
+        const pts = Number(gift.points) || 0;
+        const pct = pts > 0 ? Math.max(0, Math.min(100, Math.round((currentPoints / pts) * 100))) : 0;
+        const remaining = Math.max(0, pts - currentPoints);
+        const ready = currentPoints >= pts && pts > 0;
+        if (ready) card.classList.add('is-ready');
+
+        const media = document.createElement('div');
+        media.className = 'gc-media';
+        const hasOriginalUrl = gift.original_url && isEcommerceUrl(gift.original_url);
         if (gift.image_url) {
-            // 检查是否有原始电商URL
-            const hasOriginalUrl = gift.original_url && isEcommerceUrl(gift.original_url);
-            
             if (hasOriginalUrl) {
-                // 创建可点击的链接
                 const link = document.createElement('a');
                 link.href = gift.original_url;
                 link.target = '_blank';
                 link.rel = 'noopener noreferrer';
-                
                 const img = document.createElement('img');
                 img.src = gift.image_url;
                 img.alt = gift.name;
-                img.className = 'gift-image';
                 img.loading = 'lazy';
-                img.width = 80;
-                img.height = 80;
-                img.onerror = function() {
-                    this.src = 'placeholder.svg';
-                    this.alt = t('common.giftImage');
-                };
-                
+                img.onerror = function () { this.src = 'placeholder.svg'; this.alt = t('common.giftImage'); };
                 link.appendChild(img);
-                imageDiv.appendChild(link);
+                media.appendChild(link);
+                const badge = document.createElement('a');
+                badge.href = gift.original_url;
+                badge.target = '_blank';
+                badge.rel = 'noopener noreferrer';
+                badge.className = 'gc-link-badge';
+                badge.title = t('common.viewProduct');
+                badge.setAttribute('aria-label', t('common.viewProduct'));
+                badge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+                media.appendChild(badge);
             } else {
                 const img = document.createElement('img');
                 img.src = gift.image_url;
                 img.alt = gift.name;
-                img.className = 'gift-image';
                 img.loading = 'lazy';
-                img.width = 80;
-                img.height = 80;
-                img.onerror = function() {
-                    this.src = 'placeholder.svg';
-                    this.alt = '礼物图片';
-                };
-                imageDiv.appendChild(img);
+                img.onerror = function () { this.src = 'placeholder.svg'; this.alt = t('common.giftImage'); };
+                media.appendChild(img);
             }
         } else {
             const placeholder = document.createElement('div');
             placeholder.className = 'gift-image-placeholder';
-            placeholder.textContent = t('common.gift');
-            imageDiv.appendChild(placeholder);
+            placeholder.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v11M3 12v8h18v-8"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg>';
+            media.appendChild(placeholder);
         }
-        
-        // 礼物信息区域
-        const infoDiv = document.createElement('div');
-        infoDiv.className = 'gift-info';
-        
-        // 礼物标题和类别
-        const headerDiv = document.createElement('div');
-        headerDiv.className = 'gift-header';
-        
-        const titleDiv = document.createElement('div');
-        titleDiv.className = 'item-title';
-        titleDiv.textContent = gift.name;
-        
+        card.appendChild(media);
+
+        const body = document.createElement('div');
+        body.className = 'gc-body';
+
+        const head = document.createElement('div');
+        head.className = 'gc-head';
+        const title = document.createElement('div');
+        title.className = 'gc-title';
+        title.textContent = gift.name;
+        head.appendChild(title);
         if (gift.category) {
-            const categoryBadge = document.createElement('span');
-            categoryBadge.className = 'category-badge';
-            categoryBadge.textContent = gift.category;
-            headerDiv.appendChild(categoryBadge);
+            const cat = document.createElement('span');
+            cat.className = 'gc-cat';
+            cat.textContent = gift.category;
+            head.appendChild(cat);
         }
-        
-        headerDiv.appendChild(titleDiv);
-        
-        // 礼物描述
+        body.appendChild(head);
+
         if (gift.description) {
-            const descDiv = document.createElement('div');
-            descDiv.className = 'gift-description';
-            // 如果有HTML格式的描述（包含可点击链接），则使用它
+            const desc = document.createElement('div');
+            desc.className = 'gc-desc';
             if (gift.description_html) {
-                descDiv.innerHTML = gift.description_html;
+                desc.innerHTML = gift.description_html;
             } else {
-                // 否则使用原始文本描述
-                descDiv.textContent = gift.description;
+                desc.textContent = gift.description;
             }
-            infoDiv.appendChild(descDiv);
+            body.appendChild(desc);
         }
-        
-        // 礼物积分要求
-        const pointsDiv = document.createElement('div');
-        pointsDiv.className = 'item-details';
-        pointsDiv.textContent = `${t('gifts.pointsRequired').replace('{points}', gift.points)}`;
-        
-        infoDiv.appendChild(headerDiv);
-        infoDiv.appendChild(pointsDiv);
-        if (gift.added_by_name) {
-            const byDiv = document.createElement('div');
-            byDiv.className = 'item-by';
-            byDiv.textContent = t('home.family.addedBy') + '：' + gift.added_by_name;
-            infoDiv.appendChild(byDiv);
-        }
-        
-        contentDiv.appendChild(imageDiv);
-        contentDiv.appendChild(infoDiv);
-        li.appendChild(contentDiv);
-        
-        // 兑换按钮
+
+        const points = document.createElement('div');
+        points.className = 'gc-points';
+        points.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
+            '<span>' + pts + ' ' + escapeHtml(t('common.points')) + '</span>';
+        body.appendChild(points);
+
+        const progress = document.createElement('div');
+        progress.className = 'gc-progress';
+        const track = document.createElement('div');
+        track.className = 'gc-progress-track';
+        const fill = document.createElement('div');
+        fill.className = 'gc-progress-fill' + (ready ? ' is-ready' : '');
+        fill.style.width = pct + '%';
+        track.appendChild(fill);
+        const meta = document.createElement('div');
+        meta.className = 'gc-progress-meta';
+        const pctEl = document.createElement('span');
+        pctEl.className = 'gc-pct' + (ready ? ' is-ready' : '');
+        pctEl.textContent = pct + '%';
+        const stateEl = document.createElement('span');
+        stateEl.className = 'gc-state ' + (ready ? 'is-ready' : 'is-pending');
+        stateEl.textContent = ready ? t('gifts.progressReady') : t('gifts.progressRemain').replace('{points}', remaining);
+        meta.appendChild(pctEl);
+        meta.appendChild(stateEl);
+        progress.appendChild(track);
+        progress.appendChild(meta);
+        body.appendChild(progress);
+
+        const actions = document.createElement('div');
+        actions.className = 'gc-actions';
         const redeemBtn = document.createElement('button');
-        redeemBtn.className = 'redeem-btn';
+        redeemBtn.className = 'gc-redeem' + (ready ? ' is-ready' : '');
         redeemBtn.textContent = t('common.achieveButton');
-        redeemBtn.disabled = currentPoints < gift.points;
-        redeemBtn.onclick = async () => {
-            await redeemGift(index);
-        };
-        
-        li.appendChild(redeemBtn);
+        redeemBtn.disabled = !ready;
+        redeemBtn.onclick = async () => { await redeemGift(index); };
+        actions.appendChild(redeemBtn);
 
-        // Delete button
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'delete-btn';
-        deleteBtn.textContent = '🗑';
-        deleteBtn.title = 'Delete';
-        deleteBtn.style.cssText = 'background:none;border:none;font-size:1.2rem;cursor:pointer;padding:4px 8px;opacity:0.5;transition:opacity 0.2s;';
-        deleteBtn.onmouseenter = () => deleteBtn.style.opacity = '1';
-        deleteBtn.onmouseleave = () => deleteBtn.style.opacity = '0.5';
-        deleteBtn.onclick = (e) => {
-            e.stopPropagation();
-            deleteGift(gift.id);
-        };
-        li.appendChild(deleteBtn);
-        giftList.appendChild(li);
+        const delBtn = document.createElement('button');
+        delBtn.className = 'gc-del';
+        delBtn.title = t('common.delete');
+        delBtn.setAttribute('aria-label', t('common.delete'));
+        delBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+        delBtn.onclick = (e) => { e.stopPropagation(); deleteGift(gift.id); };
+        actions.appendChild(delBtn);
+
+        body.appendChild(actions);
+        card.appendChild(body);
+        giftList.appendChild(card);
     });
-
-    // 空状态引导
-    if (gifts.length === 0) {
-        const emptyMessage = document.createElement('li');
-        emptyMessage.className = 'empty-behavior-message';
-        emptyMessage.innerHTML = t('gifts.emptyHint');
-        giftList.appendChild(emptyMessage);
-    }
 }
 
 function updateRedeemedList() {
     const redeemedList = document.getElementById('redeemed-list');
     const redeemedCount = document.getElementById('redeemed-count');
-    
-    // 如果元素不存在，直接返回
+
     if (!redeemedList) {
         console.log('redeemed-list元素不存在，跳过更新');
         return;
     }
-    
-    // 更新计数徽章
+
     if (redeemedCount) {
         redeemedCount.textContent = redeemedGifts.length;
     }
-    
-    // 清空现有内容
+
     while (redeemedList.firstChild) {
         redeemedList.removeChild(redeemedList.firstChild);
     }
-    
+
     if (redeemedGifts.length === 0) {
         const emptyMessage = document.createElement('div');
         emptyMessage.className = 'empty-redeemed-message';
-        emptyMessage.innerHTML = t('common.noRedeemedRecords');
+        emptyMessage.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M9 8h6M8.5 12.5 7 22l5-3 5 3-1.5-9.5"/></svg><div>' + escapeHtml(t('common.noRedeemedRecords')) + '</div>';
         redeemedList.appendChild(emptyMessage);
         return;
     }
-    
-    // 添加统计信息
+
     const totalRedeemedPoints = redeemedGifts.reduce((sum, item) => sum + item.points, 0);
     const statsDiv = document.createElement('div');
     statsDiv.className = 'redeemed-stats';
     statsDiv.innerHTML = `
         <div class="stat-item">
-            <span class="stat-icon">🏆</span>
-            <span class="stat-text">${t('common.totalRedeemed')} ${redeemedGifts.length} ${t('common.items')}</span>
+            <span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6m12 5h1.5a2.5 2.5 0 0 0 0-5H18M6 4h12v5a6 6 0 0 1-12 0V4zM8 21h8M12 15v6"/></svg></span>
+            <span class="stat-text">${escapeHtml(t('common.totalRedeemed'))} ${redeemedGifts.length} ${escapeHtml(t('common.items'))}</span>
         </div>
         <div class="stat-item">
-            <span class="stat-icon">💎</span>
-            <span class="stat-text">${t('common.totalPointsSpent')} ${totalRedeemedPoints} ${t('common.points')}</span>
+            <span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M6 3 2 9h20l-4-6M2 9l10 12 10-12M9 3 6 9l6 12 6-12-3-6"/></svg></span>
+            <span class="stat-text">${escapeHtml(t('common.totalPointsSpent'))} ${totalRedeemedPoints} ${escapeHtml(t('common.points'))}</span>
         </div>
     `;
     redeemedList.appendChild(statsDiv);
-    
-    // 创建礼物列表容器
+
     const giftsContainer = document.createElement('div');
     giftsContainer.className = 'redeemed-gifts-container';
-    
+
     redeemedGifts.forEach((item, index) => {
         const itemElement = document.createElement('div');
         itemElement.className = 'redeemed-item';
         itemElement.style.animationDelay = `${index * 0.1}s`;
-        
-        // 礼物图片区域
+
         const imageDiv = document.createElement('div');
         imageDiv.className = 'redeemed-image-container';
         if (item.image_url) {
-            // 检查是否有原始电商URL
             const hasOriginalUrl = item.original_url && isEcommerceUrl(item.original_url);
-            
             if (hasOriginalUrl) {
-                // 创建可点击的链接
                 const link = document.createElement('a');
                 link.href = item.original_url;
                 link.target = '_blank';
                 link.rel = 'noopener noreferrer';
-                
                 const img = document.createElement('img');
                 img.src = item.image_url;
                 img.alt = item.name;
@@ -998,11 +1003,7 @@ function updateRedeemedList() {
                 img.loading = 'lazy';
                 img.width = 60;
                 img.height = 60;
-                img.onerror = function() {
-                    this.src = 'placeholder.svg';
-                    this.alt = t('common.giftImage');
-                };
-                
+                img.onerror = function () { this.src = 'placeholder.svg'; this.alt = t('common.giftImage'); };
                 link.appendChild(img);
                 imageDiv.appendChild(link);
             } else {
@@ -1013,68 +1014,56 @@ function updateRedeemedList() {
                 img.loading = 'lazy';
                 img.width = 60;
                 img.height = 60;
-                img.onerror = function() {
-                    this.src = 'placeholder.svg';
-                    this.alt = t('common.giftImage');
-                };
+                img.onerror = function () { this.src = 'placeholder.svg'; this.alt = t('common.giftImage'); };
                 imageDiv.appendChild(img);
             }
         } else {
             const placeholder = document.createElement('div');
             placeholder.className = 'redeemed-image-placeholder';
-            placeholder.textContent = t('common.gift');
+            placeholder.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v11M3 12v8h18v-8"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg>';
             imageDiv.appendChild(placeholder);
         }
-        
-        // 内容区域
+
         const contentDiv = document.createElement('div');
         contentDiv.className = 'redeemed-content';
-        
-        // 礼物标题和类别
+
         const headerDiv = document.createElement('div');
         headerDiv.className = 'redeemed-header';
-        
+
         const nameDiv = document.createElement('div');
         nameDiv.className = 'redeemed-name';
         nameDiv.textContent = item.name;
-        
+
         if (item.category) {
             const categoryBadge = document.createElement('span');
             categoryBadge.className = 'category-badge small';
             categoryBadge.textContent = item.category;
             headerDiv.appendChild(categoryBadge);
         }
-        
         headerDiv.appendChild(nameDiv);
-        
-        // 礼物描述
+
         if (item.description) {
             const descDiv = document.createElement('div');
             descDiv.className = 'redeemed-description';
-            // 如果有HTML格式的描述（包含可点击链接），则使用它
             if (item.description_html) {
                 descDiv.innerHTML = item.description_html;
             } else {
-                // 否则使用原始文本描述
                 descDiv.textContent = item.description;
             }
             contentDiv.appendChild(descDiv);
         }
-        
-        // 底部信息
+
         const infoDiv = document.createElement('div');
         infoDiv.className = 'redeemed-info';
-        
-        // 积分信息
+
         const pointsSpan = document.createElement('span');
         pointsSpan.className = 'redeemed-points';
-        pointsSpan.innerHTML = `<span class="points-badge">-${item.points}</span> ${t('common.points')}`;
-        
-        // 时间信息
+        pointsSpan.innerHTML = `<span class="points-badge">-${item.points}</span> ${escapeHtml(t('common.points'))}`;
+
         const dateSpan = document.createElement('span');
         dateSpan.className = 'redeemed-date';
         dateSpan.textContent = formatRedeemDate(item.redeem_date);
-        
+
         infoDiv.appendChild(pointsSpan);
         infoDiv.appendChild(dateSpan);
         if (item.added_by_name) {
@@ -1083,16 +1072,16 @@ function updateRedeemedList() {
             bySpan.textContent = t('home.family.addedBy') + '：' + item.added_by_name;
             infoDiv.appendChild(bySpan);
         }
-        
+
         contentDiv.appendChild(headerDiv);
         contentDiv.appendChild(infoDiv);
-        
+
         itemElement.appendChild(imageDiv);
         itemElement.appendChild(contentDiv);
-        
+
         giftsContainer.appendChild(itemElement);
     });
-    
+
     redeemedList.appendChild(giftsContainer);
 }
 

@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=10">
+    <link rel="stylesheet" href="style.css?v=11">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=19"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=22"></script>
+    <script defer src="i18n.js?v=23"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -104,7 +104,7 @@
             </div>
             <div class="module-card" onclick="showModule('diary-module')">
                 <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M19 3v18"/><path d="M8 7h6M8 11h6"/></svg></span>
-                <h3 data-i18n="home.diary">成长日记</h3>
+                <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span data-i18n="home.diary">成长日记</span></h3>
                 <p data-i18n="home.diaryDesc">回顾足迹，见证成长</p>
                 <div class="module-stat" id="stat-diary"></div>
             </div>
@@ -161,29 +161,45 @@
                         <a href="behavior-templates.html" class="template-link" data-i18n="behaviors.viewTemplates">查看更多模板</a>
                     </div>
                     <div class="button-group">
-                        <button class="add-points-btn" onclick="addPoints()" data-i18n="behaviors.addBehaviorButton">➕ 记录积分</button>
+                        <button class="add-points-btn" onclick="addPoints()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="behaviors.addBehaviorButton">记录积分</span></button>
                     </div>
                 </div>
 
-                <h3 class="section-title" data-i18n="home.recentRecords">📋 最近记录</h3>
+                <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span data-i18n="home.recentRecords">最近记录</span></h3>
                 <div id="behavior-log"></div>
 
                 <div class="reminder-bar" id="reminder-bar">
-                    <span class="reminder-label">⏰ <span data-i18n="home.reminderLabel">每日打卡提醒</span></span>
+                    <span class="reminder-label"><svg class="reminder-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span data-i18n="home.reminderLabel">每日打卡提醒</span></span>
                     <input type="time" id="reminder-time" value="19:00">
                     <button type="button" id="reminder-toggle" class="reminder-toggle" onclick="toggleReminder()"><span data-i18n="home.reminderEnable">开启提醒</span></button>
                 </div>
 
                 <div class="export-bar">
-                    <button type="button" class="poster-btn" onclick="openPosterModal()"><span data-i18n="home.sharePoster">🖼️ 分享海报</span></button>
-                    <button type="button" class="export-btn" onclick="exportData()"><span data-i18n="home.exportData">📤 导出数据</span></button>
+                    <button type="button" class="poster-btn" onclick="openPosterModal()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span data-i18n="home.sharePoster">分享海报</span></button>
+                    <button type="button" class="export-btn" onclick="exportData()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span data-i18n="home.exportData">导出数据</span></button>
                 </div>
             </div>
 
             <!-- 宝贝愿望模块 -->
             <div id="gifts-module" class="module-content">
+                <!-- 愿望清单概览 -->
+                <div class="wishlist-summary" id="wishlist-summary">
+                    <div class="ws-stat">
+                        <span class="ws-value" id="ws-wishes">0</span>
+                        <span class="ws-label" data-i18n="gifts.statWishes">愿望</span>
+                    </div>
+                    <div class="ws-stat">
+                        <span class="ws-value" id="ws-target">0</span>
+                        <span class="ws-label" data-i18n="gifts.statTarget">目标积分</span>
+                    </div>
+                    <div class="ws-stat ws-stat--closest">
+                        <span class="ws-value" id="ws-closest">0%</span>
+                        <span class="ws-label" data-i18n="gifts.statClosest">最近进度</span>
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <h3 data-i18n="gifts.addGift">🎁 添加愿望</h3>
+                    <h3 data-i18n="gifts.addGift">添加愿望</h3>
                     <div class="form-row">
                         <input type="text" id="gift-name" data-i18n-placeholder="gifts.name" placeholder="愿望名称">
                         <input type="number" id="gift-points" data-i18n-placeholder="gifts.points" placeholder="所需积分">
@@ -193,27 +209,30 @@
                     </div>
                     <div class="form-row">
                         <input type="text" id="gift-link" data-i18n-placeholder="gifts.link" placeholder="商品链接（京东/淘宝/亚马逊…）">
-                        <button type="button" class="import-btn" onclick="importProductInfo()"><span data-i18n="gifts.importButton">🪄 一键导入</span></button>
+                        <button type="button" class="import-btn" onclick="importProductInfo()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="gifts.importButton">一键导入</span></button>
                     </div>
                     <div class="form-row form-row--center">
                         <input type="text" id="gift-image" data-i18n-placeholder="gifts.image" placeholder="图片URL（可选）">
                         <img id="gift-image-preview" class="gift-image-preview" style="display:none;" alt="preview">
                     </div>
-                    <button class="add-gift-btn" onclick="addGift()" data-i18n="gifts.addGiftButton">➕ 添加愿望</button>
+                    <button class="add-gift-btn" onclick="addGift()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="gifts.addGiftButton">添加愿望</span></button>
                 </div>
                 
-                <h3 data-i18n="gifts.title">🎉 愿望清单</h3>
-                <ul id="gift-list"></ul>
+                <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 22V7M12 7S10 2 7.5 3.5 8 7 12 7zM12 7c0 0 2-5 4.5-3.5S16 7 12 7z"/></svg><span data-i18n="gifts.title">愿望清单</span></h3>
+                <div id="gift-list" class="gift-grid"></div>
                 
-                <h3 data-i18n="redeemed.title">🏆 兑换记录</h3>
+                <div class="section-head">
+                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6m12 5h1.5a2.5 2.5 0 0 0 0-5H18M6 4h12v5a6 6 0 0 1-12 0V4zM8 21h8M12 15v6"/></svg><span data-i18n="redeemed.title">达成记录</span></h3>
+                    <span class="section-count" id="redeemed-count">0</span>
+                </div>
                 <div id="redeemed-list"></div>
             </div>
 
             <!-- 成长日记模块（成长日历：积分+兑换按天综合展示） -->
             <div id="diary-module" class="module-content">
                 <div class="diary-header">
-                    <h3 data-i18n="home.diary">📖 成长日历</h3>
-                    <button type="button" class="poster-btn" onclick="openPosterModal()"><span data-i18n="home.sharePoster">🖼️ 分享海报</span></button>
+                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span data-i18n="home.diary">成长日历</span></h3>
+                    <button type="button" class="poster-btn" onclick="openPosterModal()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span data-i18n="home.sharePoster">分享海报</span></button>
                 </div>
 
                 <div class="calendar-card">
@@ -228,14 +247,14 @@
                 <div id="calendar-day-detail" class="calendar-day-detail" style="display:none;"></div>
 
                 <div class="chart-container" id="chart-container" style="display:none;">
-                    <h3 data-i18n="home.pointsTrend">📈 积分趋势</h3>
+                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span data-i18n="home.pointsTrend">积分趋势</span></h3>
                     <canvas id="points-chart" style="max-height: 220px;"></canvas>
                 </div>
 
                 <div class="achievements-section" id="achievements-section">
                     <div class="achievements-head">
                         <h3 id="achievements-title">成就徽章</h3>
-                        <button type="button" class="poster-btn achievements-poster-btn" onclick="openPosterModal()"><span data-i18n="home.sharePoster">🖼️ 分享海报</span></button>
+                        <button type="button" class="poster-btn achievements-poster-btn" onclick="openPosterModal()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span data-i18n="home.sharePoster">分享海报</span></button>
                     </div>
                     <div class="achievements-grid" id="achievements-grid"></div>
                 </div>
@@ -244,13 +263,13 @@
             <!-- 成长纪念册模块（时间轴 + 月度报告 + 可打印/分享） -->
             <div id="growth-module" class="module-content">
                 <div class="keepsake-header">
-                    <h3 data-i18n="keepsake.title">📔 成长纪念册</h3>
+                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span data-i18n="keepsake.title">成长纪念册</span></h3>
                     <p class="keepsake-subtitle" data-i18n="keepsake.subtitle">每一颗星星，都是成长的印记</p>
                 </div>
 
                 <div class="keepsake-actions">
-                    <button type="button" class="poster-btn" onclick="printKeepsake()"><span data-i18n="keepsake.print">🖨️ 打印 / 保存纪念册</span></button>
-                    <button type="button" class="export-btn" onclick="openPosterModal()"><span data-i18n="keepsake.share">📤 分享成长</span></button>
+                    <button type="button" class="poster-btn" onclick="printKeepsake()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span data-i18n="keepsake.print">打印 / 保存纪念册</span></button>
+                    <button type="button" class="export-btn" onclick="openPosterModal()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span data-i18n="keepsake.share">分享成长</span></button>
                 </div>
 
                 <div class="keepsake-month" id="keepsake-month"></div>
@@ -268,17 +287,17 @@
                 </div>
 
                 <div class="ktab-panel" id="ktab-milestones" style="display:none">
-                    <div class="keepsake-add-row"><button type="button" class="add-line-btn" onclick="openGrowthAdd('milestone')">➕ <span data-i18n="keepsake.addMilestone">添加里程碑</span></button></div>
+                    <div class="keepsake-add-row"><button type="button" class="add-line-btn" onclick="openGrowthAdd('milestone')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="keepsake.addMilestone">添加里程碑</span></button></div>
                     <div id="keepsake-milestones" class="keepsake-list"></div>
                 </div>
 
                 <div class="ktab-panel" id="ktab-notes" style="display:none">
-                    <div class="keepsake-add-row"><button type="button" class="add-line-btn" onclick="openGrowthAdd('note')">➕ <span data-i18n="keepsake.addNote">写手记</span></button></div>
+                    <div class="keepsake-add-row"><button type="button" class="add-line-btn" onclick="openGrowthAdd('note')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="keepsake.addNote">写手记</span></button></div>
                     <div id="keepsake-notes" class="keepsake-list"></div>
                 </div>
 
                 <div class="ktab-panel" id="ktab-voice" style="display:none">
-                    <div class="keepsake-add-row"><button type="button" class="add-line-btn" onclick="openGrowthAdd('voice')">➕ <span data-i18n="keepsake.addVoice">记童言</span></button></div>
+                    <div class="keepsake-add-row"><button type="button" class="add-line-btn" onclick="openGrowthAdd('voice')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="keepsake.addVoice">记童言</span></button></div>
                     <div id="keepsake-voice" class="keepsake-list"></div>
                 </div>
             </div>
@@ -346,7 +365,7 @@
             signOut();
         }
     </script>
-    <script defer src="script.js?v=22"></script>
+    <script defer src="script.js?v=23"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
@@ -384,12 +403,12 @@
         </div>
     </div>
     <!-- 悬浮快速记分按钮 -->
-    <button type="button" id="quick-add-fab" class="quick-add-fab" style="display:none;" onclick="quickAddPoints()" title="快速记积分">➕</button>
+    <button type="button" id="quick-add-fab" class="quick-add-fab" style="display:none;" onclick="quickAddPoints()" title="快速记积分" aria-label="快速记积分"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg></button>
 
     <!-- 分享海报弹窗 -->
     <div id="poster-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content">
-            <h3 data-i18n="home.sharePoster">🖼️ 成长分享海报</h3>
+            <h3 data-i18n="home.sharePoster">成长分享海报</h3>
             <div class="poster-preview-wrap">
                 <canvas id="poster-canvas" width="750" height="1200"></canvas>
             </div>
@@ -398,13 +417,13 @@
                 <button type="button" class="secondary-btn" id="poster-copy-invite-btn" onclick="copyPosterInvite()" data-i18n="home.family.copyLink">复制邀请链接</button>
             </div>
             <div class="poster-share-row">
-                <button type="button" class="share-chip" onclick="shareToWeChat()" data-i18n="common.shareWeChat">💬 微信</button>
-                <button type="button" class="share-chip" onclick="shareToWhatsApp()" data-i18n="common.shareWhatsApp">🟢 WhatsApp</button>
-                <button type="button" class="share-chip" onclick="shareToPinterest()" data-i18n="common.sharePinterest">📌 Pinterest</button>
+                <button type="button" class="share-chip" onclick="shareToWeChat()"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span data-i18n="common.shareWeChat">微信</span></button>
+                <button type="button" class="share-chip" onclick="shareToWhatsApp()"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span data-i18n="common.shareWhatsApp">WhatsApp</span></button>
+                <button type="button" class="share-chip" onclick="shareToPinterest()"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span data-i18n="common.sharePinterest">Pinterest</span></button>
             </div>
             <div class="modal-actions">
-                <button class="primary-btn" onclick="downloadPoster()" data-i18n="home.posterDownload">💾 保存图片</button>
-                <button class="secondary-btn" id="poster-share-btn" style="display:none" onclick="sharePoster()" data-i18n="home.posterShare">📤 分享</button>
+                <button class="primary-btn" onclick="downloadPoster()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="home.posterDownload">保存图片</span></button>
+                <button class="secondary-btn" id="poster-share-btn" style="display:none" onclick="sharePoster()" data-i18n="home.posterShare">分享</button>
                 <button class="secondary-btn" onclick="closePosterModal()" data-i18n="common.cancel">取消</button>
             </div>
         </div>
@@ -413,13 +432,13 @@
     <!-- 成长成就证书弹窗 -->
     <div id="certificate-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content cert-modal">
-            <h3 data-i18n="common.certTitle">🎉 成长成就证书</h3>
+            <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg><span data-i18n="common.certTitle">成长成就证书</span></h3>
             <div class="cert-preview-wrap">
                 <canvas id="cert-canvas" width="800" height="600"></canvas>
             </div>
             <p class="cert-sub" data-i18n="common.certSub">这是对你努力与坚持的见证</p>
             <div class="modal-actions">
-                <button class="primary-btn" onclick="downloadCertificate()">💾 保存证书</button>
+                <button class="primary-btn" onclick="downloadCertificate()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="common.certDownload">保存证书</span></button>
                 <button class="secondary-btn" onclick="closeCertificateModal()" data-i18n="common.cancel">关闭</button>
             </div>
         </div>
