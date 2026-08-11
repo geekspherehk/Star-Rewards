@@ -34,7 +34,7 @@ const translations = {
             keepsake: '成长纪念册',
             keepsakeDesc: '珍藏点滴，见证成长',
             streakDays: '连续打卡天数',
-            pointsTrend: '📈 积分趋势',
+            pointsTrend: '积分趋势',
             diary: '成长日记',
             profile: {
                 switch: '切换孩子',
@@ -57,7 +57,7 @@ const translations = {
                 deleteConfirm: '确定要删除这个孩子的档案吗？所有积分和记录将一并删除！'
             },
             achievements: {
-                title: '🏆 成就徽章',
+                title: '成就徽章',
                 unlocked: '已解锁',
                 locked: '未解锁',
                 progress: '{current}/{target}',
@@ -82,12 +82,12 @@ const translations = {
             exportRedeemedCount: '兑换记录数',
             exportSuccess: '导出成功',
             exportFailed: '导出失败',
-            recentRecords: '📋 最近记录',
+            recentRecords: '最近记录',
             quickAdd: '快速记积分',
             viewAllRecords: '查看全部记录',
             welcomeTitle: '欢迎来到 Star Rewards！',
             welcomeDesc: '记录第一个好行为，为孩子点亮第一颗星星，解锁第一个成就吧！',
-            welcomeCta: '⭐ 记录第一个行为',
+            welcomeCta: '记录第一个行为',
             reminderLabel: '每日打卡提醒',
             reminderEnable: '开启提醒',
             reminderDisable: '关闭提醒',
@@ -161,7 +161,7 @@ const translations = {
                 exercise: '早起锻炼 +5',
                 test: '小测满分 +20'
             },
-            viewTemplates: '✨ 查看更多模板',
+            viewTemplates: '查看更多模板',
             rewardsForHer: '🌸 女性专属奖励',
             addBehaviorButton: '➕ 记录积分'
         },
@@ -190,17 +190,17 @@ const translations = {
             pointsRequired: '需要 {points} 分'
         },
         redeemed: {
-            title: '🏆 达成记录',
+            title: '达成记录',
             name: '礼物名称',
             points: '消耗积分',
             date: '兑换日期',
             noRecords: '暂无兑换记录'
         },
         keepsake: {
-            title: '📔 成长纪念册',
+            title: '成长纪念册',
             subtitle: '每一颗星星，都是成长的印记',
-            timelineTitle: '✨ 成长时间轴',
-            monthTitle: '📅 本月成长报告',
+            timelineTitle: '成长时间轴',
+            monthTitle: '本月成长报告',
             earned: '本月获得积分',
             achieved: '本月达成愿望',
             bestStreak: '最佳连续打卡',
@@ -475,7 +475,7 @@ const translations = {
             keepsakeDesc: 'Cherish moments, witness growth',
             diary: 'Growth Diary',
             streakDays: 'Day Streak',
-            pointsTrend: '📈 Points Trend',
+            pointsTrend: 'Points Trend',
             profile: {
                 switch: 'Switch Child',
                 add: 'Add Child',
@@ -497,7 +497,7 @@ const translations = {
                 deleteConfirm: 'Delete this child profile? All points and records will be removed!'
             },
             achievements: {
-                title: '🏆 Achievements',
+                title: 'Achievements',
                 unlocked: 'Unlocked',
                 locked: 'Locked',
                 progress: '{current}/{target}',
@@ -522,12 +522,12 @@ const translations = {
             exportRedeemedCount: 'Gifts Redeemed',
             exportSuccess: 'Export successful',
             exportFailed: 'Export failed',
-            recentRecords: '📋 Recent Records',
+            recentRecords: 'Recent Records',
             quickAdd: 'Quick Add Points',
             viewAllRecords: 'View All Records',
             welcomeTitle: 'Welcome to Star Rewards!',
             welcomeDesc: 'Log your first behavior, light up a star for your child and unlock your first achievement!',
-            welcomeCta: '⭐ Log First Behavior',
+            welcomeCta: 'Log First Behavior',
             reminderLabel: 'Daily Check-in Reminder',
             reminderEnable: 'Enable Reminder',
             reminderDisable: 'Disable Reminder',
@@ -601,7 +601,7 @@ const translations = {
                 exercise: 'Early exercise +5',
                 test: 'Test full score +20'
             },
-            viewTemplates: '✨ View More Templates',
+            viewTemplates: 'View More Templates',
             rewardsForHer: '🌸 Rewards for Her',
             addBehaviorButton: '➕ Add Points'
         },
@@ -637,10 +637,10 @@ const translations = {
             noRecords: 'No redeemed items yet'
         },
         keepsake: {
-            title: '📔 Growth Keepsake',
+            title: 'Growth Keepsake',
             subtitle: 'Every star is a mark of growth',
-            timelineTitle: '✨ Growth Timeline',
-            monthTitle: '📅 Monthly Growth Report',
+            timelineTitle: 'Growth Timeline',
+            monthTitle: 'Monthly Growth Report',
             earned: 'Points earned this month',
             achieved: 'Wishes achieved this month',
             bestStreak: 'Best day streak',

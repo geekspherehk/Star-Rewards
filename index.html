@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=9">
+    <link rel="stylesheet" href="style.css?v=10">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=19"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=21"></script>
+    <script defer src="i18n.js?v=22"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -49,59 +49,67 @@
     </script>
 </head>
 <body>
-    <header class="language-selector">
-        <select id="language-selector" onchange="setLanguage(this.value)">
-            <option value="zh">中文</option>
-            <option value="en">English</option>
-        </select>
+    <header class="app-topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <img src="logo.svg" alt="Star Rewards" class="brand-logo">
+                <span class="brand-name">Star Rewards</span>
+            </div>
+            <div class="topbar-actions">
+                <select id="language-selector" class="lang-select" onchange="setLanguage(this.value)">
+                    <option value="zh">中文</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+        </div>
     </header>
-    
+
     <main class="container">
         <h1>Star Rewards 儿童积分奖励系统</h1>
-        
+
         <!-- 用户认证状态卡片 -->
-        <div id="auth-status-card" style="margin-bottom: 15px;">
+        <div id="auth-status-card">
             <!-- 已登录状态 -->
-            <div id="logged-in-state" style="display: none; background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 0.9rem; color: #9C27B0; font-weight: 500;"><span data-i18n="home.welcome">欢迎</span>，<span id="user-email"></span></span>
-                    <button onclick="doSignOut()" style="padding: 6px 12px; font-size: 0.8rem; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer;" data-i18n="home.logout">退出</button>
+            <div id="logged-in-state" class="auth-card auth-card--member" style="display: none;">
+                <div class="ac-row">
+                    <span class="ac-text"><span data-i18n="home.welcome">欢迎</span>，<span id="user-email"></span></span>
+                    <button class="auth-btn auth-btn--logout" onclick="doSignOut()" data-i18n="home.logout">退出</button>
                 </div>
                 <!-- 多孩档案切换 -->
                 <div id="profile-switcher" class="profile-switcher"></div>
             </div>
-            
+
             <!-- 未登录状态 -->
-            <div id="not-logged-in-state" style="display: none; background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 0.9rem; color: #ff9800;" data-i18n="home.needLogin">需要登录才能使用</span>
-                    <button onclick="window.location.href='login.html'" style="padding: 6px 12px; font-size: 0.8rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;" data-i18n="login.loginButton">登录</button>
+            <div id="not-logged-in-state" class="auth-card auth-card--guest" style="display: none;">
+                <div class="ac-row">
+                    <span class="ac-text" data-i18n="home.needLogin">需要登录才能使用</span>
+                    <button class="auth-btn auth-btn--login" onclick="window.location.href='login.html'" data-i18n="login.loginButton">登录</button>
                 </div>
             </div>
         </div>
-        
+
         <!-- 功能模块导航（迷你仪表盘：实时数据一眼可见） -->
         <div class="module-cards">
             <div class="module-card active" onclick="showModule('points-module')">
-                <div style="font-size: 2.5rem; margin-bottom: 10px;">🌟</div>
+                <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
                 <h3 data-i18n="home.addPoints">成长积分</h3>
                 <p data-i18n="home.pointsDesc">记录成长，积累积分</p>
                 <div class="module-stat" id="stat-points"></div>
             </div>
             <div class="module-card" onclick="showModule('gifts-module')">
-                <div style="font-size: 2.5rem; margin-bottom: 10px;">🎁</div>
+                <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg></span>
                 <h3 data-i18n="home.gifts">宝贝愿望</h3>
                 <p data-i18n="home.giftsDesc">记录愿望，激励成长</p>
                 <div class="module-stat" id="stat-gifts"></div>
             </div>
             <div class="module-card" onclick="showModule('diary-module')">
-                <div style="font-size: 2.5rem; margin-bottom: 10px;">📖</div>
+                <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M19 3v18"/><path d="M8 7h6M8 11h6"/></svg></span>
                 <h3 data-i18n="home.diary">成长日记</h3>
                 <p data-i18n="home.diaryDesc">回顾足迹，见证成长</p>
                 <div class="module-stat" id="stat-diary"></div>
             </div>
             <div class="module-card" onclick="showModule('growth-module')">
-                <div style="font-size: 2.5rem; margin-bottom: 10px;">📔</div>
+                <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
                 <h3 data-i18n="home.keepsake">成长纪念册</h3>
                 <p data-i18n="home.keepsakeDesc">珍藏点滴，见证成长</p>
                 <div class="module-stat" id="stat-keepsake"></div>
@@ -114,7 +122,7 @@
             <div id="points-module" class="module-content active">
                 <!-- 新手引导横幅（新用户空状态） -->
                 <div id="welcome-banner" class="welcome-banner" style="display:none;">
-                    <div class="welcome-banner-icon">🚀</div>
+                    <div class="welcome-banner-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></div>
                     <div class="welcome-banner-body">
                         <h3 data-i18n="home.welcomeTitle">欢迎来到 Star Rewards！</h3>
                         <p data-i18n="home.welcomeDesc">记录第一个好行为，为孩子点亮第一颗星星，解锁第一个成就吧！</p>
@@ -143,14 +151,14 @@
                         <input type="number" id="points-change" data-i18n-placeholder="behaviors.points" placeholder="积分变化（正加负扣）">
                     </div>
                     <div class="preset-behaviors" id="preset-behaviors">
-                        <span style="grid-column: 1 / -1; font-weight: 500; color: #6c757d; margin-bottom: 4px;" data-i18n="behaviors.quickSelect">快速选择:</span>
+                        <span class="preset-label" data-i18n="behaviors.quickSelect">快速选择:</span>
                         <button class="preset-btn" onclick="setPresetBehavior('按时睡觉', 1)" data-i18n="behaviors.preset.sleep">按时睡觉 +1</button>
                         <button class="preset-btn" onclick="setPresetBehavior('作业全对', 2)" data-i18n="behaviors.preset.homework">作业全对 +2</button>
                         <button class="preset-btn" onclick="setPresetBehavior('早起锻炼', 5)" data-i18n="behaviors.preset.exercise">早起锻炼 +5</button>
                         <button class="preset-btn" onclick="setPresetBehavior('小测满分', 20)" data-i18n="behaviors.preset.test">小测满分 +20</button>
                     </div>
                     <div style="text-align: center; margin-top: 15px;">
-                        <a href="behavior-templates.html" class="template-link" style="display: inline-block; background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); transition: transform 0.3s ease;" data-i18n="behaviors.viewTemplates">✨ 查看更多模板</a>
+                        <a href="behavior-templates.html" class="template-link" data-i18n="behaviors.viewTemplates">查看更多模板</a>
                     </div>
                     <div class="button-group">
                         <button class="add-points-btn" onclick="addPoints()" data-i18n="behaviors.addBehaviorButton">➕ 记录积分</button>
@@ -187,7 +195,7 @@
                         <input type="text" id="gift-link" data-i18n-placeholder="gifts.link" placeholder="商品链接（京东/淘宝/亚马逊…）">
                         <button type="button" class="import-btn" onclick="importProductInfo()"><span data-i18n="gifts.importButton">🪄 一键导入</span></button>
                     </div>
-                    <div class="form-row" style="align-items: center;">
+                    <div class="form-row form-row--center">
                         <input type="text" id="gift-image" data-i18n-placeholder="gifts.image" placeholder="图片URL（可选）">
                         <img id="gift-image-preview" class="gift-image-preview" style="display:none;" alt="preview">
                     </div>
@@ -226,7 +234,7 @@
 
                 <div class="achievements-section" id="achievements-section">
                     <div class="achievements-head">
-                        <h3 id="achievements-title">🏆 成就徽章</h3>
+                        <h3 id="achievements-title">成就徽章</h3>
                         <button type="button" class="poster-btn achievements-poster-btn" onclick="openPosterModal()"><span data-i18n="home.sharePoster">🖼️ 分享海报</span></button>
                     </div>
                     <div class="achievements-grid" id="achievements-grid"></div>
