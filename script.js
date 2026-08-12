@@ -510,19 +510,50 @@ function renderPoster() {
         ctx.textAlign = 'center';
     }
 
-    // 底部
+    // 底部：左=标语+域名，右=二维码（平台链接，扫码访问平台）
+    ctx.textAlign = 'left';
     ctx.fillStyle = textFoot;
     ctx.font = '28px ' + fontFamily;
-    ctx.fillText(t('home.posterFooter'), W / 2, H - 105);
+    ctx.fillText(t('home.posterFooter'), 60, H - 105);
     ctx.font = '22px ' + fontFamily;
     ctx.fillStyle = textSub;
-    ctx.fillText('stellar.gaocaihk.com', W / 2, H - 58);
+    ctx.fillText('stellar.gaocaihk.com', 60, H - 58);
 
-    // 家庭邀请码（海报裂变）
-    if (currentFamily && currentFamily.family && currentFamily.family.invite_code) {
-        ctx.font = '20px ' + fontFamily;
-        ctx.fillStyle = textSub;
-        ctx.fillText(t('home.family.inviteCode') + '：' + currentFamily.family.invite_code, W / 2, H - 30);
+    // 二维码：平台链接（不再放家庭邀请码）
+    const qrSize = 130;
+    const qrX = W - 40 - qrSize;
+    const qrY = H - 40 - qrSize;
+    drawQrCode(ctx, 'https://stellar.gaocaihk.com/', qrX, qrY, qrSize, light);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = textSub;
+    ctx.font = '20px ' + fontFamily;
+    ctx.fillText(t('home.posterQrHint'), qrX + qrSize / 2, qrY + qrSize + 26);
+}
+
+// ── 海报二维码：把平台链接编码为二维码，扫码访问 ──
+function drawQrCode(ctx, text, x, y, size, light) {
+    if (typeof qrcode !== 'function') return; // 库未加载时跳过，不影响海报其余内容
+    let qr;
+    try {
+        qr = qrcode(0, 'M');
+        qr.addData(text);
+        qr.make();
+    } catch (e) {
+        return;
+    }
+    const count = qr.getModuleCount();
+    const cell = size / count;
+    // 白底
+    ctx.fillStyle = 'rgba(255,255,255,0.98)';
+    ctx.fillRect(x - 5, y - 5, size + 10, size + 10);
+    // 深色模块（浅色海报用深墨，深色海报用白）
+    ctx.fillStyle = light ? 'rgba(45,35,25,0.95)' : 'rgba(255,255,255,0.98)';
+    for (let r = 0; r < count; r++) {
+        for (let c = 0; c < count; c++) {
+            if (qr.isDark(r, c)) {
+                ctx.fillRect(Math.round(x + c * cell), Math.round(y + r * cell), Math.ceil(cell), Math.ceil(cell));
+            }
+        }
     }
 }
 
