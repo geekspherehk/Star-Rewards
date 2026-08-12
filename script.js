@@ -394,140 +394,163 @@ function renderPoster() {
     const fontFamily = '"PingFang SC","Microsoft YaHei",sans-serif';
     ctx.clearRect(0, 0, W, H);
 
-    // 背景渐变
+    // ── 背景：三档渐变 ──
     const color = posterColor();
     const grad = ctx.createLinearGradient(0, 0, 0, H);
     grad.addColorStop(0, color);
-    grad.addColorStop(0.55, shadeColor(color, 0.72));
+    grad.addColorStop(0.5, shadeColor(color, 0.74));
     grad.addColorStop(1, shadeColor(color, 0.48));
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
-    // 根据背景明暗选择文字/装饰颜色，保证对比度（浅色背景用深字，深色背景用白字）
     const light = isLightColor(color);
     const textMain = light ? 'rgba(45,35,25,0.95)' : 'rgba(255,255,255,0.96)';
-    const textSub = light ? 'rgba(45,35,25,0.72)' : 'rgba(255,255,255,0.85)';
+    const textSub = light ? 'rgba(45,35,25,0.70)' : 'rgba(255,255,255,0.85)';
     const textFoot = light ? 'rgba(45,35,25,0.88)' : 'rgba(255,255,255,0.92)';
-    const decoColor = light ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.12)';
-    const cardBg = light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.2)';
+    const cardBg = light ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.16)';
+    const cardLine = light ? 'rgba(45,35,25,0.10)' : 'rgba(255,255,255,0.20)';
 
-    // 装饰圆
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = decoColor;
-    [[70, 140, 95], [640, 250, 60], [110, 960, 70], [655, 1030, 105]].forEach(([x, y, r]) => {
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
-    });
+    // ── 头像光晕 ──
+    const glow = ctx.createRadialGradient(W / 2, 300, 30, W / 2, 300, 235);
+    glow.addColorStop(0, light ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.20)');
+    glow.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(W / 2, 300, 235, 0, Math.PI * 2);
+    ctx.fill();
 
-    // 标题
+    // ── 星点撒布（庆祝感）──
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const sprinkles = [
+        [70, 128, '\u2726', 26], [668, 176, '\u2605', 20], [112, 430, '\u00b7', 15],
+        [640, 556, '\u2726', 18], [84, 770, '\u00b7', 13], [672, 906, '\u2605', 22],
+        [150, 1128, '\u00b7', 14], [368, 92, '\u2605', 16], [360, 1182, '\u00b7', 12]
+    ];
+    sprinkles.forEach(([sx, sy, ch, sz]) => {
+        ctx.globalAlpha = 0.32;
+        ctx.fillStyle = textSub;
+        ctx.font = sz + 'px ' + EMOJI_FONT;
+        ctx.fillText(ch, sx, sy);
+    });
+    ctx.globalAlpha = 1;
+    ctx.textBaseline = 'alphabetic';
+
+    // ── 顶部标题 pill ──
+    const pillW = 216, pillH = 48, pillY = 62;
+    ctx.fillStyle = cardBg;
+    roundRectPath(ctx, W / 2 - pillW / 2, pillY, pillW, pillH, 24);
+    ctx.fill();
     ctx.fillStyle = textMain;
-    ctx.font = 'bold 54px ' + fontFamily;
-    ctx.fillText(t('home.posterTitle'), W / 2, 105);
+    ctx.font = 'bold 24px ' + fontFamily;
+    ctx.textAlign = 'center';
+    ctx.fillText('\u2726 ' + t('home.posterTitle') + ' \u2726', W / 2, pillY + pillH / 2 + 9);
     ctx.font = '26px ' + fontFamily;
     ctx.fillStyle = textSub;
     ctx.fillText(t('home.posterSubtitle'), W / 2, 158);
 
-    // 头像圆 + emoji
+    // ── 头像（主视觉：白色圆 + 外环）──
     const p = getSelectedProfile();
-    const cy = 330;
-    const cr = 108;
+    const cy = 322, cr = 102;
+    ctx.beginPath();
+    ctx.arc(W / 2, cy, cr + 13, 0, Math.PI * 2);
+    ctx.fillStyle = light ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.26)';
+    ctx.fill();
     ctx.beginPath();
     ctx.arc(W / 2, cy, cr, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';
     ctx.fill();
-    ctx.font = '108px ' + EMOJI_FONT;
+    ctx.font = '100px ' + EMOJI_FONT;
     ctx.textBaseline = 'middle';
-    ctx.fillText(p.avatar || '⭐', W / 2, cy + 10);
+    ctx.fillText(p.avatar || '\u2b50', W / 2, cy + 8);
     ctx.textBaseline = 'alphabetic';
 
     // 名字 + 日期
     ctx.fillStyle = textMain;
-    ctx.font = 'bold 54px ' + fontFamily;
-    ctx.fillText((p.name || '孩子').slice(0, 10), W / 2, 512);
+    ctx.font = 'bold 52px ' + fontFamily;
+    ctx.fillText((p.name || '\u5b69\u5b50').slice(0, 10), W / 2, 538);
     ctx.font = '24px ' + fontFamily;
     ctx.fillStyle = textSub;
-    ctx.fillText(new Date().toLocaleDateString(), W / 2, 556);
+    ctx.fillText(new Date().toLocaleDateString(), W / 2, 582);
 
-    // 三个统计卡
+    // ── 三统计（一体面板 + 竖分隔）──
     const stats = [
         [t('home.currentPoints'), currentPoints],
         [t('home.totalPoints'), totalPoints],
         [t('home.streakDays'), calculateStreak(behaviors)]
     ];
-    const cardW = 200;
-    const cardH = 150;
-    const gap = 18;
-    const startX = (W - (cardW * 3 + gap * 2)) / 2;
-    const cardY = 620;
+    const panelW = 604, panelH = 166, panelX = (W - panelW) / 2, panelY = 636;
+    ctx.fillStyle = cardBg;
+    roundRectPath(ctx, panelX, panelY, panelW, panelH, 22);
+    ctx.fill();
+    const colW = panelW / 3;
     stats.forEach(([label, value], i) => {
-        const x = startX + i * (cardW + gap);
-        ctx.fillStyle = cardBg;
-        roundRectPath(ctx, x, cardY, cardW, cardH, 18);
-        ctx.fill();
-        ctx.fillStyle = textMain;
-        ctx.font = 'bold 50px ' + fontFamily;
-        ctx.fillText(String(value), x + cardW / 2, cardY + 70);
-        ctx.font = '22px ' + fontFamily;
+        const cx = panelX + colW * i + colW / 2;
+        if (i > 0) {
+            ctx.strokeStyle = cardLine;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(panelX + colW * i, panelY + 26);
+            ctx.lineTo(panelX + colW * i, panelY + panelH - 26);
+            ctx.stroke();
+        }
+        ctx.textAlign = 'center';
         ctx.fillStyle = textSub;
-        ctx.fillText(String(label), x + cardW / 2, cardY + 120);
+        ctx.font = '20px ' + fontFamily;
+        ctx.fillText(String(label), cx, panelY + 44);
+        ctx.fillStyle = textMain;
+        ctx.font = 'bold 52px ' + fontFamily;
+        ctx.fillText(String(value), cx, panelY + 118);
     });
+    ctx.textAlign = 'center';
 
-    // 成就
+    // ── 成就 ──
     const ach = computeAchievements();
     const unlocked = ach.filter(a => a.unlocked);
     ctx.fillStyle = textMain;
-    ctx.font = 'bold 34px ' + fontFamily;
-    ctx.fillText(t('home.achievements.title') + ' ' + unlocked.length + '/' + ach.length, W / 2, 850);
+    ctx.font = 'bold 30px ' + fontFamily;
+    ctx.fillText('\u2726 ' + t('home.achievements.title') + ' ' + unlocked.length + '/' + ach.length + ' \u2726', W / 2, 868);
 
-    const iconSize = 66;
-    const cols = 5;
+    const iconSize = 64, cols = 5, gap = 18;
     const shown = unlocked.slice(0, 10);
     if (shown.length > 0) {
-        const totalW = cols * iconSize + (cols - 1) * 18;
+        const totalW = cols * iconSize + (cols - 1) * gap;
         const rowCount = Math.ceil(shown.length / cols);
-        const baseY = 872;
-        ctx.textAlign = 'center';
+        const baseY = 898;
         ctx.textBaseline = 'middle';
         shown.forEach((a, i) => {
-            const col = i % cols;
-            const row = Math.floor(i / cols);
-            const x = (W - totalW) / 2 + col * (iconSize + 18);
+            const col = i % cols, row = Math.floor(i / cols);
+            const x = (W - totalW) / 2 + col * (iconSize + gap);
             const y = baseY + row * (iconSize + 14) + (rowCount === 1 ? (iconSize + 14) / 4 : 0);
-            const cx = x + iconSize / 2;
-            const cy = y + iconSize / 2 + 2;
-            // 品牌色圆底 + 白色字符徽章（画布稳健方案：不画 SVG 源码）
+            const cx = x + iconSize / 2, cy = y + iconSize / 2 + 2;
             ctx.beginPath();
             ctx.arc(cx, cy, iconSize / 2 + 5, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(108,92,231,0.95)';
             ctx.fill();
             ctx.fillStyle = 'rgba(255,255,255,0.98)';
-            ctx.font = '40px ' + fontFamily;
-            ctx.fillText(a.glyph || '★', cx, cy + 2);
+            ctx.font = '38px ' + fontFamily;
+            ctx.fillText(a.glyph || '\u2605', cx, cy + 2);
         });
         ctx.textBaseline = 'alphabetic';
-        ctx.textAlign = 'center';
     }
 
-    // 底部：左=标语+域名，右=二维码（平台链接，扫码访问平台）
+    // ── 底部：左=标语+域名，右=二维码（扫码访问平台）──
     ctx.textAlign = 'left';
     ctx.fillStyle = textFoot;
-    ctx.font = '28px ' + fontFamily;
-    ctx.fillText(t('home.posterFooter'), 60, H - 105);
-    ctx.font = '22px ' + fontFamily;
+    ctx.font = '26px ' + fontFamily;
+    ctx.fillText(t('home.posterFooter'), 60, H - 100);
+    ctx.font = '20px ' + fontFamily;
     ctx.fillStyle = textSub;
-    ctx.fillText('stellar.gaocaihk.com', 60, H - 58);
+    ctx.fillText('stellar.gaocaihk.com', 60, H - 60);
 
-    // 二维码：平台链接（不再放家庭邀请码）
-    const qrSize = 130;
-    const qrX = W - 40 - qrSize;
-    const qrY = H - 40 - qrSize;
+    const qrSize = 128;
+    const qrX = W - 44 - qrSize;
+    const qrY = H - 44 - qrSize;
     drawQrCode(ctx, 'https://stellar.gaocaihk.com/', qrX, qrY, qrSize, light);
     ctx.textAlign = 'center';
     ctx.fillStyle = textSub;
     ctx.font = '20px ' + fontFamily;
-    ctx.fillText(t('home.posterQrHint'), qrX + qrSize / 2, qrY + qrSize + 26);
+    ctx.fillText(t('home.posterQrHint'), qrX + qrSize / 2, qrY + qrSize + 28);
 }
 
 // ── 海报二维码：把平台链接编码为二维码，扫码访问 ──
