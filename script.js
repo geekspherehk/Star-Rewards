@@ -321,11 +321,11 @@ function getSelectedProfile() {
     return (Array.isArray(profiles) ? profiles : []).find(x => x.id === selectedProfileId) || {};
 }
 
-function openPosterModal() {
+async function openPosterModal() {
     const modal = document.getElementById('poster-modal');
     if (!modal) return;
     modal.style.display = 'flex';
-    renderPoster();
+    await renderPoster();
     const shareBtn = document.getElementById('poster-share-btn');
     if (shareBtn) {
         shareBtn.style.display = (navigator.share && navigator.canShare) ? 'inline-block' : 'none';
@@ -357,6 +357,15 @@ function shadeColor(hex, factor) {
     return `rgb(${r},${g},${b})`;
 }
 
+// 把 hex 颜色转 rgba（用于头像光晕等需要透明度的场景）
+function hexToRgba(hex, a) {
+    const h = String(hex || '').replace('#', '');
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    if (!/^[0-9a-fA-F]{6}$/.test(full)) return `rgba(255,255,255,${a})`;
+    const n = parseInt(full, 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
 // 判断背景色明暗，决定海报文字用深色还是白色（保证对比度）
 function isLightColor(hex) {
     const h = String(hex).replace('#', '');
@@ -384,7 +393,26 @@ function roundRectPath(ctx, x, y, w, h, r) {
 // 网页端仍用 ACHIEVEMENTS 的 SVG icon；这里只给海报兜底。
 const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",serif';
 
-function renderPoster() {
+// ── 海报背景图（懒加载，cover-fit 铺满 750×1200 画布）──
+// 图未就绪时 renderPoster 会用粉彩渐变兜底，保证海报始终可生成。
+let posterBgImg = null;
+let posterBgPromise = null;
+function ensurePosterBg() {
+    if (posterBgImg && posterBgImg.complete && posterBgImg.naturalWidth > 0) return Promise.resolve(posterBgImg);
+    if (posterBgPromise) return posterBgPromise;
+    posterBgImg = new Image();
+    posterBgImg.decoding = 'async';
+    posterBgPromise = new Promise((resolve) => {
+        posterBgImg.onload = () => resolve(posterBgImg);
+        posterBgImg.onerror = () => { posterBgImg = null; resolve(null); };
+    });
+    posterBgImg.src = 'poster-bg.png?v=2';
+    return posterBgPromise;
+}
+
+// 「成长海报」背景：标题/副标/统计标签/页脚/域名/扫码提示已 baked 进图片。
+// 画布只叠加孩子动态数据（头像/名字/数值/徽章/二维码），避免遮挡插画图案。
+async function renderPoster() {
     const canvas = document.getElementById('poster-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -392,165 +420,112 @@ function renderPoster() {
     const W = canvas.width;
     const H = canvas.height;
     const fontFamily = '"PingFang SC","Microsoft YaHei",sans-serif';
+    await ensurePosterBg();
     ctx.clearRect(0, 0, W, H);
 
-    // ── 背景：三档渐变 ──
+    // ── 背景：1500×2400 baked 图 → 750×1200 画布 1:1 适配（2:3 等比）──
+    if (posterBgImg && posterBgImg.naturalWidth > 0) {
+        ctx.drawImage(posterBgImg, 0, 0, W, H);
+    } else {
+        // 兜底：图片未加载时仍可生成（粉彩渐变 + 同样的关键文字）
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, '#FFF8EC');
+        g.addColorStop(1, '#C7C5F0');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+    }
+
+    const textMain = 'rgba(45,35,25,0.95)';
+    const textSub  = 'rgba(45,35,25,0.72)';
     const color = posterColor();
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, color);
-    grad.addColorStop(0.5, shadeColor(color, 0.74));
-    grad.addColorStop(1, shadeColor(color, 0.48));
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
 
-    const light = isLightColor(color);
-    const textMain = light ? 'rgba(45,35,25,0.95)' : 'rgba(255,255,255,0.96)';
-    const textSub = light ? 'rgba(45,35,25,0.70)' : 'rgba(255,255,255,0.85)';
-    const textFoot = light ? 'rgba(45,35,25,0.88)' : 'rgba(255,255,255,0.92)';
-    const cardBg = light ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.16)';
-    const cardLine = light ? 'rgba(45,35,25,0.10)' : 'rgba(255,255,255,0.20)';
-
-    // ── 头像光晕 ──
-    const glow = ctx.createRadialGradient(W / 2, 300, 30, W / 2, 300, 235);
-    glow.addColorStop(0, light ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.20)');
-    glow.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = glow;
+    // ── 头像柔光（孩子色相光晕）──
+    const halo = ctx.createRadialGradient(W / 2, 460, 20, W / 2, 460, 200);
+    halo.addColorStop(0, hexToRgba(color, 0.22));
+    halo.addColorStop(1, hexToRgba(color, 0));
+    ctx.fillStyle = halo;
     ctx.beginPath();
-    ctx.arc(W / 2, 300, 235, 0, Math.PI * 2);
+    ctx.arc(W / 2, 460, 200, 0, Math.PI * 2);
     ctx.fill();
 
-    // ── 星点撒布（庆祝感）──
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const sprinkles = [
-        [70, 128, '\u2726', 26], [668, 176, '\u2605', 20], [112, 430, '\u00b7', 15],
-        [640, 556, '\u2726', 18], [84, 770, '\u00b7', 13], [672, 906, '\u2605', 22],
-        [150, 1128, '\u00b7', 14], [368, 92, '\u2605', 16], [360, 1182, '\u00b7', 12]
-    ];
-    sprinkles.forEach(([sx, sy, ch, sz]) => {
-        ctx.globalAlpha = 0.32;
-        ctx.fillStyle = textSub;
-        ctx.font = sz + 'px ' + EMOJI_FONT;
-        ctx.fillText(ch, sx, sy);
-    });
-    ctx.globalAlpha = 1;
-    ctx.textBaseline = 'alphabetic';
-
-    // ── 顶部标题 pill ──
-    const pillW = 216, pillH = 48, pillY = 62;
-    ctx.fillStyle = cardBg;
-    roundRectPath(ctx, W / 2 - pillW / 2, pillY, pillW, pillH, 24);
-    ctx.fill();
-    ctx.fillStyle = textMain;
-    ctx.font = 'bold 24px ' + fontFamily;
-    ctx.textAlign = 'center';
-    ctx.fillText('\u2726 ' + t('home.posterTitle') + ' \u2726', W / 2, pillY + pillH / 2 + 9);
-    ctx.font = '26px ' + fontFamily;
-    ctx.fillStyle = textSub;
-    ctx.fillText(t('home.posterSubtitle'), W / 2, 158);
-
-    // ── 头像（主视觉：白色圆 + 外环）──
+    // ── 头像：彩色环 + 白色圆 + 表情 ──
     const p = getSelectedProfile();
-    const cy = 322, cr = 102;
+    const avY = 460, cr = 98;
+    ctx.save();
+    ctx.shadowColor = 'rgba(45,35,25,0.22)';
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetY = 6;
     ctx.beginPath();
-    ctx.arc(W / 2, cy, cr + 13, 0, Math.PI * 2);
-    ctx.fillStyle = light ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.26)';
+    ctx.arc(W / 2, avY, cr, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.97)';
     ctx.fill();
+    ctx.restore();
     ctx.beginPath();
-    ctx.arc(W / 2, cy, cr, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.96)';
-    ctx.fill();
-    ctx.font = '100px ' + EMOJI_FONT;
+    ctx.arc(W / 2, avY, cr + 8, 0, Math.PI * 2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.font = '96px ' + EMOJI_FONT;
     ctx.textBaseline = 'middle';
-    ctx.fillText(p.avatar || '\u2b50', W / 2, cy + 8);
+    ctx.fillText(p.avatar || '\u2b50', W / 2, avY + 8);
     ctx.textBaseline = 'alphabetic';
 
-    // 名字 + 日期
+    // ── 名字 + 日期 ──
     ctx.fillStyle = textMain;
     ctx.font = 'bold 52px ' + fontFamily;
-    ctx.fillText((p.name || '\u5b69\u5b50').slice(0, 10), W / 2, 538);
+    ctx.textAlign = 'center';
+    ctx.fillText((p.name || '\u5b69\u5b50').slice(0, 10), W / 2, 660);
     ctx.font = '24px ' + fontFamily;
     ctx.fillStyle = textSub;
-    ctx.fillText(new Date().toLocaleDateString(), W / 2, 582);
+    ctx.fillText(new Date().toLocaleDateString(), W / 2, 704);
 
-    // ── 三统计（一体面板 + 竖分隔）──
-    const stats = [
-        [t('home.currentPoints'), currentPoints],
-        [t('home.totalPoints'), totalPoints],
-        [t('home.streakDays'), calculateStreak(behaviors)]
-    ];
-    const panelW = 604, panelH = 166, panelX = (W - panelW) / 2, panelY = 636;
-    ctx.fillStyle = cardBg;
-    roundRectPath(ctx, panelX, panelY, panelW, panelH, 22);
-    ctx.fill();
+    // ── 三统计数字（标签已在背景图 baked）──
+    const stats = [currentPoints, totalPoints, calculateStreak(behaviors)];
+    const panelW = 604, panelH = 156, panelX = (W - panelW) / 2, panelY = 736;
     const colW = panelW / 3;
-    stats.forEach(([label, value], i) => {
+    ctx.fillStyle = textMain;
+    ctx.font = 'bold 52px ' + fontFamily;
+    stats.forEach((value, i) => {
         const cx = panelX + colW * i + colW / 2;
-        if (i > 0) {
-            ctx.strokeStyle = cardLine;
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(panelX + colW * i, panelY + 26);
-            ctx.lineTo(panelX + colW * i, panelY + panelH - 26);
-            ctx.stroke();
-        }
-        ctx.textAlign = 'center';
-        ctx.fillStyle = textSub;
-        ctx.font = '20px ' + fontFamily;
-        ctx.fillText(String(label), cx, panelY + 44);
-        ctx.fillStyle = textMain;
-        ctx.font = 'bold 52px ' + fontFamily;
         ctx.fillText(String(value), cx, panelY + 118);
     });
-    ctx.textAlign = 'center';
 
-    // ── 成就 ──
+    // ── 成就标题 + 数字 + 紫底白字徽章 ──
     const ach = computeAchievements();
     const unlocked = ach.filter(a => a.unlocked);
     ctx.fillStyle = textMain;
     ctx.font = 'bold 30px ' + fontFamily;
-    ctx.fillText('\u2726 ' + t('home.achievements.title') + ' ' + unlocked.length + '/' + ach.length + ' \u2726', W / 2, 868);
+    ctx.textAlign = 'center';
+    ctx.fillText('\u2726 ' + t('home.achievements.title') + ' ' + unlocked.length + '/' + ach.length + ' \u2726', W / 2, 940);
 
-    const iconSize = 64, cols = 5, gap = 18;
+    const iconSize = 60, cols = 5, gap = 18;
     const shown = unlocked.slice(0, 10);
     if (shown.length > 0) {
         const totalW = cols * iconSize + (cols - 1) * gap;
         const rowCount = Math.ceil(shown.length / cols);
-        const baseY = 898;
+        const baseY = 970;
         ctx.textBaseline = 'middle';
         shown.forEach((a, i) => {
             const col = i % cols, row = Math.floor(i / cols);
             const x = (W - totalW) / 2 + col * (iconSize + gap);
             const y = baseY + row * (iconSize + 14) + (rowCount === 1 ? (iconSize + 14) / 4 : 0);
-            const cx = x + iconSize / 2, cy = y + iconSize / 2 + 2;
+            const icX = x + iconSize / 2, icY = y + iconSize / 2 + 2;
             ctx.beginPath();
-            ctx.arc(cx, cy, iconSize / 2 + 5, 0, Math.PI * 2);
+            ctx.arc(icX, icY, iconSize / 2 + 5, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(108,92,231,0.95)';
             ctx.fill();
             ctx.fillStyle = 'rgba(255,255,255,0.98)';
-            ctx.font = '38px ' + fontFamily;
-            ctx.fillText(a.glyph || '\u2605', cx, cy + 2);
+            ctx.font = '36px ' + fontFamily;
+            ctx.fillText(a.glyph || '\u2605', icX, icY + 2);
         });
         ctx.textBaseline = 'alphabetic';
     }
 
-    // ── 底部：左=标语+域名，右=二维码（扫码访问平台）──
-    ctx.textAlign = 'left';
-    ctx.fillStyle = textFoot;
-    ctx.font = '26px ' + fontFamily;
-    ctx.fillText(t('home.posterFooter'), 60, H - 100);
-    ctx.font = '20px ' + fontFamily;
-    ctx.fillStyle = textSub;
-    ctx.fillText('stellar.gaocaihk.com', 60, H - 60);
-
+    // ── 右下角二维码（动态绘制，扫码访问平台）──
     const qrSize = 128;
     const qrX = W - 44 - qrSize;
     const qrY = H - 44 - qrSize;
-    drawQrCode(ctx, 'https://stellar.gaocaihk.com/', qrX, qrY, qrSize, light);
-    ctx.textAlign = 'center';
-    ctx.fillStyle = textSub;
-    ctx.font = '20px ' + fontFamily;
-    ctx.fillText(t('home.posterQrHint'), qrX + qrSize / 2, qrY + qrSize + 28);
+    drawQrCode(ctx, 'https://stellar.gaocaihk.com/', qrX, qrY, qrSize, true);
 }
 
 // ── 海报二维码：把平台链接编码为二维码，扫码访问 ──
@@ -586,9 +561,10 @@ function copyPosterInvite() {
     else showTemporaryMessage(t('home.family.invalidCode'), 'error');
 }
 
-function downloadPoster() {
+async function downloadPoster() {
     const canvas = document.getElementById('poster-canvas');
     if (!canvas) return;
+    await renderPoster();
     canvas.toBlob(blob => {
         if (!blob) {
             showTemporaryMessage(t('home.posterFailed'), 'error');
@@ -611,6 +587,7 @@ async function sharePoster() {
     if (!navigator.share) return;
     const canvas = document.getElementById('poster-canvas');
     if (!canvas) return;
+    await renderPoster();
     try {
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
         if (!blob) return;
