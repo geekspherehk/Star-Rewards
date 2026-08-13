@@ -215,7 +215,7 @@ class ApiClient {
     }
 
     async addBehavior(description, points) {
-        return await this.request('addBehavior', { description, points, profile_id: this.selectedProfileId });
+        return await this.request('addBehavior', Object.assign({ description, points, profile_id: this.selectedProfileId }, extra || {}));
     }
 
     async getGifts() {
@@ -321,6 +321,47 @@ class ApiClient {
 
     async getUserConfig() {
         return await this.request('getUserConfig');
+    }
+
+    // ── V2 全人版愿望清单体系（8 大素养 × 愿望/打卡/指标/徽章） ──
+    async getV2Overview() {
+        return await this.request('get_v2_overview', { profile_id: this.selectedProfileId });
+    }
+
+    async addWish(wish) {
+        return await this.request('add_wish', Object.assign({ profile_id: this.selectedProfileId }, wish));
+    }
+
+    async updateWish(id, fields) {
+        return await this.request('update_wish', Object.assign({ id, profile_id: this.selectedProfileId }, fields));
+    }
+
+    async deleteWish(id) {
+        return await this.request('delete_wish', { id, profile_id: this.selectedProfileId });
+    }
+
+    async completeWish(id) {
+        return await this.request('complete_wish', { id, profile_id: this.selectedProfileId });
+    }
+
+    async addCheckin(wishId, date = null, note = '') {
+        return await this.request('add_checkin', { wish_id: wishId, date, note, profile_id: this.selectedProfileId });
+    }
+
+    async getCheckins(wishId = 0) {
+        return await this.request('get_checkins', { wish_id: wishId, profile_id: this.selectedProfileId });
+    }
+
+    async setMonthlyFocus(category, month = null) {
+        return await this.request('set_monthly_focus', { category, month, profile_id: this.selectedProfileId });
+    }
+
+    async addGrowthIndicator(category, level, weekStart = null, note = '') {
+        return await this.request('add_growth_indicator', { category, level, week_start: weekStart, note, profile_id: this.selectedProfileId });
+    }
+
+    async getBadges() {
+        return await this.request('get_badges', { profile_id: this.selectedProfileId });
     }
 
     async resendConfirmation(email) {

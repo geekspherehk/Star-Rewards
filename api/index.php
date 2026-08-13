@@ -6,8 +6,13 @@ define('TRACK_ALLOWED_EVENTS', [
     'register', 'login', 'add_behavior', 'add_gift', 'redeem',
     'view_poster', 'share_poster', 'create_invite', 'join_family',
     'open_family', 'view_seo_article', 'first_session',
-    'growth_add', 'achieve_cert', 'share_wechat', 'share_whatsapp', 'share_pinterest'
+    'growth_add', 'achieve_cert', 'share_wechat', 'share_whatsapp', 'share_pinterest',
+    'v2_view', 'add_wish', 'complete_wish', 'add_checkin', 'set_focus', 'growth_indicator_add'
 ]);
+
+// ── V2 全人版：8 大素养维度（与 behaviors.dimension / wishes.category 共用） ──
+define('V2_CATEGORIES', ['self_drive', 'money', 'empathy', 'relationship', 'planning', 'resilience', 'health', 'aesthetics']);
+define('V2_EFFORT_TYPES', ['experience', 'persistence', 'challenge']);
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -404,6 +409,37 @@ switch ($action) {
     case 'add_child_voice':
         handleAddChildVoice($pdo, $data);
         break;
+    // ── V2 全人版愿望清单体系 ──
+    case 'get_v2_overview':
+        handleGetV2Overview($pdo, $data);
+        break;
+    case 'add_wish':
+        handleAddWish($pdo, $data);
+        break;
+    case 'update_wish':
+        handleUpdateWish($pdo, $data);
+        break;
+    case 'delete_wish':
+        handleDeleteWish($pdo, $data);
+        break;
+    case 'complete_wish':
+        handleCompleteWish($pdo, $data);
+        break;
+    case 'add_checkin':
+        handleAddCheckin($pdo, $data);
+        break;
+    case 'get_checkins':
+        handleGetCheckins($pdo, $data);
+        break;
+    case 'set_monthly_focus':
+        handleSetMonthlyFocus($pdo, $data);
+        break;
+    case 'add_growth_indicator':
+        handleAddGrowthIndicator($pdo, $data);
+        break;
+    case 'get_badges':
+        handleGetBadges($pdo, $data);
+        break;
     default:
         sendError('Invalid action', 400);
 }
@@ -700,7 +736,7 @@ function handleGetBehaviors($pdo, $data) {
     $familyId = requireFamilyMember($pdo, $userId);
     $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
     try {
-        $stmt = $pdo->prepare('SELECT b.id, b.profile_id, b.description, b.points, b.timestamp, fm.display_name AS added_by_name
+        $stmt = $pdo->prepare('SELECT b.id, b.profile_id, b.description, b.points, b.dimension, b.effort_type, b.related_categories, b.wish_id, b.timestamp, fm.display_name AS added_by_name
             FROM behaviors b LEFT JOIN family_members fm ON fm.user_id = b.user_id AND fm.family_id = b.family_id
             WHERE b.family_id = ? AND b.profile_id = ? ORDER BY b.timestamp DESC LIMIT 500');
         $stmt->execute([$familyId, $profileId]);
@@ -722,10 +758,19 @@ function handleAddBehavior($pdo, $data) {
     if ($points === 0) sendError('Points cannot be zero', 400);
     if ($points < -10000 || $points > 10000) sendError('Points out of range (-10000 to 10000)', 400);
 
+    // V2: 行为可挂载到 8 大素养维度与愿望（dimension 字段已存在，正式激活）
+    $dimension = isset($data['dimension']) ? trim($data['dimension']) : '';
+    if ($dimension !== '' && !in_array($dimension, V2_CATEGORIES, true)) $dimension = '';
+    $effortType = isset($data['effort_type']) ? trim($data['effort_type']) : '';
+    if ($effortType !== '' && !in_array($effortType, ['experience', 'persistence', 'challenge'], true)) $effortType = '';
+    $relatedCats = isset($data['related_categories']) ? trim($data['related_categories']) : '';
+    if (strlen($relatedCats) > 255) $relatedCats = substr($relatedCats, 0, 255);
+    $wishId = isset($data['wish_id']) ? (int)$data['wish_id'] : 0;
+
     try {
         $pdo->beginTransaction();
-        $stmt = $pdo->prepare('INSERT INTO behaviors (user_id, family_id, profile_id, description, points) VALUES (?, ?, ?, ?, ?)');
-        $stmt->execute([$userId, $familyId, $profileId, $description, $points]);
+        $stmt = $pdo->prepare('INSERT INTO behaviors (user_id, family_id, profile_id, description, points, dimension, effort_type, related_categories, wish_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$userId, $familyId, $profileId, $description, $points, $dimension !== '' ? $dimension : null, $effortType !== '' ? $effortType : null, $relatedCats !== '' ? $relatedCats : null, $wishId > 0 ? $wishId : null]);
         // 必须在 UPDATE 之前取值：该环境的 PDO 驱动在 UPDATE 后 lastInsertId() 会返回 0
         $behaviorId = (int)$pdo->lastInsertId();
 
@@ -1374,6 +1419,28 @@ function handleUpdateMemberName($pdo, $data) {
     }
 }
 
+// 埋点插入辅助（内部使用；失败静默，不打断主流程）
+function trackEvent($pdo, $userId, $event, $meta = null) {
+    if (!in_array($event, TRACK_ALLOWED_EVENTS, true)) return;
+    try {
+        if ($meta !== null && !is_array($meta)) $meta = null;
+        if ($meta !== null) {
+            $encoded = json_encode($meta, JSON_UNESCAPED_UNICODE);
+            if ($encoded === false || strlen($encoded) > 2000) $meta = null;
+        }
+        $familyId = getFamilyIdOfUser($pdo, $userId);
+        $stmt = $pdo->prepare('INSERT INTO analytics_events (user_id, family_id, event, meta) VALUES (?, ?, ?, ?)');
+        $stmt->execute([
+            $userId,
+            $familyId,
+            $event,
+            $meta === null ? null : json_encode($meta, JSON_UNESCAPED_UNICODE)
+        ]);
+    } catch (Throwable $e) {
+        // analytics must never break core features
+    }
+}
+
 function handleTrackEvent($pdo, $data) {
     try {
     $userId = getUserId();
@@ -1382,27 +1449,413 @@ function handleTrackEvent($pdo, $data) {
     if ($event === '' || !in_array($event, TRACK_ALLOWED_EVENTS, true)) {
         sendError('Invalid event', 400);
     }
-    $meta = $data['meta'] ?? null;
-    if ($meta !== null && !is_array($meta)) {
-        $meta = null;
-    }
-    if ($meta !== null) {
-        // bound payload size (defensive)
-        $encoded = json_encode($meta, JSON_UNESCAPED_UNICODE);
-        if ($encoded === false || strlen($encoded) > 2000) {
-            $meta = null;
-        }
-    }
-    $familyId = getFamilyIdOfUser($pdo, $userId);
-        $stmt = $pdo->prepare('INSERT INTO analytics_events (user_id, family_id, event, meta) VALUES (?, ?, ?, ?)');
-        $stmt->execute([
-            $userId,
-            $familyId,
-            $event,
-            $meta === null ? null : json_encode($meta, JSON_UNESCAPED_UNICODE)
-        ]);
-        sendJson(['success' => true]);
+    trackEvent($pdo, $userId, $event, $data['meta'] ?? null);
+    sendJson(['success' => true]);
     } catch (Throwable $e) {
         sendError('Failed to record event', 500, $e->getMessage());
     }
+}
+
+// ─────────────────────────────────────────────
+// V2 全人版愿望清单体系 (2026-08-13)
+// 三层模型：类别（8 大素养）/ 愿望 / 打卡；机制：努力定价、退出协议、角色徽章
+// ─────────────────────────────────────────────
+
+// 努力定价：体验型 1-2 星 / 坚持型 3-5 星 / 挑战型 5-10 星；星数 = 目标天数 × 难度系数
+function v2StarsFor($type, $days, $coef) {
+    $minMap = ['experience' => 1, 'persistence' => 3, 'challenge' => 5];
+    $maxMap = ['experience' => 2, 'persistence' => 5, 'challenge' => 10];
+    $min = $minMap[$type] ?? 1;
+    $max = $maxMap[$type] ?? 10;
+    $days = max(0, (int)$days);
+    $coef = max(0.5, min(2.0, (float)$coef));
+    if ($days <= 0) return $min;
+    return max($min, min($max, (int)round($days * $coef)));
+}
+
+// 打卡连续天数（以今天或昨天为锚点）+ 阶段：建立 1-6 / 稳定 7-20 / 内化 ≥21
+function v2WishStreakInfo($pdo, $wishId) {
+    $stmt = $pdo->prepare('SELECT checkin_date FROM checkins WHERE wish_id = ? ORDER BY checkin_date DESC');
+    $stmt->execute([$wishId]);
+    $dates = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    if (!$dates) return ['streak' => 0, 'stage' => 'building'];
+
+    $set = array_flip($dates);
+    $anchor = date('Y-m-d');
+    if (!isset($set[$anchor])) {
+        $anchor = date('Y-m-d', strtotime('-1 day'));
+        if (!isset($set[$anchor])) return ['streak' => 0, 'stage' => 'building'];
+    }
+    $streak = 0;
+    $cursor = new DateTime($anchor);
+    while (isset($set[$cursor->format('Y-m-d')])) {
+        $streak++;
+        $cursor->modify('-1 day');
+    }
+    $stage = $streak >= 21 ? 'internalizing' : ($streak >= 7 ? 'stable' : 'building');
+    return ['streak' => $streak, 'stage' => $stage];
+}
+
+// 计算并持久化角色徽章；返回全部 9 枚徽章状态（rose_<cat> ×8 + rose_all_rounder + rose_persist_21）
+function v2ComputeBadges($pdo, $familyId, $profileId, $userId) {
+    $counts = array_fill_keys(V2_CATEGORIES, 0);
+    $stmt = $pdo->prepare('SELECT dimension, COUNT(*) c FROM behaviors WHERE family_id = ? AND profile_id = ? AND dimension IS NOT NULL AND dimension <> \'\' GROUP BY dimension');
+    $stmt->execute([$familyId, $profileId]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        if (isset($counts[$row['dimension']])) $counts[$row['dimension']] = (int)$row['c'];
+    }
+
+    $achieved = array_fill_keys(V2_CATEGORIES, 0);
+    $stmt = $pdo->prepare('SELECT category, COUNT(*) c FROM wishes WHERE family_id = ? AND profile_id = ? AND status = \'achieved\' GROUP BY category');
+    $stmt->execute([$familyId, $profileId]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        if (isset($achieved[$row['category']])) $achieved[$row['category']] = (int)$row['c'];
+    }
+
+    $stmt = $pdo->prepare('SELECT COUNT(DISTINCT wish_id) c FROM checkins WHERE family_id = ? AND profile_id = ? AND wish_id IS NOT NULL');
+    $stmt->execute([$familyId, $profileId]);
+    $distinctCheckinWishes = (int)$stmt->fetch(PDO::FETCH_COLUMN);
+
+    // 21 天长期坚持徽章：任意一个愿望打过 ≥21 次卡
+    $stmt = $pdo->prepare('SELECT wish_id, COUNT(*) c FROM checkins WHERE family_id = ? AND profile_id = ? AND wish_id IS NOT NULL GROUP BY wish_id HAVING c >= 21 LIMIT 1');
+    $stmt->execute([$familyId, $profileId]);
+    $persist21 = $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+
+    $covered = 0;
+    $badges = [];
+    foreach (V2_CATEGORIES as $cat) {
+        $unlocked = $counts[$cat] >= 5 || $achieved[$cat] >= 1;
+        if ($unlocked) $covered++;
+        $badges['rose_' . $cat] = ['unlocked' => $unlocked, 'unlocked_at' => null];
+    }
+    $allRounder = $covered >= 6;
+    $badges['rose_all_rounder'] = ['unlocked' => $allRounder, 'unlocked_at' => null];
+    $badges['rose_persist_21'] = ['unlocked' => $persist21, 'unlocked_at' => null];
+
+    // 持久化已解锁徽章
+    $stmt = $pdo->prepare('INSERT IGNORE INTO user_badges (family_id, profile_id, user_id, badge_code) VALUES (?, ?, ?, ?)');
+    $unlockedAt = date('Y-m-d H:i:s');
+    foreach ($badges as $code => $info) {
+        if ($info['unlocked']) {
+            $stmt->execute([$familyId, $profileId, $userId, $code]);
+            $badges[$code]['unlocked_at'] = $unlockedAt;
+        }
+    }
+    return $badges;
+}
+
+// 计算愿望进度：体验型按积分（stars×20），坚持/挑战型按打卡进度
+function v2WishProgress($pdo, $wish, $currentPoints) {
+    $streakInfo = v2WishStreakInfo($pdo, $wish['id']);
+    if ($wish['status'] === 'achieved') {
+        $progress = 1.0;
+    } elseif ($wish['wish_type'] === 'experience') {
+        $target = (int)$wish['points_target'];
+        $progress = $target > 0 ? min(1.0, $currentPoints / $target) : 0;
+    } else {
+        $target = max(1, (int)$wish['persistence_days']);
+        $progress = min(1.0, $streakInfo['streak'] / $target);
+    }
+    return [
+        'progress' => round($progress * 100),
+        'streak' => $streakInfo['streak'],
+        'stage' => $streakInfo['stage'],
+        'points_target' => (int)$wish['points_target']
+    ];
+}
+
+// 概览：一次拉取仪表盘全部数据（玫瑰覆盖 / 愿望 / 主打瓣 / 指标 / 徽章）
+function handleGetV2Overview($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+
+    $stmt = $pdo->prepare('SELECT id, name, avatar, color, current_points, total_points, budget_cap FROM profiles WHERE id = ? AND family_id = ?');
+    $stmt->execute([$profileId, $familyId]);
+    $profile = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$profile) sendError('Profile not found', 404);
+
+    $stmt = $pdo->prepare('SELECT * FROM wishes WHERE family_id = ? AND profile_id = ? ORDER BY status ASC, created_at DESC');
+    $stmt->execute([$familyId, $profileId]);
+    $wishes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($wishes as &$w) {
+        $prog = v2WishProgress($pdo, $w, (int)$profile['current_points']);
+        $w['progress'] = $prog['progress'];
+        $w['streak'] = $prog['streak'];
+        $w['stage'] = $prog['stage'];
+        $w['checkin_count'] = 0;
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM checkins WHERE wish_id = ?');
+        $stmt->execute([$w['id']]);
+        $w['checkin_count'] = (int)$stmt->fetch(PDO::FETCH_COLUMN);
+        $stmt = $pdo->prepare('SELECT 1 FROM checkins WHERE wish_id = ? AND checkin_date = ? LIMIT 1');
+        $stmt->execute([$w['id'], date('Y-m-d')]);
+        $w['today_checked'] = (bool)$stmt->fetch(PDO::FETCH_COLUMN);
+        $w['internalized'] = $w['wish_type'] !== 'experience' && (int)$w['checkin_count'] >= max(1, (int)$w['persistence_days']);
+    }
+    unset($w);
+
+    // 玫瑰覆盖：每类行为数 + 达成愿望数
+    $coverage = [];
+    foreach (V2_CATEGORIES as $cat) {
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM behaviors WHERE family_id = ? AND profile_id = ? AND dimension = ?');
+        $stmt->execute([$familyId, $profileId, $cat]);
+        $beh = (int)$stmt->fetch(PDO::FETCH_COLUMN);
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM wishes WHERE family_id = ? AND profile_id = ? AND category = ? AND status = \'achieved\'');
+        $stmt->execute([$familyId, $profileId, $cat]);
+        $ach = (int)$stmt->fetch(PDO::FETCH_COLUMN);
+        $coverage[$cat] = ['behaviors' => $beh, 'wishes_achieved' => $ach, 'active' => $beh > 0 || $ach > 0];
+    }
+
+    $month = date('Y-m');
+    $stmt = $pdo->prepare('SELECT category FROM monthly_focus WHERE profile_id = ? AND focus_month = ?');
+    $stmt->execute([$profileId, $month]);
+    $focus = $stmt->fetch(PDO::FETCH_COLUMN) ?: null;
+
+    $weekStart = date('Y-m-d', strtotime('monday this week'));
+    $stmt = $pdo->prepare('SELECT category, level, note FROM growth_indicators WHERE profile_id = ? AND week_start = ?');
+    $stmt->execute([$profileId, $weekStart]);
+    $indicators = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $badges = v2ComputeBadges($pdo, $familyId, $profileId, $userId);
+
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM checkins WHERE family_id = ? AND profile_id = ?');
+    $stmt->execute([$familyId, $profileId]);
+    $totalCheckins = (int)$stmt->fetch(PDO::FETCH_COLUMN);
+
+    trackEvent($pdo, $userId, 'v2_view', ['profile_id' => $profileId]);
+    sendJson([
+        'success' => true,
+        'profile' => $profile,
+        'wishes' => $wishes,
+        'coverage' => $coverage,
+        'focus' => $focus,
+        'month' => $month,
+        'indicators' => $indicators,
+        'week_start' => $weekStart,
+        'badges' => $badges,
+        'total_checkins' => $totalCheckins
+    ]);
+}
+
+function handleAddWish($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+
+    $title = trim($data['title'] ?? '');
+    $category = $data['category'] ?? 'self_drive';
+    $wishType = $data['wish_type'] ?? 'experience';
+    if ($title === '') sendError('Title required', 400);
+    if (strlen($title) > 255) sendError('Title too long', 400);
+    if (!in_array($category, V2_CATEGORIES, true)) sendError('Invalid category', 400);
+    if (!in_array($wishType, V2_EFFORT_TYPES, true)) sendError('Invalid wish_type', 400);
+
+    $days = max(0, (int)($data['persistence_days'] ?? 0));
+    if ($days > 365) sendError('Days out of range', 400);
+    $coef = max(0.5, min(2.0, (float)($data['difficulty_coef'] ?? 1.0)));
+    $stars = v2StarsFor($wishType, $days, $coef);
+    $pointsTarget = $wishType === 'experience' ? $stars * 20 : 0;
+
+    $related = $data['related_categories'] ?? '';
+    if (is_array($related)) $related = implode(',', array_slice($related, 0, 2));
+    if (!is_string($related)) $related = '';
+
+    $stmt = $pdo->prepare('INSERT INTO wishes (family_id, profile_id, user_id, category, related_categories, title, description, wish_type, persistence_days, difficulty_coef, stars, effort_label, points_target, image_url, original_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt->execute([
+        $familyId, $profileId, $userId,
+        $category,
+        $related !== '' ? substr($related, 0, 255) : null,
+        $title,
+        isset($data['description']) ? trim((string)$data['description']) : '',
+        $wishType, $days, $coef, $stars,
+        $wishType, $pointsTarget,
+        isset($data['image_url']) ? trim((string)$data['image_url']) : '',
+        isset($data['original_url']) ? trim((string)$data['original_url']) : ''
+    ]);
+    $id = (int)$pdo->lastInsertId();
+
+    trackEvent($pdo, $userId, 'add_wish', ['profile_id' => $profileId, 'wish_type' => $wishType, 'stars' => $stars]);
+    sendJson(['success' => true, 'id' => $id, 'stars' => $stars, 'points_target' => $pointsTarget, 'effort_type' => $wishType]);
+}
+
+function handleUpdateWish($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    $id = (int)($data['id'] ?? 0);
+    if ($id <= 0) sendError('Wish id required', 400);
+
+    $stmt = $pdo->prepare('SELECT * FROM wishes WHERE id = ? AND profile_id = ? AND family_id = ?');
+    $stmt->execute([$id, $profileId, $familyId]);
+    $wish = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$wish) sendError('Wish not found', 404);
+
+    $title = isset($data['title']) ? trim((string)$data['title']) : $wish['title'];
+    $category = isset($data['category']) ? $data['category'] : $wish['category'];
+    $wishType = isset($data['wish_type']) ? $data['wish_type'] : $wish['wish_type'];
+    if ($title === '') sendError('Title required', 400);
+    if (!in_array($category, V2_CATEGORIES, true)) sendError('Invalid category', 400);
+    if (!in_array($wishType, V2_EFFORT_TYPES, true)) sendError('Invalid wish_type', 400);
+
+    $days = max(0, (int)($data['persistence_days'] ?? $wish['persistence_days']));
+    $coef = max(0.5, min(2.0, (float)($data['difficulty_coef'] ?? $wish['difficulty_coef'])));
+    $stars = v2StarsFor($wishType, $days, $coef);
+    $pointsTarget = $wishType === 'experience' ? $stars * 20 : 0;
+
+    $stmt = $pdo->prepare('UPDATE wishes SET title = ?, category = ?, description = ?, wish_type = ?, persistence_days = ?, difficulty_coef = ?, stars = ?, points_target = ?, related_categories = ? WHERE id = ? AND profile_id = ? AND family_id = ?');
+    $stmt->execute([
+        $title, $category,
+        isset($data['description']) ? trim((string)$data['description']) : $wish['description'],
+        $wishType, $days, $coef, $stars, $pointsTarget,
+        isset($data['related_categories']) ? substr(trim((string)$data['related_categories']), 0, 255) : $wish['related_categories'],
+        $id, $profileId, $familyId
+    ]);
+    sendJson(['success' => true, 'stars' => $stars, 'points_target' => $pointsTarget]);
+}
+
+function handleDeleteWish($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    $id = (int)($data['id'] ?? 0);
+    if ($id <= 0) sendError('Wish id required', 400);
+    $stmt = $pdo->prepare('DELETE FROM wishes WHERE id = ? AND profile_id = ? AND family_id = ?');
+    $stmt->execute([$id, $profileId, $familyId]);
+    sendJson(['success' => true]);
+}
+
+// 达成愿望：退出协议（撤卡是荣耀）+ 里程碑记录 + 徽章解锁
+function handleCompleteWish($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    $id = (int)($data['id'] ?? 0);
+    if ($id <= 0) sendError('Wish id required', 400);
+
+    $stmt = $pdo->prepare('SELECT * FROM wishes WHERE id = ? AND profile_id = ? AND family_id = ?');
+    $stmt->execute([$id, $profileId, $familyId]);
+    $wish = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$wish) sendError('Wish not found', 404);
+    if ($wish['status'] === 'achieved') sendError('Wish already achieved', 400);
+
+    try {
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare('UPDATE wishes SET status = \'achieved\', achieved_at = NOW() WHERE id = ?');
+        $stmt->execute([$id]);
+        // 写入里程碑（成长纪念册联动）
+        $stmt = $pdo->prepare('INSERT INTO milestones (family_id, profile_id, user_id, category, title, detail, occurred_on) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([
+            $familyId, $profileId, $userId,
+            '成长',
+            $wish['title'],
+            '愿望达成：' . $wish['title'] . '（' . $wish['wish_type'] . ' / ' . $wish['stars'] . ' 星）',
+            date('Y-m-d')
+        ]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        sendError('Failed to complete wish', 500, $e->getMessage());
+    }
+
+    $badges = v2ComputeBadges($pdo, $familyId, $profileId, $userId);
+    trackEvent($pdo, $userId, 'complete_wish', ['profile_id' => $profileId, 'wish_id' => $id, 'wish_type' => $wish['wish_type']]);
+    sendJson(['success' => true, 'badges' => $badges]);
+}
+
+function handleAddCheckin($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    $wishId = (int)($data['wish_id'] ?? 0);
+    if ($wishId <= 0) sendError('Wish id required', 400);
+
+    $stmt = $pdo->prepare('SELECT * FROM wishes WHERE id = ? AND profile_id = ? AND family_id = ? AND status = \'active\'');
+    $stmt->execute([$wishId, $profileId, $familyId]);
+    $wish = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$wish) sendError('Wish not found or already achieved', 404);
+    if ($wish['wish_type'] === 'experience') sendError('Experience wishes do not require check-ins', 400);
+
+    $checkinDate = isset($data['date']) ? trim((string)$data['date']) : date('Y-m-d');
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkinDate)) sendError('Invalid date', 400);
+
+    try {
+        $stmt = $pdo->prepare('INSERT INTO checkins (family_id, profile_id, user_id, wish_id, checkin_date, note) VALUES (?, ?, ?, ?, ?, ?)');
+        $stmt->execute([
+            $familyId, $profileId, $userId, $wishId, $checkinDate,
+            isset($data['note']) ? substr(trim((string)$data['note']), 0, 500) : null
+        ]);
+    } catch (PDOException $e) {
+        if ($e->getCode() == 23000) sendError('Already checked in today', 409);
+        throw $e;
+    }
+
+    $info = v2WishStreakInfo($pdo, $wishId);
+    $internalized = $info['streak'] >= max(1, (int)$wish['persistence_days']);
+    v2ComputeBadges($pdo, $familyId, $profileId, $userId);
+
+    trackEvent($pdo, $userId, 'add_checkin', ['profile_id' => $profileId, 'wish_id' => $wishId, 'internalized' => $internalized]);
+    sendJson(['success' => true, 'streak' => $info['streak'], 'stage' => $info['stage'], 'internalized' => $internalized]);
+}
+
+function handleGetCheckins($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    $wishId = (int)($data['wish_id'] ?? 0);
+
+    if ($wishId > 0) {
+        $stmt = $pdo->prepare('SELECT c.checkin_date, c.note, c.created_at FROM checkins c WHERE c.wish_id = ? AND c.profile_id = ? ORDER BY c.checkin_date DESC');
+        $stmt->execute([$wishId, $profileId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $stmt = $pdo->prepare('SELECT c.checkin_date, c.note, c.created_at, w.title AS wish_title FROM checkins c LEFT JOIN wishes w ON w.id = c.wish_id WHERE c.profile_id = ? AND c.family_id = ? ORDER BY c.checkin_date DESC LIMIT 200');
+        $stmt->execute([$profileId, $familyId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    sendJson(['success' => true, 'checkins' => $rows]);
+}
+
+function handleSetMonthlyFocus($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    $category = $data['category'] ?? '';
+    if (!in_array($category, V2_CATEGORIES, true)) sendError('Invalid category', 400);
+    $month = isset($data['month']) ? trim((string)$data['month']) : date('Y-m');
+    if (!preg_match('/^\d{4}-\d{2}$/', $month)) sendError('Invalid month', 400);
+
+    $stmt = $pdo->prepare('INSERT INTO monthly_focus (family_id, profile_id, user_id, category, focus_month) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE category = VALUES(category), updated_at = NOW()');
+    $stmt->execute([$familyId, $profileId, $userId, $category, $month]);
+
+    trackEvent($pdo, $userId, 'set_focus', ['profile_id' => $profileId, 'category' => $category]);
+    sendJson(['success' => true, 'category' => $category, 'month' => $month]);
+}
+
+function handleAddGrowthIndicator($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    $category = $data['category'] ?? '';
+    $level = $data['level'] ?? '';
+    if (!in_array($category, V2_CATEGORIES, true)) sendError('Invalid category', 400);
+    if (!in_array($level, ['sprout', 'growing', 'bloom'], true)) sendError('Invalid level', 400);
+    $weekStart = isset($data['week_start']) ? trim((string)$data['week_start']) : date('Y-m-d', strtotime('monday this week'));
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $weekStart)) sendError('Invalid week_start', 400);
+
+    $stmt = $pdo->prepare('INSERT INTO growth_indicators (family_id, profile_id, user_id, category, level, week_start, note) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE level = VALUES(level), note = VALUES(note), updated_at = NOW()');
+    $stmt->execute([
+        $familyId, $profileId, $userId, $category, $level, $weekStart,
+        isset($data['note']) ? substr(trim((string)$data['note']), 0, 500) : null
+    ]);
+
+    trackEvent($pdo, $userId, 'growth_indicator_add', ['profile_id' => $profileId, 'category' => $category, 'level' => $level]);
+    sendJson(['success' => true]);
+}
+
+function handleGetBadges($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    $badges = v2ComputeBadges($pdo, $familyId, $profileId, $userId);
+    sendJson(['success' => true, 'badges' => $badges]);
 }

@@ -1209,7 +1209,7 @@ async function addPoints() {
 
         showLoading('Adding points...');
 
-        const result = await api.addBehavior(desc, change);
+        const result = await api.addBehavior(desc, change, { dimension: getSelectedBehaviorDimension() });
         track('add_behavior', { points: change });
 
         // Incremental update - no full reload needed
@@ -1914,6 +1914,7 @@ function updateModuleStats() {
     if (sG) sG.innerHTML = `${STAT_ICO.gift}${(Array.isArray(gifts) ? gifts : []).length} · ${STAT_ICO.check}${(Array.isArray(redeemedGifts) ? redeemedGifts : []).length} 已兑换`;
     const sD = document.getElementById('stat-diary');
     if (sD) sD.innerHTML = `${STAT_ICO.note}${(Array.isArray(behaviors) ? behaviors : []).length} 条记录`;
+    updateV2ModuleStat();
 }
 
 // 新用户空状态引导横幅
@@ -2044,6 +2045,9 @@ async function initializeApp() {
         }
 
         console.log('Script.js: 应用初始化完成');
+
+        // V2 全人成长：静默预载仪表盘数据（不影响主流程）
+        loadV2Data();
         
     } catch (error) {
         console.error('Script.js: 应用初始化失败:', error);
@@ -2167,6 +2171,10 @@ async function switchProfile(profileId) {
         await loadDataFromCloud();
         updateUI();
         renderProfileSwitcher();
+        // V2：切换孩子后重置仪表盘缓存并刷新
+        v2Data = null;
+        v2PrevUnlocked = null;
+        loadV2Data();
         const p = profiles.find(x => x.id === profileId);
         showTemporaryMessage(t('home.profile.switched', { name: p ? p.name : '' }), 'success');
     } catch (error) {
@@ -2723,6 +2731,11 @@ function showModule(moduleId) {
         renderGrowthRecord();
     }
 
+    // 全人成长（V2）：切到该页时拉取/刷新 8 素养仪表盘
+    if (moduleId === 'v2-module') {
+        loadV2Data();
+    }
+
     // 悬浮快速记分按钮只在积分页显示
     const fab = document.getElementById('quick-add-fab');
     if (fab) {
@@ -2882,4 +2895,373 @@ function renderCalendarDayDetail() {
     });
     panel.innerHTML = html;
     panel.style.display = 'block';
+}
+// ════════════════════════════════════════════════════════════
+// V2 全人版愿望清单体系 — 前端逻辑（2026-08-13 追加模块）
+// 8 大素养 × 愿望/打卡/指标/徽章；数据由 get_v2_overview 一次性提供
+// ════════════════════════════════════════════════════════════
+
+const V2_CATS = [
+    { code: 'self_drive',   short: '自' },
+    { code: 'money',        short: '财' },
+    { code: 'empathy',      short: '共' },
+    { code: 'relationship', short: '关' },
+    { code: 'planning',     short: '规' },
+    { code: 'resilience',   short: '抗' },
+    { code: 'health',       short: '康' },
+    { code: 'aesthetics',   short: '审' }
+];
+
+const V2_BADGE_SVGS = {
+    self_drive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+    money: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="17"/><path d="M9.5 9.5c0-1 1.1-1.5 2.5-1.5s2.5.5 2.5 1.5-1.1 1.5-2.5 1.5-2.5.5-2.5 1.5 1.1 1.5 2.5 1.5 2.5-.5 2.5-1.5"/></svg>',
+    empathy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+    relationship: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    planning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>',
+    resilience: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="8.5 11.5 11 14 15.5 9"/></svg>',
+    health: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+    aesthetics: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="11" cy="11" r="2"/></svg>',
+    all_rounder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.8 2.4 4.6 3.6 7.5 3.5-0.4 3-1.6 5.7-4 7.5 2.4 1.8 3.6 4.5 4 7.5-2.9-.1-5.7 1.1-7.5 3.5-1.8-2.4-4.6-3.6-7.5-3.5 0.4-3 1.6-5.7 4-7.5-2.4-1.8-3.6-4.5-4-7.5 2.9.1 5.7-1.1 7.5-3.5z"/><circle cx="12" cy="12" r="2.6"/></svg>',
+    persist_21: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="9 16 11 18 15 14"/></svg>'
+};
+
+let v2Data = null;          // get_v2_overview 缓存
+let v2PrevUnlocked = null;  // 徽章解锁状态（用于「新徽章」提示）
+let v2CoveredCount = 0;
+
+function v2CatVar(code) { return 'var(--cat-' + code + ')'; }
+function v2CatSoftVar(code) { return 'var(--cat-' + code + '-soft)'; }
+
+// 行为表单素养标注（激活 behaviors.dimension）
+function getSelectedBehaviorDimension() {
+    const el = document.getElementById('behavior-dimension');
+    return el ? el.value : '';
+}
+
+async function loadV2Data() {
+    if (!api.getToken()) return null;
+    try {
+        v2Data = await api.getV2Overview();
+        renderV2All();
+        return v2Data;
+    } catch (e) {
+        console.warn('V2 overview load failed:', e);
+        return null;
+    }
+}
+
+function renderV2All() {
+    if (!v2Data) return;
+    renderV2Rose();
+    renderV2Focus();
+    renderV2Wishes();
+    renderV2Badges();
+    renderV2Indicators();
+    renderV2Report();
+    updateV2ModuleStat();
+}
+
+// ── 全人玫瑰：8 瓣覆盖 + 全能小星星进度 ──
+function renderV2Rose() {
+    const el = document.getElementById('v2-rose');
+    if (!el || !v2Data) return;
+    const covMap = v2Data.coverage || {};
+    v2CoveredCount = 0;
+    el.innerHTML = V2_CATS.map(c => {
+        const cov = covMap[c.code] || { behaviors: 0, wishes_achieved: 0, active: false };
+        const active = !!cov.active;
+        if (active) v2CoveredCount++;
+        const isFocus = v2Data.focus === c.code;
+        const countTxt = active
+            ? (cov.behaviors + (getLanguage() === 'en' ? ' acts' : ' 次'))
+            : t('v2.badgeLocked');
+        return '<div class="v2-petal ' + (active ? 'is-active' : '') + ' ' + (isFocus ? 'is-focus' : '') + '" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
+            '<div class="v2-petal-disc">' + c.short + '</div>' +
+            '<div class="v2-petal-name">' + escapeHtml(t('v2.badge.' + c.code)) + '</div>' +
+            '<div class="v2-petal-cnt">' + escapeHtml(countTxt) + '</div>' +
+        '</div>';
+    }).join('');
+    const fill = document.getElementById('v2-ar-fill');
+    if (fill) fill.style.width = (v2CoveredCount / 8 * 100) + '%';
+    const cnt = document.getElementById('v2-ar-count');
+    if (cnt) cnt.textContent = v2CoveredCount + '/8';
+}
+
+// ── 本月主打瓣 ──
+function renderV2Focus() {
+    const el = document.getElementById('v2-focus-chips');
+    if (!el || !v2Data) return;
+    el.innerHTML = V2_CATS.map(c => {
+        const on = v2Data.focus === c.code;
+        return '<button type="button" class="v2-focus-chip ' + (on ? 'is-active' : '') + '" style="--pc:' + v2CatVar(c.code) + '" onclick="v2SetFocus(\'' + c.code + '\')">' +
+            '<span class="fc-dot"></span>' + escapeHtml(t('v2.badge.' + c.code)) +
+        '</button>';
+    }).join('');
+    const hint = document.getElementById('v2-focus-hint');
+    if (hint) {
+        if (v2Data.focus) {
+            hint.style.display = 'flex';
+            hint.textContent = t('v2.focusHint');
+        } else {
+            hint.style.display = 'none';
+        }
+    }
+}
+
+async function v2SetFocus(code) {
+    try {
+        await api.setMonthlyFocus(code);
+        if (v2Data) v2Data.focus = code;
+        renderV2Focus();
+        renderV2Rose();
+        showTemporaryMessage(t('v2.focusSetDone'), 'success');
+    } catch (e) {
+        showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
+    }
+}
+
+// ── 成长愿望列表 ──
+function renderV2Wishes() {
+    const el = document.getElementById('v2-wish-list');
+    if (!el || !v2Data) return;
+    const wishes = v2Data.wishes || [];
+    if (!wishes.length) {
+        el.innerHTML = '<div class="v2-empty">' + escapeHtml(t('v2.emptyWishes')) + '</div>';
+        return;
+    }
+    el.innerHTML = wishes.map(w => {
+        const c = V2_CATS.find(x => x.code === w.category) || V2_CATS[0];
+        const achieved = w.status === 'achieved';
+        const isExp = w.wish_type === 'experience';
+        const pct = achieved ? 100 : (w.progress || 0);
+        const stageKey = ({ building: 'stageBuilding', stable: 'stageStable', internalizing: 'stageInternalizing' })[w.stage] || 'stageBuilding';
+        const stageTag = achieved
+            ? '<span class="v2-tag v2-tag--achieved">' + escapeHtml(t('v2.achieved')) + '</span>'
+            : '<span class="v2-tag v2-tag--stage">' + escapeHtml(t('v2.' + stageKey)) + (isExp ? '' : ' · ' + (w.streak || 0) + '/' + (w.persistence_days || 0)) + '</span>';
+        const starsTag = '<span class="v2-tag">★ ' + w.stars + '</span>';
+        const priceTag = isExp && !achieved ? '<span class="v2-tag v2-tag--warn">' + escapeHtml(t('v2.pointsTarget', { points: w.points_target })) + '</span>' : '';
+        const actions = [];
+        if (!achieved) {
+            if (!isExp) {
+                const doneToday = !!w.today_checked;
+                actions.push('<button type="button" class="v2-checkin-btn ' + (doneToday ? 'is-done' : '') + '" ' + (doneToday ? 'disabled' : '') + ' onclick="v2Checkin(' + w.id + ')">' +
+                    '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+                    escapeHtml(t(doneToday ? 'v2.checkedIn' : 'v2.checkin')) + '</button>');
+                if (w.internalized) {
+                    actions.push('<button type="button" class="v2-complete-btn" onclick="v2ExitProtocol(' + w.id + ')">' + escapeHtml(t('v2.exitProtocol')) + '</button>');
+                }
+            } else {
+                actions.push('<button type="button" class="v2-complete-btn" onclick="v2CompleteWish(' + w.id + ')">' + escapeHtml(t('v2.completeWish')) + '</button>');
+            }
+        }
+        actions.push('<button type="button" class="v2-del-btn" title="' + escapeHtml(t('common.delete')) + '" onclick="v2DeleteWish(' + w.id + ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>');
+        return '<div class="v2-wish-card ' + (achieved ? 'is-achieved' : '') + '" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
+            '<div class="v2-wish-top">' +
+                '<div class="v2-wish-cat">' + c.short + '</div>' +
+                '<div class="v2-wish-main">' +
+                    '<div class="v2-wish-title">' + escapeHtml(w.title) + '</div>' +
+                    (w.description ? '<div class="v2-wish-desc">' + escapeHtml(w.description) + '</div>' : '') +
+                    '<div class="v2-wish-meta">' + starsTag + priceTag + stageTag + '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="v2-progress">' +
+                '<div class="v2-progress-track"><div class="v2-progress-fill" style="width:' + pct + '%"></div></div>' +
+                '<span class="v2-progress-pct">' + pct + '%</span>' +
+            '</div>' +
+            '<div class="v2-wish-actions">' + actions.join('') + '</div>' +
+        '</div>';
+    }).join('');
+}
+
+// ── 打卡 + 退出协议 ──
+async function v2Checkin(id) {
+    try {
+        const res = await api.addCheckin(id);
+        if (res.internalized) {
+            showTemporaryMessage(t('v2.internalized'), 'success');
+            if (confirm(t('v2.exitProtocolConfirm'))) {
+                await api.completeWish(id);
+            }
+        } else {
+            showTemporaryMessage(t('v2.checkinDone') + ' · ' + t('v2.streak', { n: res.streak }), 'success');
+        }
+        await loadV2Data();
+    } catch (e) {
+        const msg = (e && e.message && /already checked/i.test(e.message)) ? t('v2.checkinDupe') : ((e && (e.error || e.message)) || t('common.error'));
+        showTemporaryMessage(msg, 'error');
+        await loadV2Data();
+    }
+}
+
+// 撤卡仪式：习惯已内化，把打卡位让给下一个目标
+async function v2ExitProtocol(id) {
+    if (!confirm(t('v2.exitProtocolConfirm'))) return;
+    try {
+        await api.completeWish(id);
+        showTemporaryMessage(t('v2.achieved'), 'success');
+        await loadV2Data();
+    } catch (e) {
+        showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
+    }
+}
+
+async function v2CompleteWish(id) {
+    if (!confirm(t('v2.completeWishConfirm'))) return;
+    try {
+        await api.completeWish(id);
+        showTemporaryMessage(t('v2.achieved'), 'success');
+        await loadV2Data();
+    } catch (e) {
+        showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
+    }
+}
+
+async function v2DeleteWish(id) {
+    if (!confirm(t('common.confirm') + '?')) return;
+    try {
+        await api.deleteWish(id);
+        await loadV2Data();
+    } catch (e) {
+        showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
+    }
+}
+
+// ── 愿望表单 + 努力定价预览（与后端 v2StarsFor 同规则） ──
+function updateV2StarsPreview() {
+    const typeEl = document.getElementById('v2-wish-type');
+    const daysEl = document.getElementById('v2-wish-days');
+    const coefEl = document.getElementById('v2-wish-coef');
+    const out = document.getElementById('v2-stars-preview-text');
+    if (!typeEl || !out) return;
+    const type = typeEl.value;
+    const days = Math.max(0, parseInt(daysEl ? daysEl.value : '0', 10) || 0);
+    const coef = parseFloat(coefEl ? coefEl.value : '1') || 1;
+    const min = { experience: 1, persistence: 3, challenge: 5 }[type];
+    const max = { experience: 2, persistence: 5, challenge: 10 }[type];
+    const stars = days > 0 ? Math.max(min, Math.min(max, Math.round(days * coef))) : min;
+    let txt = '★'.repeat(Math.min(stars, 10)) + '☆'.repeat(Math.max(0, 10 - stars));
+    if (type === 'experience') txt += ' · ' + (stars * 20) + (getLanguage() === 'en' ? ' pts' : ' 分');
+    out.textContent = txt;
+}
+
+async function addV2Wish() {
+    const titleEl = document.getElementById('v2-wish-name');
+    const title = titleEl.value.trim();
+    if (!title) { alert(t('common.enterGiftName')); titleEl.focus(); return; }
+    try {
+        await api.addWish({
+            title: title,
+            category: document.getElementById('v2-wish-category').value,
+            wish_type: document.getElementById('v2-wish-type').value,
+            persistence_days: parseInt(document.getElementById('v2-wish-days').value, 10) || 0,
+            difficulty_coef: parseFloat(document.getElementById('v2-wish-coef').value) || 1,
+            description: document.getElementById('v2-wish-desc').value.trim()
+        });
+        showTemporaryMessage(t('common.addGiftSuccess', { name: title }), 'success');
+        titleEl.value = '';
+        document.getElementById('v2-wish-desc').value = '';
+        document.getElementById('v2-wish-days').value = '';
+        await loadV2Data();
+    } catch (e) {
+        showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
+    }
+}
+
+// ── 角色徽章墙 ──
+function renderV2Badges() {
+    const el = document.getElementById('v2-badge-wall');
+    if (!el || !v2Data) return;
+    const badges = v2Data.badges || {};
+    const order = V2_CATS.map(c => 'rose_' + c.code);
+    order.push('rose_all_rounder', 'rose_persist_21');
+
+    // 新解锁检测（首次渲染不算「新」）
+    const nowUnlocked = {};
+    order.forEach(code => { if (badges[code] && badges[code].unlocked) nowUnlocked[code] = true; });
+    const newOnes = v2PrevUnlocked ? order.filter(code => nowUnlocked[code] && !v2PrevUnlocked[code]) : [];
+    if (newOnes.length) {
+        const names = newOnes.map(code => {
+            const cat = code.replace('rose_', '');
+            return code === 'rose_all_rounder' ? t('v2.badgeAllRounder') : (code === 'rose_persist_21' ? t('v2.badgePersist21') : t('v2.badge.' + cat));
+        });
+        showTemporaryMessage(t('v2.badgeNew') + ': ' + names.join('、'), 'success');
+    }
+    v2PrevUnlocked = nowUnlocked;
+
+    el.innerHTML = order.map(code => {
+        const info = badges[code] || { unlocked: false };
+        const cat = code.replace('rose_', '');
+        const isAR = code === 'rose_all_rounder';
+        const isP21 = code === 'rose_persist_21';
+        const pcVar = isAR ? 'var(--cat-all-rounder)' : v2CatVar(cat);
+        const pcSoft = isAR ? 'var(--cat-all-rounder-soft)' : v2CatSoftVar(cat);
+        const name = isAR ? t('v2.badgeAllRounder') : (isP21 ? t('v2.badgePersist21') : t('v2.badge.' + cat));
+        const desc = isAR ? t('v2.allRounderDesc') : (isP21 ? '' : t('v2.badgeDesc.' + cat));
+        const icon = isAR ? V2_BADGE_SVGS.all_rounder : (isP21 ? V2_BADGE_SVGS.persist_21 : (V2_BADGE_SVGS[cat] || V2_BADGE_SVGS.self_drive));
+        const isNew = newOnes.indexOf(code) !== -1;
+        return '<div class="v2-badge ' + (info.unlocked ? '' : 'is-locked') + ' ' + (isNew ? 'is-new' : '') + '" style="--pc:' + pcVar + ';--pc-soft:' + pcSoft + '">' +
+            '<div class="v2-badge-ico">' + icon + '</div>' +
+            '<div class="v2-badge-name">' + escapeHtml(name) + '</div>' +
+            '<div class="v2-badge-desc">' + (desc ? escapeHtml(desc) : '&nbsp;') + '</div>' +
+        '</div>';
+    }).join('');
+}
+
+// ── 每周成长指标 + 成长报告 ──
+function renderV2Indicators() {
+    const el = document.getElementById('v2-indicator-grid');
+    if (!el || !v2Data) return;
+    const levels = [['sprout', 'v2.levelSprout'], ['growing', 'v2.levelGrowing'], ['bloom', 'v2.levelBloom']];
+    const saved = {};
+    (v2Data.indicators || []).forEach(i => { saved[i.category] = i.level; });
+    el.innerHTML = V2_CATS.map(c => {
+        const cur = saved[c.code];
+        const lvls = levels.map(function (lv) {
+            return '<button type="button" class="v2-ind-level ' + lv[0] + ' ' + (cur === lv[0] ? 'is-on' : '') + '" onclick="v2SetIndicator(\'' + c.code + '\',\'' + lv[0] + '\')">' + escapeHtml(t(lv[1])) + '</button>';
+        }).join('');
+        return '<div class="v2-ind-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
+            '<div class="v2-ind-cat">' + c.short + '</div>' +
+            '<div class="v2-ind-name">' + escapeHtml(t('v2.badge.' + c.code)) + '</div>' +
+            '<div class="v2-ind-levels">' + lvls + '</div>' +
+        '</div>';
+    }).join('');
+}
+
+async function v2SetIndicator(cat, level) {
+    try {
+        await api.addGrowthIndicator(cat, level);
+        showTemporaryMessage(t('v2.indicatorSaved'), 'success');
+        v2Data = await api.getV2Overview();
+        renderV2Indicators();
+        renderV2Report();
+    } catch (e) {
+        showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
+    }
+}
+
+function renderV2Report() {
+    const el = document.getElementById('v2-report');
+    if (!el || !v2Data) return;
+    const inds = v2Data.indicators || [];
+    const tip = '<div class="v2-report-tip">' + escapeHtml(t('v2.reportTip')) + '</div>';
+    if (!inds.length) {
+        el.innerHTML = '<div>' + escapeHtml(t('v2.reportEmpty')) + '</div>' + tip;
+        return;
+    }
+    const bloom = inds.filter(i => i.level === 'bloom');
+    const growing = inds.filter(i => i.level === 'growing');
+    const bloomTxt = bloom.length ? bloom.map(i => escapeHtml(t('v2.badge.' + i.category))).join('、') : escapeHtml(t('v2.reportNone'));
+    const growTxt = growing.length ? growing.map(i => escapeHtml(t('v2.badge.' + i.category))).join('、') : escapeHtml(t('v2.reportNone'));
+    el.innerHTML = '<div><b>' + escapeHtml(t('v2.reportTitle')) + '</b></div>' +
+        '<div>' + escapeHtml(t('v2.reportBloom')) + bloomTxt + '</div>' +
+        '<div>' + escapeHtml(t('v2.reportGrowing')) + growTxt + '</div>' + tip;
+}
+
+// ── 模块卡迷你统计 ──
+function updateV2ModuleStat() {
+    const s = document.getElementById('stat-v2');
+    if (!s) return;
+    if (!v2Data || !v2Data.coverage) { s.textContent = '—'; return; }
+    const cov = Object.values(v2Data.coverage).filter(c => c.active).length;
+    s.innerHTML = STAT_ICO.star + cov + '/8';
 }
