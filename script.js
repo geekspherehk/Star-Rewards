@@ -805,7 +805,7 @@ function updateBehaviorLog() {
         const moreBtn = document.createElement('button');
         moreBtn.className = 'view-all-btn';
         moreBtn.innerHTML = `${t('home.viewAllRecords')} (${totalBehaviors}) →`;
-        moreBtn.onclick = () => showModule('diary-module');
+        moreBtn.onclick = () => showModule('achievements-module');
         logContainer.appendChild(moreBtn);
     }
     
@@ -1943,22 +1943,20 @@ function showNotLoggedInState() {
     // 成就也从本地演示数据计算
     renderAchievements();
     
-    // 隐藏所有需要登录的内容，但保留成长日记模块可见
+    // 顶栏：未登录 → 显示紧凑登录按钮，隐藏用户芯片
+    const chipWrap = document.getElementById('user-chip-wrap');
+    if (chipWrap) chipWrap.style.display = 'none';
+    const loginBtn = document.getElementById('topbar-login-btn');
+    if (loginBtn) loginBtn.style.display = 'inline-flex';
+    
+    // 隐藏需要登录的内容
     const pointsSection = document.getElementById('points-section');
     const giftsSection = document.getElementById('gifts-section');
     const redeemedSection = document.getElementById('redeemed-section');
-    const loggedInState = document.getElementById('logged-in-state');
-    const notLoggedInState = document.getElementById('not-logged-in-state');
     
     if (pointsSection) pointsSection.style.display = 'none';
     if (giftsSection) giftsSection.style.display = 'none';
     if (redeemedSection) redeemedSection.style.display = 'none';
-    if (loggedInState) loggedInState.style.display = 'none';
-    
-    // 显示未登录提示
-    if (notLoggedInState) {
-        notLoggedInState.style.display = 'block';
-    }
     
     // 即使在未登录状态下也显示成长日记
     updateDiaryList();
@@ -1979,22 +1977,23 @@ function showNotLoggedInState() {
 function showLoggedInState(user) {
     console.log('Script.js: 显示已登录状态:', user.email);
     
+    // 顶栏：已登录 → 显示用户芯片（头像+孩子名），隐藏登录按钮
+    const chipWrap = document.getElementById('user-chip-wrap');
+    if (chipWrap) chipWrap.style.display = 'block';
+    const loginBtn = document.getElementById('topbar-login-btn');
+    if (loginBtn) loginBtn.style.display = 'none';
+    const emailEl = document.getElementById('um-email');
+    if (emailEl) emailEl.textContent = user.email || '';
+    renderProfileSwitcher();
+    
     // 显示所有需要登录的内容
     const pointsSection = document.getElementById('points-section');
     const giftsSection = document.getElementById('gifts-section');
     const redeemedSection = document.getElementById('redeemed-section');
-    const loggedInState = document.getElementById('logged-in-state');
-    const notLoggedInState = document.getElementById('not-logged-in-state');
     
     if (pointsSection) pointsSection.style.display = 'block';
     if (giftsSection) giftsSection.style.display = 'block';
     if (redeemedSection) redeemedSection.style.display = 'block';
-    if (loggedInState) loggedInState.style.display = 'block';
-    
-    // 隐藏未登录提示
-    if (notLoggedInState) {
-        notLoggedInState.style.display = 'none';
-    }
 
     // 已登录：积分页默认显示悬浮记分按钮
     const fab = document.getElementById('quick-add-fab');
@@ -2117,51 +2116,45 @@ async function loadDataFromCloud() {
 
 // ── 多孩档案切换 ──
 function renderProfileSwitcher() {
-    const container = document.getElementById('profile-switcher');
+    // 顶栏用户芯片：当前孩子头像 + 名字
+    const cur = (Array.isArray(profiles) ? profiles : []).find(p => p.id === selectedProfileId);
+    const ucAvatar = document.getElementById('uc-avatar');
+    const ucName = document.getElementById('uc-name');
+    if (ucAvatar) ucAvatar.textContent = cur ? (cur.avatar || '⭐') : '⭐';
+    if (ucName) ucName.textContent = cur ? (cur.name || '孩子') : t('home.profile.switch');
+
+    // 下拉菜单：孩子列表
+    const container = document.getElementById('um-children');
     if (!container) return;
     container.innerHTML = '';
     if (!profiles || profiles.length === 0) return;
 
-    // 家庭共享入口按钮
-    const famBtn = document.createElement('button');
-    famBtn.type = 'button';
-    famBtn.className = 'profile-chip profile-chip-family';
-    famBtn.setAttribute('title', t('home.family.open'));
-    famBtn.innerHTML = `<span class="profile-chip-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="profile-chip-name">${t('home.family.open')}</span>`;
-    famBtn.onclick = () => openFamilyModal();
-    container.appendChild(famBtn);
-
-
     profiles.forEach(p => {
-        const chip = document.createElement('button');
-        chip.type = 'button';
-        chip.className = 'profile-chip' + (p.id === selectedProfileId ? ' active' : '');
-        chip.style.setProperty('--chip-color', p.color || '#FFB300');
-        chip.setAttribute('title', t('home.profile.switch'));
-        chip.onclick = () => switchProfile(p.id);
-        chip.innerHTML = `<span class="profile-chip-avatar">${escapeHtml(p.avatar || '⭐')}</span><span class="profile-chip-name">${escapeHtml(p.name || '孩子')}</span>`;
-
-        const editBtn = document.createElement('span');
-        editBtn.className = 'profile-chip-edit';
-        editBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
-        editBtn.setAttribute('title', t('home.profile.edit'));
-        editBtn.onclick = (e) => {
-            e.stopPropagation();
-            openProfileModal(p.id);
-        };
-        chip.appendChild(editBtn);
-
-        container.appendChild(chip);
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'um-item um-child' + (p.id === selectedProfileId ? ' is-active' : '');
+        item.innerHTML = '<span class="um-avatar">' + escapeHtml(p.avatar || '⭐') + '</span><span class="um-child-name">' + escapeHtml(p.name || '孩子') + '</span>' +
+            (p.id === selectedProfileId ? '<svg class="um-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '');
+        item.onclick = () => switchProfile(p.id);
+        container.appendChild(item);
     });
-
-    const addBtn = document.createElement('button');
-    addBtn.type = 'button';
-    addBtn.className = 'profile-chip profile-chip-add';
-    addBtn.setAttribute('title', t('home.profile.add'));
-    addBtn.innerHTML = `<span class="profile-chip-avatar">➕</span><span class="profile-chip-name">${t('home.profile.add')}</span>`;
-    addBtn.onclick = () => openProfileModal();
-    container.appendChild(addBtn);
 }
+
+// ── 顶栏用户菜单（选择孩子 / 家庭 / 退出） ──
+function toggleUserMenu(event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('user-menu');
+    if (!menu) return;
+    menu.hidden = !menu.hidden;
+}
+function closeUserMenu() {
+    const menu = document.getElementById('user-menu');
+    if (menu) menu.hidden = true;
+}
+document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('user-chip-wrap');
+    if (wrap && !wrap.contains(e.target)) closeUserMenu();
+});
 
 async function switchProfile(profileId) {
     if (profileId === selectedProfileId) return;
@@ -2171,6 +2164,7 @@ async function switchProfile(profileId) {
         await loadDataFromCloud();
         updateUI();
         renderProfileSwitcher();
+        closeUserMenu();
         // V2：切换孩子后重置仪表盘缓存并刷新
         v2Data = null;
         v2PrevUnlocked = null;
@@ -2718,21 +2712,23 @@ function showModule(moduleId) {
         selectedCard.classList.add('active');
     }
 
-    // 成长日历/趋势/成就 页签：切到该页时重新渲染（修复隐藏容器下 canvas 尺寸为 0、数据更新）
-    if (moduleId === 'diary-module') {
+    // 成长成就：切到该页时重新渲染（修复隐藏容器下 canvas 尺寸为 0、数据更新）
+    if (moduleId === 'achievements-module') {
         renderCalendar();
         renderCalendarDayDetail();
         renderPointsChart();
-        renderAchievements();
+        loadV2Data();
+        renderAchStats();
     }
 
-    // 成长纪念册：切到该页时聚合行为 + 兑换，生成时间轴与月度报告
-    if (moduleId === 'growth-module') {
-        renderGrowthRecord();
+    // 目标：首次进入展示三步引导，并确保愿望列表已渲染
+    if (moduleId === 'gifts-module') {
+        maybeShowV2Guide();
+        loadV2Data();
     }
 
-    // 全人成长（V2）：切到该页时拉取/刷新 8 素养仪表盘
-    if (moduleId === 'v2-module') {
+    // 首页：确保今日打卡/总览已渲染
+    if (moduleId === 'points-module') {
         loadV2Data();
     }
 
@@ -2745,10 +2741,13 @@ function showModule(moduleId) {
     console.log('切换到模块:', moduleId);
 }
 
-// 悬浮按钮：回到积分页并聚焦记录表单
-function quickAddPoints() {
+// 悬浮按钮：回到首页「今日打卡」卡
+function quickCheckin() {
     showModule('points-module');
-    focusBehaviorForm();
+    const el = document.getElementById('today-checkin');
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
 
 // 更新成长日记列表
@@ -2902,14 +2901,14 @@ function renderCalendarDayDetail() {
 // ════════════════════════════════════════════════════════════
 
 const V2_CATS = [
-    { code: 'self_drive',   short: '自' },
-    { code: 'money',        short: '财' },
-    { code: 'empathy',      short: '共' },
-    { code: 'relationship', short: '关' },
-    { code: 'planning',     short: '规' },
-    { code: 'resilience',   short: '抗' },
-    { code: 'health',       short: '康' },
-    { code: 'aesthetics',   short: '审' }
+    { code: 'self_drive',   short: '自驱' },
+    { code: 'money',        short: '理财' },
+    { code: 'empathy',      short: '共情' },
+    { code: 'relationship', short: '社交' },
+    { code: 'planning',     short: '规划' },
+    { code: 'resilience',   short: '抗挫' },
+    { code: 'health',       short: '健康' },
+    { code: 'aesthetics',   short: '审美' }
 ];
 
 const V2_BADGE_SVGS = {
@@ -2952,39 +2951,178 @@ async function loadV2Data() {
 
 function renderV2All() {
     if (!v2Data) return;
-    renderV2Rose();
+    renderV2Flower();
+    renderV2Legend();
     renderV2Focus();
+    renderV2Suggestions();
     renderV2Wishes();
     renderV2Badges();
     renderV2Indicators();
     renderV2Report();
+    renderHomeCheckin();
+    renderAchStats();
     updateV2ModuleStat();
 }
 
+// ── 首页「今日打卡」：进行中的目标一键打卡 +5 分 ──
+function renderHomeCheckin() {
+    const el = document.getElementById('today-checkin-list');
+    if (!el) return;
+    const wishes = (v2Data && v2Data.wishes) || [];
+    const active = wishes.filter(w => w.status !== 'achieved' && w.wish_type !== 'experience');
+    if (!active.length) {
+        el.innerHTML = '<div class="today-checkin-empty"><span>' + escapeHtml(t('v2.emptyWishes')) + '</span>' +
+            '<button type="button" class="add-points-btn" onclick="showModule(\'gifts-module\')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>' + escapeHtml(t('home.setGoalCta')) + '</span></button></div>';
+        return;
+    }
+    el.innerHTML = active.map(w => {
+        const c = V2_CATS.find(x => x.code === w.category) || V2_CATS[0];
+        const done = !!w.today_checked;
+        return '<div class="today-checkin-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
+            '<span class="tci-cat">' + c.short + '</span>' +
+            '<span class="tci-title">' + escapeHtml(w.title) + '</span>' +
+            '<span class="tci-streak">' + escapeHtml(t('v2.streak', { n: w.streak || 0 })) + '</span>' +
+            (done
+                ? '<button type="button" class="v2-checkin-btn is-done" disabled><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkedIn')) + '</button>'
+                : '<button type="button" class="v2-checkin-btn" onclick="v2Checkin(' + w.id + ')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkin')) + ' +5</button>') +
+        '</div>';
+    }).join('');
+}
+
+// ── 成长成就页：汇总统计条 ──
+function renderAchStats() {
+    const el = document.getElementById('ach-stats');
+    if (!el || !v2Data) { if (el) el.innerHTML = ''; return; }
+    const wishes = v2Data.wishes || [];
+    const achievedGoals = wishes.filter(w => w.status === 'achieved').length;
+    const checkinDays = wishes.reduce((s, w) => s + (w.streak || 0), 0);
+    const badges = v2Data.badges || {};
+    const badgeCount = Object.values(badges).filter(b => b && b.unlocked).length;
+    const cov = Object.values((v2Data.coverage || {})).filter(c => c && c.active).length;
+    const unit = getLanguage() === 'en' ? ' goals' : ' 个目标';
+    el.innerHTML =
+        '<div class="ach-stat"><span class="as-val">' + achievedGoals + '</span><span class="as-label">' + escapeHtml(t('ach.statGoals')) + '</span></div>' +
+        '<div class="ach-stat"><span class="as-val">' + checkinDays + '</span><span class="as-label">' + escapeHtml(t('ach.statCheckins')) + '</span></div>' +
+        '<div class="ach-stat"><span class="as-val">' + badgeCount + '/' + Object.keys(badges).length + '</span><span class="as-label">' + escapeHtml(t('ach.statBadges')) + '</span></div>' +
+        '<div class="ach-stat"><span class="as-val">' + cov + '/8</span><span class="as-label">' + escapeHtml(t('ach.statRose')) + '</span></div>';
+}
+
 // ── 全人玫瑰：8 瓣覆盖 + 全能小星星进度 ──
-function renderV2Rose() {
-    const el = document.getElementById('v2-rose');
+// ── 全人玫瑰：8 瓣圆形环（对应八瓣玫瑰理论），中心显示覆盖数 ──
+// 素养积累分：行为记录 ×1 + 达成愿望 ×3（持续积累，不是一次性点亮）
+function v2CatScore(cov) {
+    if (!cov) return 0;
+    return (cov.behaviors || 0) + (cov.wishes_achieved || 0) * 3;
+}
+// 水平分级：0 未开始 / 1 萌芽 / 2 成长 / 3 绽放
+function v2CatLevel(cov) {
+    const s = v2CatScore(cov);
+    if (s <= 0) return 0;
+    if (s <= 3) return 1;
+    if (s <= 7) return 2;
+    return 3;
+}
+
+// 单瓣水滴形（尖端贴近花心 100,90，向外延伸至 y≈8），径向排列成玫瑰
+function v2PetalPath() {
+    // 尖端(近花心) (100,90)，外端圆润 (100,12)，最宽处 x≈80/120
+    return 'M100 90 C 86 78 80 40 100 12 C 120 40 114 78 100 90 Z';
+}
+// 内瓣（成长/绽放时叠加，营造层叠花瓣感）
+function v2PetalInner() {
+    return 'M100 84 C 90 74 86 46 100 22 C 114 46 110 74 100 84 Z';
+}
+
+function renderV2Flower() {
+    const el = document.getElementById('v2-flower');
     if (!el || !v2Data) return;
     const covMap = v2Data.coverage || {};
     v2CoveredCount = 0;
-    el.innerHTML = V2_CATS.map(c => {
-        const cov = covMap[c.code] || { behaviors: 0, wishes_achieved: 0, active: false };
-        const active = !!cov.active;
-        if (active) v2CoveredCount++;
-        const isFocus = v2Data.focus === c.code;
-        const countTxt = active
-            ? (cov.behaviors + (getLanguage() === 'en' ? ' acts' : ' 次'))
-            : t('v2.badgeLocked');
-        return '<div class="v2-petal ' + (active ? 'is-active' : '') + ' ' + (isFocus ? 'is-focus' : '') + '" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
-            '<div class="v2-petal-disc">' + c.short + '</div>' +
-            '<div class="v2-petal-name">' + escapeHtml(t('v2.badge.' + c.code)) + '</div>' +
-            '<div class="v2-petal-cnt">' + escapeHtml(countTxt) + '</div>' +
-        '</div>';
+    const N = V2_CATS.length;          // 8
+    const cx = 100, cy = 100, R = 72;  // viewBox 200x200
+    const angle = i => (-90 + i * 360 / N) * Math.PI / 180;
+    const pt = (i, r) => [cx + Math.cos(angle(i)) * r, cy + Math.sin(angle(i)) * r];
+    const raw = V2_CATS.map(c => v2CatScore(covMap[c.code] || {}));
+    const maxRaw = Math.max(8, ...raw);
+    const vals = raw.map(s => Math.round(s / maxRaw * 100));
+
+    // 花瓣：8 瓣完全相同（统一柔色），仅作为花朵外形框架；强弱差异完全由雷达数据表达
+    let petals = '';
+    V2_CATS.forEach((c, i) => {
+        const ang = i * 45;                 // 顶部开始、顺时针 45° 一瓣
+        const cov = covMap[c.code] || { behaviors: 0, wishes_achieved: 0 };
+        const score = v2CatScore(cov);
+        if (score > 0) v2CoveredCount++;
+        const labelRot = ang <= 180 ? ang : ang - 360; // 标签始终正立
+        petals +=
+            '<g class="petal-g" transform="rotate(' + ang + ' ' + cx + ' ' + cy + ')" title="' + escapeHtml(t('v2.badge.' + c.code)) + '">' +
+                '<path class="petal-bg" d="' + v2PetalPath() + '"/>' +
+            '</g>' +
+            '<g class="petal-label" transform="rotate(' + ang + ' ' + cx + ' ' + cy + ') translate(100 4) rotate(' + (-labelRot) + ')">' +
+                '<text class="petal-label-txt" text-anchor="middle">' + c.short + '</text>' +
+            '</g>';
+    });
+
+    // 雷达参考网格（作为底层背景，最外圈 = 范围边界，清晰可见）+ 轴线
+    let refRings = '';
+    [25, 50, 75, 100].forEach(g => {
+        const pts = V2_CATS.map((_, i) => pt(i, R * g / 100).map(n => n.toFixed(1)).join(',')).join(' ');
+        refRings += '<polygon class="radar-ring' + (g === 100 ? ' outer' : '') + '" points="' + pts + '"/>';
+    });
+    let axes = '';
+    V2_CATS.forEach((c, i) => {
+        const [x, y] = pt(i, R);
+        axes += '<line class="radar-axis" x1="' + cx + '" y1="' + cy + '" x2="' + x.toFixed(1) + '" y2="' + y.toFixed(1) + '"/>';
+    });
+    const dpts = V2_CATS.map((_, i) => pt(i, R * vals[i] / 100).map(n => n.toFixed(1)).join(',')).join(' ');
+    const dots = V2_CATS.map((_, i) => {
+        const [x, y] = pt(i, R * vals[i] / 100);
+        return '<circle class="radar-dot" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4"/>';
     }).join('');
+
+    el.innerHTML =
+        '<svg class="v2-flower-svg" viewBox="0 0 200 200" role="img" aria-label="' + escapeHtml(t('v2.flowerTitle')) + '">' +
+            '<circle class="rose-halo" cx="' + cx + '" cy="' + cy + '" r="96"/>' +
+            '<g class="radar-backdrop">' + refRings + axes + '</g>' +
+            '<g class="rose-petals">' + petals + '</g>' +
+            '<g class="radar-overlay">' +
+                '<polygon class="radar-area" points="' + dpts + '"/>' + dots +
+            '</g>' +
+        '</svg>';
+
     const fill = document.getElementById('v2-ar-fill');
     if (fill) fill.style.width = (v2CoveredCount / 8 * 100) + '%';
     const cnt = document.getElementById('v2-ar-count');
     if (cnt) cnt.textContent = v2CoveredCount + '/8';
+
+    // 强弱总结（最强 3 + 最弱 2）
+    const ranked = V2_CATS.map((c, i) => ({ code: c.code, short: c.short, v: vals[i] }))
+        .sort((a, b) => b.v - a.v);
+    const top = ranked.slice(0, 3).filter(x => x.v > 0);
+    const bottom = ranked.slice(-2).filter(x => x.v < 100);
+    const sumEl = document.getElementById('v2-flower-summary');
+    if (sumEl) {
+        if (!top.length) {
+            sumEl.textContent = t('v2.flowerEmpty');
+        } else {
+            const strongTxt = top.map(x => x.short).join('、');
+            const weakTxt = bottom.length ? bottom.map(x => x.short).join('、') : '';
+            sumEl.innerHTML = t('v2.flowerSummary', { strong: strongTxt, weak: weakTxt });
+        }
+    }
+}
+
+// ── 素养图鉴（JS 渲染，名称与花瓣标签一致：二字素养名 + 小名） ──
+function renderV2Legend() {
+    const el = document.getElementById('v2-legend');
+    if (!el) return;
+    el.innerHTML = V2_CATS.map(c =>
+        '<div class="v2-legend-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
+            '<span class="v2-legend-dot"></span>' +
+            '<span class="v2-legend-name"><b>' + c.short + '</b> ' + escapeHtml(t('v2.badge.' + c.code)) + '</span>' +
+            '<span class="v2-legend-desc">' + escapeHtml(t('v2.badgeDesc.' + c.code)) + '</span>' +
+        '</div>'
+    ).join('');
 }
 
 // ── 本月主打瓣 ──
@@ -3013,11 +3151,58 @@ async function v2SetFocus(code) {
         await api.setMonthlyFocus(code);
         if (v2Data) v2Data.focus = code;
         renderV2Focus();
-        renderV2Rose();
+        renderV2Flower();
+        renderV2Suggestions();
         showTemporaryMessage(t('v2.focusSetDone'), 'success');
     } catch (e) {
         showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
     }
+}
+
+// ── 右侧成长建议：本月主打推荐 + 可加强方向 ──
+function renderV2Suggestions() {
+    const el = document.getElementById('v2-suggest');
+    if (!el || !v2Data) return;
+    const covMap = v2Data.coverage || {};
+    const rank = V2_CATS.map(c => ({ c, v: v2CatScore(covMap[c.code] || {}) }))
+        .sort((a, b) => a.v - b.v); // 升序：最弱在前
+    if (!rank.some(x => x.v > 0)) {
+        el.innerHTML =
+            '<div class="v2-suggest-card v2-suggest-empty">' +
+                '<div class="v2-suggest-kicker">' + escapeHtml(t('v2.suggestTitle')) + '</div>' +
+                '<p class="v2-suggest-empty-txt">' + escapeHtml(t('v2.suggestEmpty')) + '</p>' +
+            '</div>';
+        return;
+    }
+    const focus = rank[0];
+    const others = rank.slice(1, 3);           // 次弱 2 项
+    const isFocus = v2Data.focus === focus.c.code;
+    let html =
+        '<div class="v2-suggest-card">' +
+            '<div class="v2-suggest-kicker">' + escapeHtml(t('v2.suggestTitle')) + '</div>' +
+            '<div class="v2-suggest-focus">' +
+                '<span class="v2-suggest-cat" style="--pc:' + v2CatVar(focus.c.code) + '">' + focus.c.short + '</span>' +
+                '<div class="v2-suggest-focus-body">' +
+                    '<div class="v2-suggest-focus-name">' + escapeHtml(t('v2.badge.' + focus.c.code)) + '</div>' +
+                    '<div class="v2-suggest-focus-desc">' + escapeHtml(t('v2.suggestWeak', { name: focus.c.short })) + '</div>' +
+                '</div>' +
+                (isFocus
+                    ? '<button type="button" class="v2-suggest-btn is-done" disabled>' + escapeHtml(t('v2.suggestDone')) + '</button>'
+                    : '<button type="button" class="v2-suggest-btn" onclick="v2SetFocus(\'' + focus.c.code + '\')">' + escapeHtml(t('v2.suggestSet')) + '</button>') +
+            '</div>';
+    if (others.length) {
+        html +=
+            '<div class="v2-suggest-divider"></div>' +
+            '<div class="v2-suggest-sub">' + escapeHtml(t('v2.suggestStrengthen')) + '</div>' +
+            '<div class="v2-suggest-list">' +
+                others.map(o =>
+                    '<div class="v2-suggest-item"><span class="v2-suggest-dot" style="--pc:' + v2CatVar(o.c.code) + '"></span>' +
+                    '<span>' + o.c.short + ' · ' + escapeHtml(t('v2.badge.' + o.c.code)) + '</span></div>'
+                ).join('') +
+            '</div>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
 }
 
 // ── 成长愿望列表 ──
@@ -3074,17 +3259,30 @@ function renderV2Wishes() {
 }
 
 // ── 打卡 + 退出协议 ──
+// 积分引擎：把服务端返回的加分结果同步到本地积分显示
+const V2_PTS_UNIT = () => (getLanguage() === 'en' ? ' pts' : ' 分');
+function applyPointsResult(res) {
+    if (res && typeof res.current_points === 'number') {
+        currentPoints = res.current_points;
+        totalPoints = res.total_points;
+        updatePointsDisplay();
+    }
+}
+
 async function v2Checkin(id) {
     try {
         const res = await api.addCheckin(id);
+        const ptsTxt = (res && res.points_awarded) ? (' · +' + res.points_awarded + V2_PTS_UNIT()) : '';
         if (res.internalized) {
-            showTemporaryMessage(t('v2.internalized'), 'success');
+            showTemporaryMessage(t('v2.internalized') + ptsTxt, 'success');
             if (confirm(t('v2.exitProtocolConfirm'))) {
-                await api.completeWish(id);
+                const done = await api.completeWish(id);
+                applyPointsResult(done);
             }
         } else {
-            showTemporaryMessage(t('v2.checkinDone') + ' · ' + t('v2.streak', { n: res.streak }), 'success');
+            showTemporaryMessage(t('v2.checkinDone') + ptsTxt + ' · ' + t('v2.streak', { n: res.streak }), 'success');
         }
+        applyPointsResult(res);
         await loadV2Data();
     } catch (e) {
         const msg = (e && e.message && /already checked/i.test(e.message)) ? t('v2.checkinDupe') : ((e && (e.error || e.message)) || t('common.error'));
@@ -3097,8 +3295,9 @@ async function v2Checkin(id) {
 async function v2ExitProtocol(id) {
     if (!confirm(t('v2.exitProtocolConfirm'))) return;
     try {
-        await api.completeWish(id);
-        showTemporaryMessage(t('v2.achieved'), 'success');
+        const res = await api.completeWish(id);
+        showTemporaryMessage(t('v2.achieved') + ((res && res.points_awarded) ? (' · +' + res.points_awarded + V2_PTS_UNIT()) : ''), 'success');
+        applyPointsResult(res);
         await loadV2Data();
     } catch (e) {
         showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
@@ -3108,8 +3307,9 @@ async function v2ExitProtocol(id) {
 async function v2CompleteWish(id) {
     if (!confirm(t('v2.completeWishConfirm'))) return;
     try {
-        await api.completeWish(id);
-        showTemporaryMessage(t('v2.achieved'), 'success');
+        const res = await api.completeWish(id);
+        showTemporaryMessage(t('v2.achieved') + ((res && res.points_awarded) ? (' · +' + res.points_awarded + V2_PTS_UNIT()) : ''), 'success');
+        applyPointsResult(res);
         await loadV2Data();
     } catch (e) {
         showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
@@ -3142,6 +3342,45 @@ function updateV2StarsPreview() {
     let txt = '★'.repeat(Math.min(stars, 10)) + '☆'.repeat(Math.max(0, 10 - stars));
     if (type === 'experience') txt += ' · ' + (stars * 20) + (getLanguage() === 'en' ? ' pts' : ' 分');
     out.textContent = txt;
+
+    // 渐进式表单：坚持/挑战型才需要填目标天数，自动展开高级项；体验型收起
+    const adv = document.getElementById('v2-advanced');
+    if (adv && !adv.dataset.manual) {
+        if (type === 'experience') adv.setAttribute('hidden', '');
+        else adv.removeAttribute('hidden');
+    }
+}
+
+// 首次进入全人成长展示三步引导，关闭后不再出现
+function maybeShowV2Guide() {
+    try { if (localStorage.getItem('v2_guide_seen')) return; } catch (e) {}
+    const el = document.getElementById('v2-guide');
+    if (el) el.hidden = false;
+}
+function v2GuideDismiss() {
+    const el = document.getElementById('v2-guide');
+    if (el) el.hidden = true;
+    try { localStorage.setItem('v2_guide_seen', '1'); } catch (e) {}
+}
+// 高级选项（目标天数 / 难度）手动展开/收起
+function toggleV2Advanced() {
+    const el = document.getElementById('v2-advanced');
+    if (!el) return;
+    const willOpen = el.hasAttribute('hidden');
+    if (willOpen) { el.removeAttribute('hidden'); el.dataset.manual = '1'; }
+    else { el.setAttribute('hidden', ''); el.dataset.manual = '1'; }
+    const btn = document.getElementById('v2-adv-toggle');
+    if (btn) btn.textContent = t(willOpen ? 'v2.advToggleHide' : 'v2.advToggle');
+}
+// 素养图鉴：8 大方向含义展开/收起（首页成长总览）
+function toggleV2Legend() {
+    const el = document.getElementById('v2-legend');
+    if (!el) return;
+    const willOpen = el.hasAttribute('hidden');
+    if (willOpen) el.removeAttribute('hidden');
+    else el.setAttribute('hidden', '');
+    const chev = document.getElementById('v2-legend-chev');
+    if (chev) chev.textContent = willOpen ? '▾' : '▸';
 }
 
 async function addV2Wish() {
@@ -3172,19 +3411,29 @@ function renderV2Badges() {
     const el = document.getElementById('v2-badge-wall');
     if (!el || !v2Data) return;
     const badges = v2Data.badges || {};
-    const order = V2_CATS.map(c => 'rose_' + c.code);
-    order.push('rose_all_rounder', 'rose_persist_21');
+    // 8 枚素养徽章已在玫瑰图（成长总览）呈现，此处徽章墙仅展示 2 枚里程碑成就
+    const order = ['rose_all_rounder', 'rose_persist_21'];
+    // 新解锁检测仍需覆盖全部徽章，保证解锁 +20 分提示照常弹出
+    const allCodes = V2_CATS.map(c => 'rose_' + c.code).concat(['rose_all_rounder', 'rose_persist_21']);
 
     // 新解锁检测（首次渲染不算「新」）
     const nowUnlocked = {};
-    order.forEach(code => { if (badges[code] && badges[code].unlocked) nowUnlocked[code] = true; });
-    const newOnes = v2PrevUnlocked ? order.filter(code => nowUnlocked[code] && !v2PrevUnlocked[code]) : [];
+    allCodes.forEach(code => { if (badges[code] && badges[code].unlocked) nowUnlocked[code] = true; });
+    const newOnes = v2PrevUnlocked ? allCodes.filter(code => nowUnlocked[code] && !v2PrevUnlocked[code]) : [];
     if (newOnes.length) {
         const names = newOnes.map(code => {
             const cat = code.replace('rose_', '');
             return code === 'rose_all_rounder' ? t('v2.badgeAllRounder') : (code === 'rose_persist_21' ? t('v2.badgePersist21') : t('v2.badge.' + cat));
         });
-        showTemporaryMessage(t('v2.badgeNew') + ': ' + names.join('、'), 'success');
+        showTemporaryMessage(t('v2.badgeNew') + ': ' + names.join('、') + ' · +' + (newOnes.length * 20) + V2_PTS_UNIT(), 'success');
+        // 徽章解锁奖励已由服务端入账，刷新积分显示
+        api.getProfile().then(p => {
+            if (p && typeof p.current_points === 'number') {
+                currentPoints = p.current_points;
+                totalPoints = p.total_points;
+                updatePointsDisplay();
+            }
+        }).catch(() => {});
     }
     v2PrevUnlocked = nowUnlocked;
 
@@ -3259,9 +3508,12 @@ function renderV2Report() {
 
 // ── 模块卡迷你统计 ──
 function updateV2ModuleStat() {
-    const s = document.getElementById('stat-v2');
-    if (!s) return;
-    if (!v2Data || !v2Data.coverage) { s.textContent = '—'; return; }
-    const cov = Object.values(v2Data.coverage).filter(c => c.active).length;
-    s.innerHTML = STAT_ICO.star + cov + '/8';
+    // 首页成长总览统计（原 #stat-v2 已随模块卡移除）
+    if (!v2Data) return;
+    // 成长成就模块卡：已解锁角色徽章数
+    const sA = document.getElementById('stat-ach');
+    if (sA && v2Data.badges) {
+        const n = Object.values(v2Data.badges).filter(b => b && b.unlocked).length;
+        sA.innerHTML = STAT_ICO.star + n + '/11';
+    }
 }

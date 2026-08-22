@@ -1524,7 +1524,8 @@ function v2ComputeBadges($pdo, $familyId, $profileId, $userId) {
     $covered = 0;
     $badges = [];
     foreach (V2_CATEGORIES as $cat) {
-        $unlocked = $counts[$cat] >= 5 || $achieved[$cat] >= 1;
+        // 素养称号 = 持续积累（行为记录 ×1 + 达成愿望 ×3，≥4 分 = 成长级），非一次性点亮
+        $unlocked = $counts[$cat] + $achieved[$cat] * 3 >= 4;
         if ($unlocked) $covered++;
         $badges['rose_' . $cat] = ['unlocked' => $unlocked, 'unlocked_at' => null];
     }
@@ -1535,11 +1536,19 @@ function v2ComputeBadges($pdo, $familyId, $profileId, $userId) {
     // 持久化已解锁徽章
     $stmt = $pdo->prepare('INSERT IGNORE INTO user_badges (family_id, profile_id, user_id, badge_code) VALUES (?, ?, ?, ?)');
     $unlockedAt = date('Y-m-d H:i:s');
+    $newBadges = 0;
     foreach ($badges as $code => $info) {
         if ($info['unlocked']) {
             $stmt->execute([$familyId, $profileId, $userId, $code]);
+            if ($stmt->rowCount() > 0) $newBadges++;
             $badges[$code]['unlocked_at'] = $unlockedAt;
         }
+    }
+    // 新徽章解锁奖励：每枚 +20 分（INSERT IGNORE 保证只对首次解锁发放）
+    if ($newBadges > 0) {
+        $badgeBonus = $newBadges * 20;
+        $stmt = $pdo->prepare('UPDATE profiles SET current_points = current_points + ?, total_points = total_points + ? WHERE id = ?');
+        $stmt->execute([$badgeBonus, $badgeBonus, $profileId]);
     }
     return $badges;
 }
@@ -1742,13 +1751,17 @@ function handleCompleteWish($pdo, $data) {
         $pdo->beginTransaction();
         $stmt = $pdo->prepare('UPDATE wishes SET status = \'achieved\', achieved_at = NOW() WHERE id = ?');
         $stmt->execute([$id]);
+        // 达成奖励：愿望星数 × 20 分（一次性）
+        $bonus = max(1, (int)$wish['stars']) * 20;
+        $stmt = $pdo->prepare('UPDATE profiles SET current_points = current_points + ?, total_points = total_points + ? WHERE id = ?');
+        $stmt->execute([$bonus, $bonus, $profileId]);
         // 写入里程碑（成长纪念册联动）
         $stmt = $pdo->prepare('INSERT INTO milestones (family_id, profile_id, user_id, category, title, detail, occurred_on) VALUES (?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([
             $familyId, $profileId, $userId,
             '成长',
             $wish['title'],
-            '愿望达成：' . $wish['title'] . '（' . $wish['wish_type'] . ' / ' . $wish['stars'] . ' 星）',
+            '愿望达成：' . $wish['title'] . '（' . $wish['wish_type'] . ' / ' . $wish['stars'] . ' 星 / +' . $bonus . ' 分）',
             date('Y-m-d')
         ]);
         $pdo->commit();
@@ -1757,9 +1770,18 @@ function handleCompleteWish($pdo, $data) {
         sendError('Failed to complete wish', 500, $e->getMessage());
     }
 
+    $profileRow = v2FetchProfilePoints($pdo, $profileId);
     $badges = v2ComputeBadges($pdo, $familyId, $profileId, $userId);
     trackEvent($pdo, $userId, 'complete_wish', ['profile_id' => $profileId, 'wish_id' => $id, 'wish_type' => $wish['wish_type']]);
-    sendJson(['success' => true, 'badges' => $badges]);
+    sendJson(['success' => true, 'points_awarded' => $bonus, 'current_points' => $profileRow['current_points'], 'total_points' => $profileRow['total_points'], 'badges' => $badges]);
+}
+
+// 读取档案当前积分（积分引擎用）
+function v2FetchProfilePoints($pdo, $profileId) {
+    $stmt = $pdo->prepare('SELECT current_points, total_points FROM profiles WHERE id = ?');
+    $stmt->execute([$profileId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ? $row : ['current_points' => 0, 'total_points' => 0];
 }
 
 function handleAddCheckin($pdo, $data) {
@@ -1789,12 +1811,21 @@ function handleAddCheckin($pdo, $data) {
         throw $e;
     }
 
+    // 打卡奖励：每次 +5 分（每愿望每天限 1 次）
+    $checkinPoints = 5;
+    $stmt = $pdo->prepare('UPDATE profiles SET current_points = current_points + ?, total_points = total_points + ? WHERE id = ?');
+    $stmt->execute([$checkinPoints, $checkinPoints, $profileId]);
+
     $info = v2WishStreakInfo($pdo, $wishId);
     $internalized = $info['streak'] >= max(1, (int)$wish['persistence_days']);
     v2ComputeBadges($pdo, $familyId, $profileId, $userId);
+    $profileRow = v2FetchProfilePoints($pdo, $profileId);
 
     trackEvent($pdo, $userId, 'add_checkin', ['profile_id' => $profileId, 'wish_id' => $wishId, 'internalized' => $internalized]);
-    sendJson(['success' => true, 'streak' => $info['streak'], 'stage' => $info['stage'], 'internalized' => $internalized]);
+    sendJson([
+        'success' => true, 'streak' => $info['streak'], 'stage' => $info['stage'], 'internalized' => $internalized,
+        'points_awarded' => $checkinPoints, 'current_points' => $profileRow['current_points'], 'total_points' => $profileRow['total_points']
+    ]);
 }
 
 function handleGetCheckins($pdo, $data) {

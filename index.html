@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=18">
+    <link rel="stylesheet" href="style.css?v=33">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=22"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=28"></script>
+    <script defer src="i18n.js?v=40"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -56,6 +56,22 @@
                 <span class="brand-name">Star Rewards</span>
             </div>
             <div class="topbar-actions">
+                <div class="user-chip-wrap" id="user-chip-wrap" style="display:none;">
+                    <button type="button" class="user-chip" id="user-chip" onclick="toggleUserMenu(event)">
+                        <span class="uc-avatar" id="uc-avatar">⭐</span>
+                        <span class="uc-name" id="uc-name">孩子</span>
+                        <svg class="uc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="user-menu" id="user-menu" hidden>
+                        <div class="um-email" id="um-email"></div>
+                        <div class="um-label" data-i18n="home.profile.switch">切换孩子</div>
+                        <div class="um-children" id="um-children"></div>
+                        <button type="button" class="um-item" onclick="openProfileModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="home.profile.add">添加孩子</span></button>
+                        <button type="button" class="um-item" onclick="openFamilyModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span data-i18n="home.family.open">家庭</span></button>
+                        <button type="button" class="um-item um-item--logout" onclick="doSignOut()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span data-i18n="home.logout">退出登录</span></button>
+                    </div>
+                </div>
+                <button type="button" id="topbar-login-btn" class="auth-btn auth-btn--login" style="display:none;" onclick="window.location.href='login.html'" data-i18n="login.loginButton">登录</button>
                 <select id="language-selector" class="lang-select" onchange="setLanguage(this.value)">
                     <option value="zh">中文</option>
                     <option value="en">English</option>
@@ -65,60 +81,27 @@
     </header>
 
     <main class="container">
-        <h1>Star Rewards 儿童积分奖励系统</h1>
+        <h1 class="sr-only">Star Rewards 儿童积分奖励系统</h1>
 
-        <!-- 用户认证状态卡片 -->
-        <div id="auth-status-card">
-            <!-- 已登录状态 -->
-            <div id="logged-in-state" class="auth-card auth-card--member" style="display: none;">
-                <div class="ac-row">
-                    <span class="ac-text"><span data-i18n="home.welcome">欢迎</span>，<span id="user-email"></span></span>
-                    <button class="auth-btn auth-btn--logout" onclick="doSignOut()" data-i18n="home.logout">退出</button>
-                </div>
-                <!-- 多孩档案切换 -->
-                <div id="profile-switcher" class="profile-switcher"></div>
-            </div>
-
-            <!-- 未登录状态 -->
-            <div id="not-logged-in-state" class="auth-card auth-card--guest" style="display: none;">
-                <div class="ac-row">
-                    <span class="ac-text" data-i18n="home.needLogin">需要登录才能使用</span>
-                    <button class="auth-btn auth-btn--login" onclick="window.location.href='login.html'" data-i18n="login.loginButton">登录</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 功能模块导航（迷你仪表盘：实时数据一眼可见） -->
+        <!-- 功能模块导航（紧凑三入口） -->
         <div class="module-cards">
             <div class="module-card active" onclick="showModule('points-module')">
                 <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
-                <h3 data-i18n="home.addPoints">成长积分</h3>
-                <p data-i18n="home.pointsDesc">记录成长，积累积分</p>
+                <h3 data-i18n="home.home">首页</h3>
+                <p data-i18n="home.homeDesc">今日打卡 · 积分</p>
                 <div class="module-stat" id="stat-points"></div>
             </div>
             <div class="module-card" onclick="showModule('gifts-module')">
-                <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg></span>
-                <h3 data-i18n="home.gifts">宝贝愿望</h3>
-                <p data-i18n="home.giftsDesc">记录愿望，激励成长</p>
+                <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
+                <h3 data-i18n="goals.module">目标</h3>
+                <p data-i18n="goals.moduleDesc">成长目标 + 礼物兑换</p>
                 <div class="module-stat" id="stat-gifts"></div>
             </div>
-            <div class="module-card" onclick="showModule('diary-module')">
-                <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M19 3v18"/><path d="M8 7h6M8 11h6"/></svg></span>
-                <h3 data-i18n="home.diary">成长日记</h3>
-                <p data-i18n="home.diaryDesc">回顾足迹，见证成长</p>
-                <div class="module-stat" id="stat-diary"></div>
-            </div>
-            <div class="module-card" onclick="showModule('growth-module')">
-                <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
-                <h3 data-i18n="home.keepsake">成长纪念册</h3>
-                <p data-i18n="home.keepsakeDesc">珍藏点滴，见证成长</p>
-                <div class="module-stat" id="stat-keepsake"></div>
-            </div>
-            <div class="module-card" onclick="showModule('v2-module')">
-                <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.8 2.4 4.6 3.6 7.5 3.5-0.4 3-1.6 5.7-4 7.5 2.4 1.8 3.6 4.5 4 7.5-2.9-.1-5.7 1.1-7.5 3.5-1.8-2.4-4.6-3.6-7.5-3.5 0.4-3 1.6-5.7 4-7.5-2.4-1.8-3.6-4.5-4-7.5 2.9.1 5.7-1.1 7.5-3.5z"/><circle cx="12" cy="12" r="2.6"/></svg></span>
-                <h3 data-i18n="v2.module">全人成长</h3>
-                <p data-i18n="v2.moduleDesc">8 大素养，看见孩子在长成什么样的人</p>
-                <div class="module-stat" id="stat-v2"></div>
+            <div class="module-card" onclick="showModule('achievements-module')">
+                <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></span>
+                <h3 data-i18n="ach.module">成长成就</h3>
+                <p data-i18n="ach.moduleDesc">徽章 · 统计 · 故事</p>
+                <div class="module-stat" id="stat-ach"></div>
             </div>
         </div>
 
@@ -135,6 +118,16 @@
                     </div>
                     <button type="button" class="welcome-banner-cta" onclick="focusBehaviorForm()" data-i18n="home.welcomeCta">记录第一个行为</button>
                 </div>
+
+                <!-- 今日打卡：主操作前置，直接打卡 +5 分 -->
+                <div class="today-checkin" id="today-checkin">
+                    <div class="v2-section-head">
+                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span data-i18n="home.todayCheckin">今日打卡</span></h3>
+                        <p class="v2-sub" data-i18n="home.todayCheckinSub">每天完成一个小目标 · 打卡一次 +5 分</p>
+                    </div>
+                    <div id="today-checkin-list" class="today-checkin-list"></div>
+                </div>
+
                 <div class="points-display">
                     <div class="points-card">
                         <div class="points-value" id="current-points">0</div>
@@ -151,42 +144,16 @@
                 </div>
 
                     <div class="form-group">
-                    <h3 data-i18n="behaviors.title">记录行为积分</h3>
-                    <div class="form-row">
-                        <input type="text" id="behavior-desc" data-i18n-placeholder="behaviors.description" placeholder="描述行为（例如：完成作业）">
-                        <input type="number" id="points-change" data-i18n-placeholder="behaviors.points" placeholder="积分变化（正加负扣）">
-                    </div>
-                    <div class="form-row">
-                        <select id="behavior-dimension" class="v2-select">
-                            <option value="" data-i18n="v2.reportNone">（不标注素养）</option>
-                            <option value="self_drive" data-i18n="v2.badge.self_drive">自驱力 · 小学霸</option>
-                            <option value="money" data-i18n="v2.badge.money">理财力 · 小掌柜</option>
-                            <option value="empathy" data-i18n="v2.badge.empathy">共情力 · 暖心侠</option>
-                            <option value="relationship" data-i18n="v2.badge.relationship">关系力 · 小太阳</option>
-                            <option value="planning" data-i18n="v2.badge.planning">规划力 · 小规划师</option>
-                            <option value="resilience" data-i18n="v2.badge.resilience">抗挫力 · 小勇士</option>
-                            <option value="health" data-i18n="v2.badge.health">健康力 · 活力星</option>
-                            <option value="aesthetics" data-i18n="v2.badge.aesthetics">审美力 · 小艺术家</option>
-                        </select>
-                        <label class="v2-dim-label" for="behavior-dimension" data-i18n="v2.category">素养类别</label>
-                    </div>
-                    <div class="preset-behaviors" id="preset-behaviors">
-                        <span class="preset-label" data-i18n="behaviors.quickSelect">快速选择:</span>
-                        <button class="preset-btn" onclick="setPresetBehavior('按时睡觉', 1)" data-i18n="behaviors.preset.sleep">按时睡觉 +1</button>
-                        <button class="preset-btn" onclick="setPresetBehavior('作业全对', 2)" data-i18n="behaviors.preset.homework">作业全对 +2</button>
-                        <button class="preset-btn" onclick="setPresetBehavior('早起锻炼', 5)" data-i18n="behaviors.preset.exercise">早起锻炼 +5</button>
-                        <button class="preset-btn" onclick="setPresetBehavior('小测满分', 20)" data-i18n="behaviors.preset.test">小测满分 +20</button>
-                    </div>
-                    <div style="text-align: center; margin-top: 15px;">
-                        <a href="behavior-templates.html" class="template-link" data-i18n="behaviors.viewTemplates">查看更多模板</a>
+                    <h3 data-i18n="home.pointsRuleTitle">积分怎么来？</h3>
+                    <div class="points-rules">
+                        <div class="points-rule"><span class="pr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><span class="pr-text" data-i18n="home.ruleCheckin">成长愿望每日打卡 1 次</span><b class="pr-val">+5 分</b></div>
+                        <div class="points-rule"><span class="pr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span><span class="pr-text" data-i18n="home.ruleWish">达成一个成长愿望</span><b class="pr-val" data-i18n="home.ruleWishValue">+星数×20 分</b></div>
+                        <div class="points-rule"><span class="pr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></span><span class="pr-text" data-i18n="home.ruleBadge">解锁一枚角色徽章</span><b class="pr-val">+20 分</b></div>
                     </div>
                     <div class="button-group">
-                        <button class="add-points-btn" onclick="addPoints()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="behaviors.addBehaviorButton">记录积分</span></button>
+                        <button class="add-points-btn" onclick="quickCheckin()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="home.goCheckin">去打卡</span></button>
                     </div>
                 </div>
-
-                <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span data-i18n="home.recentRecords">最近记录</span></h3>
-                <div id="behavior-log"></div>
 
                 <div class="reminder-bar" id="reminder-bar">
                     <span class="reminder-label"><svg class="reminder-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span data-i18n="home.reminderLabel">每日打卡提醒</span></span>
@@ -200,8 +167,80 @@
                 </div>
             </div>
 
-            <!-- 宝贝愿望模块 -->
+            <!-- 目标模块：成长目标（设置/打卡/撤卡）+ 礼物兑换 -->
             <div id="gifts-module" class="module-content">
+                <!-- 成长目标：目标挂素养、每日打卡（新手三步引导首次展示） -->
+                <div class="v2-section" id="goals-section">
+                    <!-- 新手引导：首次进入展示三步，关闭后不再出现 -->
+                    <div class="v2-guide" id="v2-guide" hidden>
+                        <div class="v2-guide-body">
+                            <h4 class="v2-guide-title" data-i18n="v2.guideTitle">三步开始全人成长</h4>
+                            <ol class="v2-guide-steps">
+                                <li data-i18n="v2.guideStep1"></li>
+                                <li data-i18n="v2.guideStep2"></li>
+                                <li data-i18n="v2.guideStep3"></li>
+                            </ol>
+                            <p class="v2-guide-note" data-i18n="v2.guideNote"></p>
+                        </div>
+                        <button type="button" class="v2-guide-close" onclick="v2GuideDismiss()" data-i18n="v2.guideDismiss">知道了，开始吧</button>
+                    </div>
+                    <div class="v2-section-head">
+                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span data-i18n="v2.wishTitle">成长目标</span></h3>
+                        <p class="v2-sub" data-i18n="v2.wishSubtitle">目标挂在素养下，努力看得见</p>
+                    </div>
+                    <div class="form-group v2-wish-form">
+                        <div class="form-row">
+                            <select id="v2-wish-category" class="v2-select">
+                                <option value="self_drive" data-i18n="v2.badge.self_drive">小学霸</option>
+                                <option value="money" data-i18n="v2.badge.money">小掌柜</option>
+                                <option value="empathy" data-i18n="v2.badge.empathy">暖心侠</option>
+                                <option value="relationship" data-i18n="v2.badge.relationship">小太阳</option>
+                                <option value="planning" data-i18n="v2.badge.planning">小规划师</option>
+                                <option value="resilience" data-i18n="v2.badge.resilience">小勇士</option>
+                                <option value="health" data-i18n="v2.badge.health">活力星</option>
+                                <option value="aesthetics" data-i18n="v2.badge.aesthetics">小艺术家</option>
+                            </select>
+                            <select id="v2-wish-type" class="v2-select" onchange="updateV2StarsPreview()">
+                                <option value="experience" data-i18n="v2.typeExperience">体验型（1-2 星）</option>
+                                <option value="persistence" data-i18n="v2.typePersistence">坚持型（3-5 星）</option>
+                                <option value="challenge" data-i18n="v2.typeChallenge">挑战型（5-10 星）</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <input type="text" id="v2-wish-name" maxlength="255" data-i18n-placeholder="v2.wishNamePlaceholder" placeholder="目标名称：例如学会骑两轮自行车">
+                        </div>
+                        <div class="form-row">
+                            <input type="text" id="v2-wish-desc" maxlength="500" data-i18n-placeholder="v2.wishDescPlaceholder" placeholder="目标描述（可选）">
+                        </div>
+                        <button type="button" class="v2-adv-toggle" id="v2-adv-toggle" onclick="toggleV2Advanced()" data-i18n="v2.advToggle">高级选项（目标天数 / 难度）</button>
+                        <div class="v2-advanced" id="v2-advanced" hidden>
+                        <div class="form-row">
+                            <input type="number" id="v2-wish-days" min="0" max="365" oninput="updateV2StarsPreview()" data-i18n-placeholder="v2.daysPlaceholder" placeholder="目标天数（坚持/挑战型填写）">
+                            <select id="v2-wish-coef" class="v2-select" onchange="updateV2StarsPreview()">
+                                <option value="0.75">难度 × 0.75</option>
+                                <option value="1" selected>难度 × 1</option>
+                                <option value="1.25">难度 × 1.25</option>
+                                <option value="1.5">难度 × 1.5</option>
+                                <option value="1.75">难度 × 1.75</option>
+                                <option value="2">难度 × 2</option>
+                            </select>
+                        </div>
+                        </div>
+                        <div class="v2-stars-preview">
+                            <span id="v2-stars-preview-text">★ ★ ☆ ☆ ☆</span>
+                            <em data-i18n="v2.starsAuto">星数自动计算</em>
+                        </div>
+                        <div class="button-group">
+                            <button class="add-points-btn" onclick="addV2Wish()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="v2.addWishBtn">添加目标</span></button>
+                        </div>
+                    </div>
+                    <div id="v2-wish-list" class="v2-wish-list"></div>
+                </div>
+
+                <!-- 礼物兑换 -->
+                <div class="v2-section-head">
+                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg><span data-i18n="goals.giftTitle">礼物兑换</span></h3>
+                </div>
                 <!-- 愿望清单概览 -->
                 <div class="wishlist-summary" id="wishlist-summary">
                     <div class="ws-stat">
@@ -248,10 +287,15 @@
                 <div id="redeemed-list"></div>
             </div>
 
-            <!-- 成长日记模块（成长日历：积分+兑换按天综合展示） -->
-            <div id="diary-module" class="module-content">
+            <!-- 成长成就模块：汇总统计 + 打卡日历 + 里程碑成就 + 成长总览玫瑰 -->
+            <div id="achievements-module" class="module-content">
+
+                <!-- 汇总统计条 -->
+                <div class="ach-stats" id="ach-stats"></div>
+
+                <!-- 打卡日历 + 积分趋势 -->
                 <div class="diary-header">
-                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span data-i18n="home.diaryCalendar">成长日历</span></h3>
+                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span data-i18n="home.diaryCalendar">打卡日历</span></h3>
                     <button type="button" class="poster-btn" onclick="openPosterModal()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span data-i18n="home.sharePoster">分享海报</span></button>
                 </div>
 
@@ -266,154 +310,43 @@
 
                 <div id="calendar-day-detail" class="calendar-day-detail" style="display:none;"></div>
 
-                <div class="chart-container" id="chart-container" style="display:none;">
-                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span data-i18n="home.pointsTrend">积分趋势</span></h3>
-                    <canvas id="points-chart" style="max-height: 220px;"></canvas>
-                </div>
-
-                <div class="achievements-section" id="achievements-section">
-                    <div class="achievements-head">
-                        <h3 id="achievements-title">成就徽章</h3>
-                        <button type="button" class="poster-btn achievements-poster-btn" onclick="openPosterModal()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span data-i18n="home.sharePoster">分享海报</span></button>
-                    </div>
-                    <div class="achievements-grid" id="achievements-grid"></div>
-                </div>
-            </div>
-
-            <!-- 成长纪念册模块（时间轴 + 月度报告 + 可打印/分享） -->
-            <div id="growth-module" class="module-content">
-                <div class="keepsake-header">
-                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span data-i18n="keepsake.title">成长纪念册</span></h3>
-                    <p class="keepsake-subtitle" data-i18n="keepsake.subtitle">每一颗星星，都是成长的印记</p>
-                </div>
-
-                <div class="keepsake-actions">
-                    <button type="button" class="poster-btn" onclick="printKeepsake()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span data-i18n="keepsake.print">打印 / 保存纪念册</span></button>
-                    <button type="button" class="export-btn" onclick="openPosterModal()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span data-i18n="keepsake.share">分享成长</span></button>
-                </div>
-
-                <div class="keepsake-month" id="keepsake-month"></div>
-
-                <div class="keepsake-tabs">
-                    <button type="button" class="ktab active" onclick="switchKeepsakeTab('timeline')"><span data-i18n="keepsake.tabsTimeline">时间轴</span></button>
-                    <button type="button" class="ktab" onclick="switchKeepsakeTab('milestones')"><span data-i18n="keepsake.tabsMilestones">里程碑</span></button>
-                    <button type="button" class="ktab" onclick="switchKeepsakeTab('notes')"><span data-i18n="keepsake.tabsNotes">成长手记</span></button>
-                    <button type="button" class="ktab" onclick="switchKeepsakeTab('voice')"><span data-i18n="keepsake.tabsVoice">童言童语</span></button>
-                </div>
-
-                <div class="ktab-panel" id="ktab-timeline">
-                    <h4 class="keepsake-section-title" data-i18n="keepsake.timelineTitle">成长时间轴</h4>
-                    <div id="keepsake-timeline" class="keepsake-timeline"></div>
-                </div>
-
-                <div class="ktab-panel" id="ktab-milestones" style="display:none">
-                    <div class="keepsake-add-row"><button type="button" class="add-line-btn" onclick="openGrowthAdd('milestone')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="keepsake.addMilestone">添加里程碑</span></button></div>
-                    <div id="keepsake-milestones" class="keepsake-list"></div>
-                </div>
-
-                <div class="ktab-panel" id="ktab-notes" style="display:none">
-                    <div class="keepsake-add-row"><button type="button" class="add-line-btn" onclick="openGrowthAdd('note')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="keepsake.addNote">写手记</span></button></div>
-                    <div id="keepsake-notes" class="keepsake-list"></div>
-                </div>
-
-                <div class="ktab-panel" id="ktab-voice" style="display:none">
-                    <div class="keepsake-add-row"><button type="button" class="add-line-btn" onclick="openGrowthAdd('voice')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="keepsake.addVoice">记童言</span></button></div>
-                    <div id="keepsake-voice" class="keepsake-list"></div>
-                </div>
-            </div>
-
-            <!-- 全人成长模块（V2：8 大素养 × 愿望/打卡/指标/徽章） -->
-            <div id="v2-module" class="module-content">
-                <div class="v2-section v2-rose-card">
+                <!-- 里程碑成就（全能小星星 + 21天坚持者） -->
+                <div class="v2-section ach-v2-wall">
                     <div class="v2-section-head">
-                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.8 2.4 4.6 3.6 7.5 3.5-0.4 3-1.6 5.7-4 7.5 2.4 1.8 3.6 4.5 4 7.5-2.9-.1-5.7 1.1-7.5 3.5-1.8-2.4-4.6-3.6-7.5-3.5 0.4-3 1.6-5.7 4-7.5-2.4-1.8-3.6-4.5-4-7.5 2.9.1 5.7-1.1 7.5-3.5z"/><circle cx="12" cy="12" r="2.6"/></svg><span data-i18n="v2.roseTitle">全人玫瑰 · 素养覆盖</span></h3>
-                        <p class="v2-sub" data-i18n="v2.roseSubtitle">花瓣越满，成长越全面</p>
+                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg><span data-i18n="v2.badgeTitle">里程碑成就</span></h3>
+                        <p class="v2-sub" data-i18n="v2.badgeSubtitle">点亮全能小星星 · 坚持 21 天，收获特殊奖励</p>
                     </div>
-                    <div id="v2-rose" class="v2-rose"></div>
+                    <div id="v2-badge-wall" class="v2-badge-wall"></div>
+                </div>
+                <!-- 成长总览（放最底部）：全人玫瑰 + 全能进度 + 本月主打瓣 + 素养图鉴 -->
+                <div class="growth-overview" id="growth-overview">
+                    <div class="v2-section-head">
+                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.8 2.4 4.6 3.6 7.5 3.5-0.4 3-1.6 5.7-4 7.5 2.4 1.8 3.6 4.5 4 7.5-2.9-.1-5.7 1.1-7.5 3.5-1.8-2.4-4.6-3.6-7.5-3.5 0.4-3 1.6-5.7 4-7.5-2.4-1.8-3.6-4.5-4-7.5 2.9.1 5.7-1.1 7.5-3.5z"/><circle cx="12" cy="12" r="2.6"/></svg><span data-i18n="home.growthOverview">成长总览</span></h3>
+                        <p class="v2-sub" data-i18n="home.growthOverviewDesc">8 大素养 · 看看孩子正在长成什么样的人</p>
+                    </div>
+                    <div class="growth-flower-row">
+                        <div class="v2-flower-wrap">
+                            <div id="v2-flower" class="v2-flower"></div>
+                            <p class="v2-flower-summary" id="v2-flower-summary"></p>
+                            <p class="v2-flower-note" data-i18n="v2.flowerNote">花瓣是统一的花形框架（对应 8 大素养），彩色圆点标出各维度强弱——离中心越远越强，偏向一侧就是要加强的方向。</p>
+                        </div>
+                        <div class="v2-suggest" id="v2-suggest"></div>
+                    </div>
                     <div class="v2-allrounder">
                         <span class="v2-ar-label"><span data-i18n="v2.allRounder">全能小星星</span> · <span data-i18n="v2.allRounderDesc">点亮 6 瓣即可解锁</span></span>
                         <div class="v2-ar-track"><div id="v2-ar-fill" class="v2-ar-fill"></div></div>
                         <span id="v2-ar-count" class="v2-ar-count">0/8</span>
                     </div>
-                </div>
-
-                <div class="v2-section">
-                    <div class="v2-section-head">
-                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span data-i18n="v2.focusTitle">本月主打瓣</span></h3>
-                        <p class="v2-sub" data-i18n="v2.focusSubtitle">孩子每月自选 1 个重点培养方向</p>
-                    </div>
                     <div id="v2-focus-chips" class="v2-focus-chips"></div>
                     <div id="v2-focus-hint" class="v2-focus-hint" style="display:none"></div>
+                    <button type="button" class="v2-legend-toggle" id="v2-legend-toggle" onclick="toggleV2Legend()"><span data-i18n="v2.legendToggle">素养图鉴：8 大方向各是什么意思</span><span class="v2-legend-chev" id="v2-legend-chev" aria-hidden="true">▸</span></button>
+                    <div class="v2-legend" id="v2-legend" hidden></div>
                 </div>
 
-                <div class="v2-section">
-                    <div class="v2-section-head">
-                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span data-i18n="v2.wishTitle">成长愿望</span></h3>
-                        <p class="v2-sub" data-i18n="v2.wishSubtitle">愿望挂在素养下，努力看得见</p>
-                    </div>
-                    <div class="form-group v2-wish-form">
-                        <div class="form-row">
-                            <select id="v2-wish-category" class="v2-select">
-                                <option value="self_drive" data-i18n="v2.badge.self_drive">小学霸</option>
-                                <option value="money" data-i18n="v2.badge.money">小掌柜</option>
-                                <option value="empathy" data-i18n="v2.badge.empathy">暖心侠</option>
-                                <option value="relationship" data-i18n="v2.badge.relationship">小太阳</option>
-                                <option value="planning" data-i18n="v2.badge.planning">小规划师</option>
-                                <option value="resilience" data-i18n="v2.badge.resilience">小勇士</option>
-                                <option value="health" data-i18n="v2.badge.health">活力星</option>
-                                <option value="aesthetics" data-i18n="v2.badge.aesthetics">小艺术家</option>
-                            </select>
-                            <select id="v2-wish-type" class="v2-select" onchange="updateV2StarsPreview()">
-                                <option value="experience" data-i18n="v2.typeExperience">体验型（1-2 星）</option>
-                                <option value="persistence" data-i18n="v2.typePersistence">坚持型（3-5 星）</option>
-                                <option value="challenge" data-i18n="v2.typeChallenge">挑战型（5-10 星）</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <input type="text" id="v2-wish-name" maxlength="255" data-i18n-placeholder="v2.wishNamePlaceholder" placeholder="愿望名称：例如学会骑两轮自行车">
-                        </div>
-                        <div class="form-row">
-                            <input type="text" id="v2-wish-desc" maxlength="500" data-i18n-placeholder="v2.wishDescPlaceholder" placeholder="愿望描述（可选）">
-                        </div>
-                        <div class="form-row">
-                            <input type="number" id="v2-wish-days" min="0" max="365" oninput="updateV2StarsPreview()" data-i18n-placeholder="v2.daysPlaceholder" placeholder="目标天数（坚持/挑战型填写）">
-                            <select id="v2-wish-coef" class="v2-select" onchange="updateV2StarsPreview()">
-                                <option value="0.75">难度 × 0.75</option>
-                                <option value="1" selected>难度 × 1</option>
-                                <option value="1.25">难度 × 1.25</option>
-                                <option value="1.5">难度 × 1.5</option>
-                                <option value="1.75">难度 × 1.75</option>
-                                <option value="2">难度 × 2</option>
-                            </select>
-                        </div>
-                        <div class="v2-stars-preview">
-                            <span id="v2-stars-preview-text">★ ★ ☆ ☆ ☆</span>
-                            <em data-i18n="v2.starsAuto">星数自动计算</em>
-                        </div>
-                        <div class="button-group">
-                            <button class="add-points-btn" onclick="addV2Wish()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="v2.addWishBtn">添加愿望</span></button>
-                        </div>
-                    </div>
-                    <div id="v2-wish-list" class="v2-wish-list"></div>
-                </div>
 
-                <div class="v2-section">
-                    <div class="v2-section-head">
-                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg><span data-i18n="v2.badgeTitle">角色徽章墙</span></h3>
-                        <p class="v2-sub" data-i18n="v2.badgeSubtitle">集齐 8 枚角色徽章，解锁全能小星星</p>
-                    </div>
-                    <div id="v2-badge-wall" class="v2-badge-wall"></div>
-                </div>
-
-                <div class="v2-section">
-                    <div class="v2-section-head">
-                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span data-i18n="v2.indicatorTitle">每周成长指标</span></h3>
-                        <p class="v2-sub" data-i18n="v2.indicatorSubtitle">家长每周对照勾选，看见进步</p>
-                    </div>
-                    <div id="v2-indicator-grid" class="v2-indicator-grid"></div>
-                    <div class="v2-report" id="v2-report"></div>
-                </div>
             </div>
+
+            <!-- V2 全人成长内容已按功能拆入：首页今日打卡 / 目标（愿望+礼物） / 成长成就（统计+日历+里程碑+玫瑰） -->
         </div>
     </main>
     
@@ -423,18 +356,20 @@
             // 检查用户登录状态
             checkAuthStatus();
             
-            // 检查是否有从模板页面传递过来的行为数据
+            // 检查是否有从模板页面传递过来的行为数据（行为记录已移除，仅保留兼容跳过）
             const selectedBehavior = sessionStorage.getItem('selectedBehavior');
             if (selectedBehavior) {
                 const behaviorData = JSON.parse(selectedBehavior);
                 sessionStorage.removeItem('selectedBehavior');
-                
-                // 自动填充行为描述和积分
-                document.getElementById('behavior-desc').value = behaviorData.description;
-                document.getElementById('points-change').value = behaviorData.points;
-                
-                // 显示提示信息
-                showTemporaryMessage(`已选择：${behaviorData.description} (${behaviorData.points > 0 ? '+' : ''}${behaviorData.points}积分)`, 'success');
+                const behaviorDescEl = document.getElementById('behavior-desc');
+                if (behaviorDescEl) {
+                    behaviorDescEl.value = behaviorData.description || '';
+                }
+                if (behaviorData && behaviorData.points) {
+                    const ptsEl = document.getElementById('points-change');
+                    if (ptsEl) ptsEl.value = behaviorData.points;
+                }
+                showTemporaryMessage(`已选择：${behaviorData.description || ''}`, 'success');
             }
             
             // 添加一些动画效果
@@ -450,17 +385,22 @@
             if (token) {
                 const email = localStorage.getItem('user_email');
                 if (email) {
-                    document.getElementById('user-email').textContent = email;
-                    document.getElementById('logged-in-state').style.display = 'block';
-                    document.getElementById('not-logged-in-state').style.display = 'none';
-                    
+                    const emailEl = document.getElementById('um-email');
+                    if (emailEl) emailEl.textContent = email;
+                    const chipWrap = document.getElementById('user-chip-wrap');
+                    if (chipWrap) chipWrap.style.display = 'block';
+                    const loginBtn = document.getElementById('topbar-login-btn');
+                    if (loginBtn) loginBtn.style.display = 'none';
+
                     if (typeof initializeApp === 'function') {
                         await initializeApp();
                     }
                 }
             } else {
-                document.getElementById('logged-in-state').style.display = 'none';
-                document.getElementById('not-logged-in-state').style.display = 'block';
+                const chipWrap = document.getElementById('user-chip-wrap');
+                if (chipWrap) chipWrap.style.display = 'none';
+                const loginBtn = document.getElementById('topbar-login-btn');
+                if (loginBtn) loginBtn.style.display = 'inline-flex';
             }
         }
         
@@ -479,7 +419,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=34"></script>
+    <script defer src="script.js?v=51"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
@@ -517,7 +457,7 @@
         </div>
     </div>
     <!-- 悬浮快速记分按钮 -->
-    <button type="button" id="quick-add-fab" class="quick-add-fab" style="display:none;" onclick="quickAddPoints()" title="快速记积分" aria-label="快速记积分"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg></button>
+    <button type="button" id="quick-add-fab" class="quick-add-fab" style="display:none;" onclick="quickCheckin()" title="去打卡" aria-label="去打卡"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
 
     <!-- 分享海报弹窗 -->
     <div id="poster-modal" class="modal-overlay" style="display:none;">
@@ -558,73 +498,7 @@
         </div>
     </div>
 
-    <!-- 成长记录添加弹窗（里程碑 / 手记 / 童言） -->
-    <div id="growth-add-modal" class="modal-overlay" style="display:none;">
-        <div class="modal-content">
-            <h3 id="growth-add-title"></h3>
 
-            <div id="ga-milestone-fields">
-                <div class="form-group">
-                    <label data-i18n="keepsake.milestoneTitle">标题</label>
-                    <input type="text" id="ga-title" maxlength="255" data-i18n-placeholder="keepsake.milestoneTitlePlaceholder" placeholder="例如：第一次自己系鞋带">
-                </div>
-                <div class="form-group milestone-row">
-                    <div>
-                        <label data-i18n="keepsake.milestoneCat">分类</label>
-                        <select id="ga-cat">
-                            <option value="首次" data-i18n="keepsake.mcatFirst">首次</option>
-                            <option value="成长" data-i18n="keepsake.mcatGrowth">成长</option>
-                            <option value="获奖" data-i18n="keepsake.mcatAward">获奖</option>
-                            <option value="习惯" data-i18n="keepsake.mcatHabit">习惯</option>
-                            <option value="学习" data-i18n="keepsake.mcatLearn">学习</option>
-                            <option value="其他" data-i18n="keepsake.mcatOther" selected>其他</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label data-i18n="keepsake.milestoneDate">日期</label>
-                        <input type="date" id="ga-date">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label data-i18n="keepsake.milestoneDetail">描述</label>
-                    <textarea id="ga-detail" maxlength="4000" data-i18n-placeholder="keepsake.milestoneDetailPlaceholder" placeholder="补充描述（可选）"></textarea>
-                </div>
-            </div>
-
-            <div id="ga-note-fields" style="display:none">
-                <div class="form-group">
-                    <label data-i18n="keepsake.noteTitle">标题</label>
-                    <input type="text" id="ga-note-title" maxlength="255" data-i18n-placeholder="keepsake.noteTitlePlaceholder" placeholder="例如：今天的小进步">
-                </div>
-                <div class="form-group">
-                    <label data-i18n="keepsake.noteBody">内容</label>
-                    <textarea id="ga-note-body" maxlength="8000" data-i18n-placeholder="keepsake.noteBodyPlaceholder" placeholder="记录这一刻的心情与故事…"></textarea>
-                </div>
-                <div class="form-group">
-                    <label data-i18n="keepsake.noteMood">心情</label>
-                    <select id="ga-note-mood">
-                        <option value="happy" data-i18n="keepsake.moodHappy">😊 开心</option>
-                        <option value="proud" data-i18n="keepsake.moodProud">🥰 自豪</option>
-                        <option value="calm" data-i18n="keepsake.moodCalm">😌 平静</option>
-                        <option value="thinking" data-i18n="keepsake.moodThinking">🤔 思考</option>
-                        <option value="sad" data-i18n="keepsake.moodSad">😢 略难过</option>
-                    </select>
-                </div>
-            </div>
-
-            <div id="ga-voice-fields" style="display:none">
-                <div class="form-group">
-                    <label data-i18n="keepsake.voiceContent">童言</label>
-                    <textarea id="ga-voice-content" maxlength="4000" data-i18n-placeholder="keepsake.voicePlaceholder" placeholder="孩子说的话…"></textarea>
-                </div>
-            </div>
-
-            <div class="modal-actions">
-                <button type="button" class="primary-btn" onclick="submitGrowthAdd()" data-i18n="common.save">保存</button>
-                <button type="button" class="secondary-btn" onclick="closeGrowthAddModal()" data-i18n="common.cancel">取消</button>
-            </div>
-        </div>
-    </div>
 
     <!-- 家庭共享弹窗 -->
     <div id="family-modal" class="modal-overlay" style="display:none;">
