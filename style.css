@@ -3673,7 +3673,7 @@ a:hover { text-decoration: underline; }
 .tci-cat { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--pc); color: #fff; font-weight: 800; font-size: 12px; }
 .tci-title { flex: 1 1 auto; min-width: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tci-streak { flex: 0 0 auto; font-size: var(--fs-xs); color: var(--text-2); white-space: nowrap; }
-.today-checkin-row .v2-checkin-btn { flex: 0 0 auto; }
+.today-checkin-row .v2-checkin-btn { flex: 0 0 auto; width: auto; max-width: 50%; white-space: nowrap; }
 .today-checkin-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: var(--sp-4); color: var(--text-2); font-size: var(--fs-sm); text-align: center; }
 
 /* ── 成长成就页：汇总统计条 ── */

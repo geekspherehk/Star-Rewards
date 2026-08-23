@@ -2968,25 +2968,31 @@ function renderV2All() {
 function renderHomeCheckin() {
     const el = document.getElementById('today-checkin-list');
     if (!el) return;
-    const wishes = (v2Data && v2Data.wishes) || [];
-    const active = wishes.filter(w => w.status !== 'achieved' && w.wish_type !== 'experience');
-    if (!active.length) {
-        el.innerHTML = '<div class="today-checkin-empty"><span>' + escapeHtml(t('v2.emptyWishes')) + '</span>' +
-            '<button type="button" class="add-points-btn" onclick="showModule(\'gifts-module\')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>' + escapeHtml(t('home.setGoalCta')) + '</span></button></div>';
-        return;
+    try {
+        const wishes = (v2Data && v2Data.wishes) || [];
+        const active = wishes.filter(w => w.status !== 'achieved' && w.wish_type !== 'experience');
+        if (!active.length) {
+            el.innerHTML = '<div class="today-checkin-empty"><span>' + escapeHtml(t('v2.emptyWishes')) + '</span>' +
+                '<button type="button" class="add-points-btn" onclick="showModule(\'gifts-module\')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>' + escapeHtml(t('home.setGoalCta')) + '</span></button></div>';
+            return;
+        }
+        const fallbackCat = (typeof V2_CATS !== 'undefined' && V2_CATS[0]) || { code: 'self_drive', short: '自驱' };
+        el.innerHTML = active.map(w => {
+            const c = (typeof V2_CATS !== 'undefined' && V2_CATS.find(x => x.code === w.category)) || fallbackCat;
+            const done = !!w.today_checked;
+            return '<div class="today-checkin-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
+                '<span class="tci-cat">' + c.short + '</span>' +
+                '<span class="tci-title">' + escapeHtml(w.title || '') + '</span>' +
+                '<span class="tci-streak">' + escapeHtml(t('v2.streak', { n: w.streak || 0 })) + '</span>' +
+                (done
+                    ? '<button type="button" class="v2-checkin-btn is-done" disabled><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkedIn')) + '</button>'
+                    : '<button type="button" class="v2-checkin-btn" onclick="v2Checkin(' + w.id + ')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkin')) + ' +5</button>') +
+            '</div>';
+        }).join('');
+    } catch (err) {
+        console.error('renderHomeCheckin 失败:', err);
+        el.innerHTML = '<div class="today-checkin-empty"><span>' + escapeHtml(t('common.error')) + '，请刷新重试</span></div>';
     }
-    el.innerHTML = active.map(w => {
-        const c = V2_CATS.find(x => x.code === w.category) || V2_CATS[0];
-        const done = !!w.today_checked;
-        return '<div class="today-checkin-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
-            '<span class="tci-cat">' + c.short + '</span>' +
-            '<span class="tci-title">' + escapeHtml(w.title) + '</span>' +
-            '<span class="tci-streak">' + escapeHtml(t('v2.streak', { n: w.streak || 0 })) + '</span>' +
-            (done
-                ? '<button type="button" class="v2-checkin-btn is-done" disabled><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkedIn')) + '</button>'
-                : '<button type="button" class="v2-checkin-btn" onclick="v2Checkin(' + w.id + ')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkin')) + ' +5</button>') +
-        '</div>';
-    }).join('');
 }
 
 // ── 成长成就页：汇总统计条 ──
