@@ -2725,7 +2725,7 @@ function showModule(moduleId) {
         renderPointsChart();
         loadV2Data();
         renderAchStats();
-        updateRedeemedList();
+        renderRedeemSummary();
     }
 
     // 目标：首次进入展示三步引导，并确保愿望列表已渲染
@@ -2829,17 +2829,32 @@ function renderCalendar() {
         if (isToday) cls += ' today';
         if (isSelected) cls += ' selected';
         if (day) cls += ' has-data';
+        if (day && day.redeemed > 0) cls += ' has-redeemed';
         let inner = `<span class="cal-day-num">${d}</span>`;
         if (day && (day.earned > 0 || day.redeemed > 0)) {
             inner += '<span class="cal-day-marks">';
             if (day.earned > 0) inner += `<span class="cal-mark cal-earned">+${day.earned}</span>`;
-            if (day.redeemed > 0) inner += `<span class="cal-mark cal-redeemed"><svg class="cal-mark-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg>${day.redeemed}</span>`;
+            if (day.redeemed > 0) inner += `<span class="cal-mark cal-redeemed"><svg class="cal-mark-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg>-${day.redeemed}</span>`;
             inner += '</span>';
         }
         html += `<span class="${cls}" onclick="calendarSelectDay('${key}')" title="${key}">${inner}</span>`;
     }
     html += '</div>';
     grid.innerHTML = html;
+    renderRedeemSummary();
+}
+
+// 愿望达成汇总：日历下方三栏（达成愿望数 / 兑换次数 / 消耗积分）
+function renderRedeemSummary() {
+    const el = document.getElementById('redeem-summary');
+    if (!el) return;
+    const list = Array.isArray(redeemedGifts) ? redeemedGifts : [];
+    const distinct = new Set(list.map(r => (r.name || '').trim())).size;
+    const totalPts = list.reduce((s, r) => s + (Number(r.points) || 0), 0);
+    const setText = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    setText('rs-count', distinct);
+    setText('rs-times', list.length);
+    setText('rs-points', totalPts);
 }
 
 function calendarShiftMonth(delta) {
@@ -2896,7 +2911,7 @@ function renderCalendarDayDetail() {
             }
             html += '</div>';
         } else {
-            html += `<div class="cal-detail-item gift"><svg class="cal-detail-icon" viewBox="0 0 24 24" fill="none" stroke="#E5484D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg><span class="cal-detail-pts neg">-${it.points}</span><span class="cal-detail-desc">${escapeHtml(it.desc)}</span></div>`;
+            html += `<div class="cal-detail-item gift"><svg class="cal-detail-icon" viewBox="0 0 24 24" fill="none" stroke="#F5A524" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg><span class="cal-detail-pts neg">-${it.points}</span><span class="cal-detail-desc">${escapeHtml(it.desc)}</span></div>`;
         }
     });
     panel.innerHTML = html;

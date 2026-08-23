@@ -843,6 +843,12 @@ h3 {
     background: #f5f7ff;
 }
 
+/* 愿望达成日：琥珀色底色，与积分（绿）一眼区分 */
+.cal-cell.has-redeemed {
+    background: var(--accent-soft);
+    border-color: #F2DFB6;
+}
+
 .cal-cell.today {
     border-color: #667eea;
     border-width: 2px;
@@ -912,8 +918,8 @@ h3 {
 }
 
 .cal-redeemed {
-    color: var(--danger);
-    background: var(--danger-soft);
+    color: var(--accent-ink);
+    background: var(--accent-soft);
 }
 
 /* 日历选中日详情 */
@@ -3081,6 +3087,32 @@ li, .gift-item, .redeemed-item, .behavior-item {
 .ws-label { font-size: 12px; color: var(--muted); }
 .ws-stat--closest { align-items: flex-end; text-align: right; }
 
+/* 愿望达成汇总 —— 日历下方三栏统计（达成愿望 / 兑换次数 / 消耗积分） */
+.redeem-summary {
+    display: flex;
+    align-items: stretch;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--sh-sm);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+.rs-stat {
+    flex: 1 1 0; min-width: 0;
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 15px 16px;
+    position: relative;
+}
+.rs-stat + .rs-stat::before {
+    content: "";
+    position: absolute; left: 0; top: 22%; bottom: 22%;
+    width: 1px; background: var(--border);
+}
+.rs-value { font-size: 1.4rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.01em; color: var(--brand); }
+.rs-stat--points .rs-value { color: var(--accent-ink); }
+.rs-label { font-size: 12px; color: var(--muted); }
+
 /* 愿望卡片网格 —— 自适应列数，比例更协调（桌面 3 列 / 平板 2 列 / 手机 1 列） */
 .gift-grid {
     display: grid;
@@ -3227,6 +3259,10 @@ li, .gift-item, .redeemed-item, .behavior-item {
     .ws-stat { padding: 13px 12px; }
     .ws-value { font-size: 1.2rem; }
     .ws-label { font-size: 11px; }
+    .redeem-summary { padding: 4px 0; }
+    .rs-stat { padding: 13px 12px; }
+    .rs-value { font-size: 1.2rem; }
+    .rs-label { font-size: 11px; }
     .gift-grid { gap: 12px; }
 }
 

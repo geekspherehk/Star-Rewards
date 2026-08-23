@@ -240,7 +240,10 @@ const translations = {
             name: '礼物名称',
             points: '消耗积分',
             date: '兑换日期',
-            noRecords: '暂无兑换记录'
+            noRecords: '暂无兑换记录',
+            sumCount: '累计达成愿望',
+            sumTimes: '累计兑换次数',
+            sumPoints: '共消耗积分'
         },
         goals: {
             module: '目标',
@@ -858,7 +861,10 @@ const translations = {
             name: 'Gift Name',
             points: 'Points Spent',
             date: 'Redeem Date',
-            noRecords: 'No redeemed items yet'
+            noRecords: 'No redeemed items yet',
+            sumCount: 'Wishes achieved',
+            sumTimes: 'Times redeemed',
+            sumPoints: 'Points spent'
         },
         goals: {
             module: 'Goals',

@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=36">
+    <link rel="stylesheet" href="style.css?v=37">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=23"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=42"></script>
+    <script defer src="i18n.js?v=43"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -305,12 +305,22 @@
                 </div>
 
                 <div id="calendar-day-detail" class="calendar-day-detail" style="display:none;"></div>
-                <!-- 愿望达成记录：与上方打卡日历融合，展示已兑换的愿望 -->
-                <div class="section-head">
-                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6m12 5h1.5a2.5 2.5 0 0 0 0-5H18M6 4h12v5a6 0 0 1-12 0V4zM8 21h8M12 15v6"/></svg><span data-i18n="redeemed.title">愿望达成记录</span></h3>
-                    <span class="section-count" id="redeemed-count">0</span>
+
+                <!-- 愿望达成汇总：达成日已在日历中以琥珀色标注，下方只留汇总数字 -->
+                <div class="redeem-summary" id="redeem-summary">
+                    <div class="rs-stat">
+                        <span class="rs-value" id="rs-count">0</span>
+                        <span class="rs-label" data-i18n="redeemed.sumCount">累计达成愿望</span>
+                    </div>
+                    <div class="rs-stat">
+                        <span class="rs-value" id="rs-times">0</span>
+                        <span class="rs-label" data-i18n="redeemed.sumTimes">累计兑换次数</span>
+                    </div>
+                    <div class="rs-stat rs-stat--points">
+                        <span class="rs-value" id="rs-points">0</span>
+                        <span class="rs-label" data-i18n="redeemed.sumPoints">共消耗积分</span>
+                    </div>
                 </div>
-                <div id="redeemed-list"></div>
 
                 <!-- 里程碑成就（全能小星星 + 21天坚持者） -->
                 <div class="v2-section ach-v2-wall">
@@ -421,7 +431,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=54"></script>
+    <script defer src="script.js?v=55"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
