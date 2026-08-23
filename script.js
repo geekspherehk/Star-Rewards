@@ -2047,7 +2047,13 @@ async function initializeApp() {
 
         // V2 全人成长：静默预载仪表盘数据（不影响主流程）
         loadV2Data();
-        
+
+        // 教育专栏（静态文章卡片，无需等待云数据）
+        renderEduColumn();
+
+        // 首次登录引导（仅首次，关闭后不再出现）
+        maybeShowOnboarding();
+
     } catch (error) {
         console.error('Script.js: 应用初始化失败:', error);
         showTemporaryMessage(t('common.initFailed'), 'error');
@@ -3367,6 +3373,53 @@ function v2GuideDismiss() {
     const el = document.getElementById('v2-guide');
     if (el) el.hidden = true;
     try { localStorage.setItem('v2_guide_seen', '1'); } catch (e) {}
+}
+
+// 首次登录引导：关闭后不再出现
+const ONBOARD_KEY = 'sr_onboarded';
+function maybeShowOnboarding() {
+    try { if (localStorage.getItem(ONBOARD_KEY)) return; } catch (e) {}
+    const el = document.getElementById('onboarding-modal');
+    if (el) el.style.display = 'flex';
+}
+function dismissOnboarding() {
+    const el = document.getElementById('onboarding-modal');
+    if (el) el.style.display = 'none';
+    try { localStorage.setItem(ONBOARD_KEY, '1'); } catch (e) {}
+    track('onboarding_dismiss');
+}
+
+// 帮助面板：全人体系说明 + 积分规则 + 教育专栏入口
+function openHelpPanel() {
+    const el = document.getElementById('help-modal');
+    if (el) el.style.display = 'flex';
+    track('open_help');
+}
+function closeHelpPanel() {
+    const el = document.getElementById('help-modal');
+    if (el) el.style.display = 'none';
+}
+
+// 教育专栏：列出已有 SEO 文章 + 占位卡
+function renderEduColumn() {
+    const el = document.getElementById('edu-cards');
+    if (!el) return;
+    const articles = [
+        { title: t('home.eduArt1Title'), sub: t('home.eduArt1Sub'), url: 'seo-guide-star-chart.html' },
+        { title: t('home.eduArt2Title'), sub: t('home.eduArt2Sub'), url: 'seo-habit-building.html' },
+        { title: t('home.eduArt3Title'), sub: t('home.eduArt3Sub'), url: 'seo-reward-ideas.html' }
+    ];
+    let html = articles.map(a =>
+        '<a class="edu-card" href="' + a.url + '" target="_blank" rel="noopener">' +
+            '<span class="edu-card-tag">' + escapeHtml(t('home.eduReadMore')) + '</span>' +
+            '<h4 class="edu-card-title">' + escapeHtml(a.title) + '</h4>' +
+            '<p class="edu-card-sub">' + escapeHtml(a.sub) + '</p>' +
+            '<span class="edu-card-more">' + escapeHtml(t('home.eduReadMore')) + ' →</span>' +
+        '</a>'
+    ).join('');
+    html += '<div class="edu-card edu-card--soon"><span class="edu-card-tag">' + escapeHtml(t('home.eduComingSoon')) + '</span>' +
+        '<h4 class="edu-card-title">…</h4><p class="edu-card-sub">' + escapeHtml(t('home.eduComingSoon')) + '</p></div>';
+    el.innerHTML = html;
 }
 // 高级选项（目标天数 / 难度）手动展开/收起
 function toggleV2Advanced() {

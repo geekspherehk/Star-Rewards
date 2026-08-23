@@ -3812,3 +3812,121 @@ a:hover { text-decoration: underline; }
     .v2-flower-wrap { max-width: 260px; }
     .petal-label-txt { font-size: 10px; }
 }
+
+/* ── 顶栏帮助按钮 ── */
+.help-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 50%;
+    background: var(--surface-2, #eef1f8);
+    color: var(--brand, #4A148C);
+    cursor: pointer;
+    transition: background .15s ease, transform .15s ease;
+}
+.help-btn:hover { background: var(--brand-soft, #ede7f6); transform: scale(1.05); }
+.help-btn .btn-ico { width: 20px; height: 20px; }
+
+/* ── 教育专栏 ── */
+.edu-column { margin-top: var(--sp-xl, 28px); }
+.edu-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+.edu-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    border-radius: 14px;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #eceef3);
+    text-decoration: none;
+    color: inherit;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.edu-card:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(74,20,140,.12); border-color: var(--brand, #4A148C); }
+.edu-card-tag {
+    align-self: flex-start;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .03em;
+    color: var(--brand, #4A148C);
+    background: var(--brand-soft, #ede7f6);
+    padding: 3px 8px;
+    border-radius: 999px;
+}
+.edu-card-title { margin: 2px 0 0; font-size: .98rem; line-height: 1.35; color: var(--text, #1f2233); }
+.edu-card-sub { margin: 0; font-size: .82rem; color: var(--text-2, #6b7280); line-height: 1.4; }
+.edu-card-more { margin-top: auto; padding-top: 6px; font-size: .8rem; font-weight: 600; color: var(--brand, #4A148C); }
+.edu-card--soon { opacity: .7; border-style: dashed; }
+.edu-card--soon .edu-card-title { color: var(--text-2, #9aa0ac); }
+
+/* ── 首次登录引导弹窗 ── */
+.onboarding-modal .onboarding-content { max-width: 420px; text-align: center; }
+.onboarding-hero { margin-bottom: 18px; }
+.onboarding-badge {
+    display: inline-block;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--brand, #4A148C);
+    background: var(--brand-soft, #ede7f6);
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+}
+.onboarding-title { margin: 0 0 8px; font-size: 1.25rem; color: var(--text, #1f2233); }
+.onboarding-lead { margin: 0; font-size: .9rem; color: var(--text-2, #6b7280); line-height: 1.5; }
+.onboarding-steps { list-style: none; margin: 0 0 20px; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 12px; }
+.onboarding-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.ob-num {
+    flex: 0 0 auto;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--brand, #4A148C);
+    color: #fff;
+    font-size: .85rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+}
+.ob-text { font-size: .9rem; color: var(--text, #1f2233); line-height: 1.45; }
+.onboarding-dismiss { width: 100%; }
+
+/* ── 帮助面板 ── */
+.help-modal .help-content { max-width: 440px; position: relative; }
+.modal-close {
+    position: absolute; top: 12px; right: 12px;
+    width: 34px; height: 34px;
+    border: none; border-radius: 50%;
+    background: var(--surface-2, #eef1f8);
+    color: var(--text-2, #6b7280);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { background: #e0e3ec; color: var(--text, #1f2233); }
+.modal-close svg { width: 18px; height: 18px; }
+.help-title {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 16px; font-size: 1.15rem; color: var(--text, #1f2233);
+}
+.help-title .sec-ico { width: 22px; height: 22px; color: var(--brand, #4A148C); }
+.help-section { margin-bottom: 18px; }
+.help-section h3 { margin: 0 0 6px; font-size: .98rem; color: var(--brand, #4A148C); }
+.help-section p { margin: 0; font-size: .88rem; color: var(--text-2, #6b7280); line-height: 1.5; }
+.help-rules { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.help-rules li { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: .88rem; color: var(--text, #1f2233); }
+.help-rules li b { color: var(--brand, #4A148C); white-space: nowrap; }
+.help-gotocol { margin-top: 10px; width: 100%; }
+
+/* 帮助/引导弹窗在窄屏的适配 */
+@media (max-width: 560px) {
+    .edu-cards { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 420px) {
+    .edu-cards { grid-template-columns: 1fr; }
+}
