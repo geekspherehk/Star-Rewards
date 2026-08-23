@@ -2725,6 +2725,7 @@ function showModule(moduleId) {
         renderPointsChart();
         loadV2Data();
         renderAchStats();
+        updateRedeemedList();
     }
 
     // 目标：首次进入展示三步引导，并确保愿望列表已渲染

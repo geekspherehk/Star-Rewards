@@ -35,7 +35,7 @@
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=23"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=41"></script>
+    <script defer src="i18n.js?v=42"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -167,7 +167,7 @@
                 </div>
             </div>
 
-            <!-- 目标模块：成长目标（设置/打卡/撤卡）+ 礼物兑换 -->
+            <!-- 目标模块：成长目标（设置/打卡/撤卡）+ 奖励目标（兑换愿望） -->
             <div id="gifts-module" class="module-content">
                 <!-- 成长目标：目标挂素养、每日打卡（新手三步引导首次展示） -->
                 <div class="v2-section" id="goals-section">
@@ -237,9 +237,10 @@
                     <div id="v2-wish-list" class="v2-wish-list"></div>
                 </div>
 
-                <!-- 礼物兑换 -->
+                <!-- 奖励目标：他希望得到的礼物，攒够积分即可兑换 -->
                 <div class="v2-section-head">
-                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg><span data-i18n="goals.giftTitle">礼物兑换</span></h3>
+                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg><span data-i18n="goals.giftTitle">奖励目标</span></h3>
+                    <p class="v2-sub" data-i18n="goals.rewardSub">他希望得到的礼物，攒够积分即可兑换</p>
                 </div>
                 <!-- 愿望清单概览 -->
                 <div class="wishlist-summary" id="wishlist-summary">
@@ -280,11 +281,6 @@
                 <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 22V7M12 7S10 2 7.5 3.5 8 7 12 7zM12 7c0 0 2-5 4.5-3.5S16 7 12 7z"/></svg><span data-i18n="gifts.title">愿望清单</span></h3>
                 <div id="gift-list" class="gift-grid"></div>
                 
-                <div class="section-head">
-                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6m12 5h1.5a2.5 2.5 0 0 0 0-5H18M6 4h12v5a6 6 0 0 1-12 0V4zM8 21h8M12 15v6"/></svg><span data-i18n="redeemed.title">达成记录</span></h3>
-                    <span class="section-count" id="redeemed-count">0</span>
-                </div>
-                <div id="redeemed-list"></div>
             </div>
 
             <!-- 成长成就模块：汇总统计 + 打卡日历 + 里程碑成就 + 成长总览玫瑰 -->
@@ -309,6 +305,12 @@
                 </div>
 
                 <div id="calendar-day-detail" class="calendar-day-detail" style="display:none;"></div>
+                <!-- 愿望达成记录：与上方打卡日历融合，展示已兑换的愿望 -->
+                <div class="section-head">
+                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6m12 5h1.5a2.5 2.5 0 0 0 0-5H18M6 4h12v5a6 0 0 1-12 0V4zM8 21h8M12 15v6"/></svg><span data-i18n="redeemed.title">愿望达成记录</span></h3>
+                    <span class="section-count" id="redeemed-count">0</span>
+                </div>
+                <div id="redeemed-list"></div>
 
                 <!-- 里程碑成就（全能小星星 + 21天坚持者） -->
                 <div class="v2-section ach-v2-wall">
@@ -419,7 +421,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=53"></script>
+    <script defer src="script.js?v=54"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {

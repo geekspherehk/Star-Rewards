@@ -236,7 +236,7 @@ const translations = {
             closestReady: '已可兑换'
         },
         redeemed: {
-            title: '达成记录',
+            title: '愿望达成记录',
             name: '礼物名称',
             points: '消耗积分',
             date: '兑换日期',
@@ -244,8 +244,9 @@ const translations = {
         },
         goals: {
             module: '目标',
-            moduleDesc: '成长目标 + 礼物兑换',
-            giftTitle: '礼物兑换'
+            moduleDesc: '成长目标 + 奖励目标',
+            giftTitle: '奖励目标',
+            rewardSub: '他希望得到的礼物，攒够积分即可兑换'
         },
         ach: {
             module: '成长成就',
@@ -853,7 +854,7 @@ const translations = {
             closestReady: 'Unlocked'
         },
         redeemed: {
-            title: 'Redeemed Items',
+            title: 'Wish Achievements',
             name: 'Gift Name',
             points: 'Points Spent',
             date: 'Redeem Date',
@@ -861,8 +862,9 @@ const translations = {
         },
         goals: {
             module: 'Goals',
-            moduleDesc: 'Growth goals + gift redemption',
-            giftTitle: 'Gift Redemption'
+            moduleDesc: 'Growth goals + Reward goals',
+            giftTitle: 'Reward Goals',
+            rewardSub: 'Rewards he or she hopes to get — redeem once enough points'
         },
         ach: {
             module: 'Achievements',
