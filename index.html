@@ -30,7 +30,7 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=42">
+    <link rel="stylesheet" href="style.css?v=43">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=23"></script>
@@ -234,6 +234,7 @@
                             <button class="add-points-btn" onclick="addV2Wish()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="v2.addWishBtn">添加目标</span></button>
                         </div>
                     </div>
+                    <div id="v2-wish-list" class="v2-wish-list"></div>
                 </div>
 
                 <!-- 奖励目标：他希望得到的礼物，攒够积分即可兑换 -->
@@ -430,7 +431,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=60"></script>
+    <script defer src="script.js?v=61"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {

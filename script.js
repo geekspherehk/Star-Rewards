@@ -3040,14 +3040,13 @@ function renderHomeCheckin() {
             const makeupBtn = '<button type="button" class="v2-makeup-btn tci-makeup" onclick="openMakeupCheckin(' + w.id + ')" title="' + escapeHtml(t('v2.makeupTip')) + '">' +
                 '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>' +
                 '<span class="tmi-text">' + escapeHtml(t('v2.makeup')) + '</span></button>';
-            const delBtn = '<button type="button" class="v2-del-btn tci-del" title="' + escapeHtml(t('common.delete')) + '" onclick="v2DeleteWish(' + w.id + ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
             return '<div class="today-checkin-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
                 '<span class="tci-cat">' + c.short + '</span>' +
                 '<div class="tci-main">' +
                     '<span class="tci-title">' + escapeHtml(w.title || '') + '</span>' +
                     '<span class="tci-streak">' + escapeHtml(t('v2.streak', { n: w.streak || 0 })) + '</span>' +
                 '</div>' +
-                '<div class="tci-actions">' + checkinBtn + makeupBtn + delBtn + '</div>' +
+                '<div class="tci-actions">' + checkinBtn + makeupBtn + '</div>' +
             '</div>';
         }).join('');
     } catch (err) {

@@ -3756,7 +3756,6 @@ a:hover { text-decoration: underline; }
 .tci-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .today-checkin-row .v2-checkin-btn { flex: 0 0 auto; width: auto; max-width: 50%; white-space: nowrap; }
 .today-checkin-row .v2-makeup-btn { flex: 0 0 auto; padding: 8px 10px; font-size: var(--fs-xs); }
-.today-checkin-row .v2-del-btn { margin-left: 0; flex: 0 0 auto; }
 .today-checkin-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: var(--sp-4); color: var(--text-2); font-size: var(--fs-sm); text-align: center; }
 
 /* 今日打卡行：手机端按钮换行到第二行并压缩（须位于 .tci-actions 基础规则之后） */
