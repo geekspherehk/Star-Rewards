@@ -48,6 +48,7 @@ let totalPoints = 0;
 let behaviors = [];
 let gifts = [];
 let redeemedGifts = [];
+let checkins = [];      // 打卡记录（含补卡），供成长日历按日期展示
 let diaryEntries = [];
 
 // 多孩档案
@@ -2068,13 +2069,14 @@ async function loadDataFromCloud() {
         if (!api.getToken()) {
             throw new Error(t('common.notLoggedIn'));        }
         
-        const [profile, profilesData, behaviorsData, giftsData, redeemedGiftsData, familyData] = await Promise.all([
+        const [profile, profilesData, behaviorsData, giftsData, redeemedGiftsData, familyData, checkinsData] = await Promise.all([
             api.getProfile(),
             api.getProfiles(),
             api.getBehaviors(),
             api.getGifts(),
             api.getRedeemedGifts(),
-            api.getFamily().catch(() => null)
+            api.getFamily().catch(() => null),
+            api.getCheckins(0).catch(() => ({ checkins: [] }))
         ]);
         
         console.log('Script.js: 数据加载成功:');
@@ -2082,6 +2084,7 @@ async function loadDataFromCloud() {
         console.log('- 行为记录:', behaviorsData.length, '条');
         console.log('- 礼物:', giftsData.length, '个');
         console.log('- 已兑换礼物:', redeemedGiftsData.length, '个');
+        console.log('- 打卡记录:', (checkinsData && checkinsData.checkins) ? checkinsData.checkins.length : 0, '条');
         
         if (profile) {
             currentPoints = profile.current_points || 0;
@@ -2108,6 +2111,8 @@ async function loadDataFromCloud() {
             image_url: gift.image_url || '',
             original_url: gift.original_url || ''
         }));
+
+        checkins = (checkinsData && Array.isArray(checkinsData.checkins)) ? checkinsData.checkins : [];
 
         currentFamily = normalizeFamily(familyData && familyData.family ? familyData : null);
 
@@ -2789,22 +2794,29 @@ function renderCalendar() {
         label.textContent = new Date(y, m, 1).toLocaleDateString(getCalendarLocale(), { year: 'numeric', month: 'long' });
     }
 
-    // 收集当月每日活动：积分行为（正负） + 兑换
+    // 收集当月每日活动：积分行为（正负） + 打卡 + 兑换
     const byDay = {};
     (Array.isArray(behaviors) ? behaviors : []).forEach(b => {
         const d = new Date(b.timestamp);
         if (isNaN(d)) return;
         const key = calendarDateKey(d);
-        if (!byDay[key]) byDay[key] = { earned: 0, redeemed: 0, items: [] };
+        if (!byDay[key]) byDay[key] = { earned: 0, redeemed: 0, checkins: 0, items: [] };
         const pts = Number(b.points) || 0;
         if (pts > 0) byDay[key].earned += pts;
         byDay[key].items.push({ type: 'b', id: b.id, points: pts, desc: b.description || '' });
+    });
+    (Array.isArray(checkins) ? checkins : []).forEach(c => {
+        const key = c.checkin_date;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return;
+        if (!byDay[key]) byDay[key] = { earned: 0, redeemed: 0, checkins: 0, items: [] };
+        byDay[key].checkins += 1;
+        byDay[key].items.push({ type: 'c', id: c.id, points: 5, desc: c.wish_title || '' });
     });
     (Array.isArray(redeemedGifts) ? redeemedGifts : []).forEach(r => {
         const d = new Date(r.redeem_date || r.created_at);
         if (isNaN(d)) return;
         const key = calendarDateKey(d);
-        if (!byDay[key]) byDay[key] = { earned: 0, redeemed: 0, items: [] };
+        if (!byDay[key]) byDay[key] = { earned: 0, redeemed: 0, checkins: 0, items: [] };
         const pts = Number(r.points) || 0;
         byDay[key].redeemed += pts;
         byDay[key].items.push({ type: 'r', id: r.id, points: pts, desc: r.name || '' });
@@ -2831,9 +2843,10 @@ function renderCalendar() {
         if (day) cls += ' has-data';
         if (day && day.redeemed > 0) cls += ' has-redeemed';
         let inner = `<span class="cal-day-num">${d}</span>`;
-        if (day && (day.earned > 0 || day.redeemed > 0)) {
+        if (day && (day.earned > 0 || day.redeemed > 0 || day.checkins > 0)) {
             inner += '<span class="cal-day-marks">';
             if (day.earned > 0) inner += `<span class="cal-mark cal-earned">+${day.earned}</span>`;
+            if (day.checkins > 0) inner += `<span class="cal-mark cal-checkin"><svg class="cal-mark-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>+${day.checkins * 5}</span>`;
             if (day.redeemed > 0) inner += `<span class="cal-mark cal-redeemed"><svg class="cal-mark-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg>-${day.redeemed}</span>`;
             inner += '</span>';
         }
@@ -2886,6 +2899,11 @@ function renderCalendarDayDetail() {
             items.push({ type: 'b', id: b.id, points: b.points, desc: b.description || '' });
         }
     });
+    (Array.isArray(checkins) ? checkins : []).forEach(c => {
+        if (c.checkin_date === calendarSelectedDay) {
+            items.push({ type: 'c', id: c.id, points: 5, desc: c.wish_title || t('v2.checkin') });
+        }
+    });
     (Array.isArray(redeemedGifts) ? redeemedGifts : []).forEach(r => {
         const d = new Date(r.redeem_date || r.created_at);
         if (!isNaN(d) && calendarDateKey(d) === calendarSelectedDay) {
@@ -2910,6 +2928,8 @@ function renderCalendarDayDetail() {
                 html += `<button class="cal-detail-del" onclick="deleteBehavior(${it.id})" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>`;
             }
             html += '</div>';
+        } else if (it.type === 'c') {
+            html += `<div class="cal-detail-item checkin"><svg class="cal-detail-icon" viewBox="0 0 24 24" fill="none" stroke="#6C5CE7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span class="cal-detail-pts pos">+${it.points}</span><span class="cal-detail-desc">${escapeHtml(it.desc)}</span></div>`;
         } else {
             html += `<div class="cal-detail-item gift"><svg class="cal-detail-icon" viewBox="0 0 24 24" fill="none" stroke="#F5A524" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M3 12v9h18v-9"/><path d="M12 8C12 8 10 3 7.5 4.5S8 8 12 8zM12 8c0 0 2-5 4.5-3.5S16 8 12 8z"/></svg><span class="cal-detail-pts neg">-${it.points}</span><span class="cal-detail-desc">${escapeHtml(it.desc)}</span></div>`;
         }
@@ -2959,10 +2979,22 @@ function getSelectedBehaviorDimension() {
     return el ? el.value : '';
 }
 
+// 拉取该档案的打卡记录（含补卡），供成长日历按日期展示
+async function refreshCheckins() {
+    if (!api.getToken()) { checkins = []; return; }
+    try {
+        const res = await api.getCheckins(0);
+        checkins = (res && Array.isArray(res.checkins)) ? res.checkins : [];
+    } catch (e) {
+        console.warn('checkins load failed:', e);
+    }
+}
+
 async function loadV2Data() {
     if (!api.getToken()) return null;
     try {
         v2Data = await api.getV2Overview();
+        await refreshCheckins();
         renderV2All();
         return v2Data;
     } catch (e) {

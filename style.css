@@ -917,6 +917,11 @@ h3 {
     background: var(--success-soft);
 }
 
+.cal-checkin {
+    color: var(--brand);
+    background: var(--brand-soft);
+}
+
 .cal-redeemed {
     color: var(--accent-ink);
     background: var(--accent-soft);
