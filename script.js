@@ -2782,14 +2782,30 @@ function a2hsCloseIos() {
     const o = document.getElementById('a2hs-ios-overlay');
     if (o) o.style.display = 'none';
 }
+function a2hsCloseManual() {
+    const o = document.getElementById('a2hs-manual-overlay');
+    if (o) o.style.display = 'none';
+}
 function a2hsInstall() {
-    if (deferredInstallPrompt) { deferredInstallPrompt.prompt(); return; }
+    if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        if (deferredInstallPrompt.userChoice && deferredInstallPrompt.userChoice.finally) {
+            deferredInstallPrompt.userChoice.finally(() => { deferredInstallPrompt = null; });
+        }
+        return;
+    }
     if (isIOSDevice()) {
         const o = document.getElementById('a2hs-ios-overlay');
         if (o) o.style.display = 'flex';
         return;
     }
-    a2hsDismiss();
+    // Android 无安装提示可用（首次访问/微信内）：给出浏览器菜单手动安装步骤
+    const o = document.getElementById('a2hs-manual-overlay');
+    if (o) {
+        const note = document.getElementById('a2hs-wechat-note');
+        if (note) note.style.display = /MicroMessenger|QQ/i.test(navigator.userAgent) ? 'block' : 'none';
+        o.style.display = 'flex';
+    }
 }
 function setupA2HS() {
     if (isStandaloneMode()) return;

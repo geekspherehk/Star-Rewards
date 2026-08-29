@@ -3603,6 +3603,7 @@ a:hover { text-decoration: underline; }
 .a2hs-later { border: none; background: transparent; color: var(--muted); font-size: var(--fs-sm); padding: 8px 6px; cursor: pointer; }
 .a2hs-ios { text-align: left; }
 .a2hs-steps { margin: 0 0 16px; padding-left: 20px; color: var(--text-2); font-size: var(--fs-sm); line-height: 2; }
+.a2hs-wechat-note { margin: 0 0 16px; padding: 10px 12px; font-size: var(--fs-xs); color: var(--accent-ink); background: var(--accent-soft); border-radius: var(--r-md); line-height: 1.6; }
 @media (max-width: 360px) {
     .a2hs-banner { flex-direction: column; align-items: stretch; gap: 10px; }
     .a2hs-actions { justify-content: flex-end; }
