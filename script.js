@@ -3369,20 +3369,17 @@ async function v2Checkin(id, date = null, note = '') {
     try {
         const res = await api.addCheckin(id, date, note);
         const isMakeup = !!date && date !== calendarDateKey(new Date());
-        const wish = ((v2Data && v2Data.wishes) || []).find(w => w.id === id);
-        if (res.internalized) {
-            if (confirm(t('v2.exitProtocolConfirm'))) {
-                const done = await api.completeWish(id);
-                applyPointsResult(done);
-                showCelebrate(wish, done);
-            } else {
-                showCheckinRitual(wish, res, isMakeup);
-            }
+        const wish = ((v2Data && v2Data.wishes) || []).find(w => String(w.id) === String(id));
+        if (res.internalized && confirm(t('v2.exitProtocolConfirm'))) {
+            const done = await api.completeWish(id);
+            applyPointsResult(done);
+            showCelebrate(wish, done);
+            await loadV2Data();
         } else {
+            applyPointsResult(res);
             showCheckinRitual(wish, res, isMakeup);
+            await loadV2Data(true);
         }
-        applyPointsResult(res);
-        await loadV2Data(true);
     } catch (e) {
         const dupeMsg = date ? t('v2.makeupDupe') : t('v2.checkinDupe');
         const msg = (e && e.message && /already checked/i.test(e.message)) ? dupeMsg : ((e && (e.error || e.message)) || t('common.error'));
@@ -3488,7 +3485,7 @@ async function v2ExitProtocol(id) {
     try {
         const res = await api.completeWish(id);
         applyPointsResult(res);
-        const wish = ((v2Data && v2Data.wishes) || []).find(w => w.id === id);
+        const wish = ((v2Data && v2Data.wishes) || []).find(w => String(w.id) === String(id));
         showCelebrate(wish, res);
         await loadV2Data();
     } catch (e) {
@@ -3501,7 +3498,7 @@ async function v2CompleteWish(id) {
     try {
         const res = await api.completeWish(id);
         applyPointsResult(res);
-        const wish = ((v2Data && v2Data.wishes) || []).find(w => w.id === id);
+        const wish = ((v2Data && v2Data.wishes) || []).find(w => String(w.id) === String(id));
         showCelebrate(wish, res);
         await loadV2Data();
     } catch (e) {
