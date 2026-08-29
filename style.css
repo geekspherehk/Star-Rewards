@@ -3563,16 +3563,28 @@ a:hover { text-decoration: underline; }
 .v2-makeup-btn svg { width: 15px; height: 15px; }
 
 /* 补打卡弹窗 */
+.makeup-content { position: relative; }
+.makeup-content h3 { padding-right: 32px; }
+.makeup-content .form-group { margin-bottom: 14px; }
 .makeup-content input[type="date"] {
     width: 100%; padding: 10px 12px;
     border: 1px solid var(--border-strong); border-radius: 8px;
     font-size: 1rem; box-sizing: border-box; background: var(--surface);
+    color: var(--text); appearance: none; -webkit-appearance: none;
 }
+.makeup-content input[type="text"] { box-sizing: border-box; }
 .makeup-wish-name {
     padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
     background: var(--surface-2); color: var(--text); font-weight: 600; font-size: .95rem;
+    word-break: break-word; line-height: 1.4;
 }
-.makeup-hint { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+.makeup-hint { margin: 8px 0 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+.makeup-content .modal-actions { margin-top: 18px; }
+@media (max-width: 560px) {
+    .makeup-content .modal-actions { flex-direction: column; gap: 8px; }
+    .makeup-content .modal-actions .primary-btn,
+    .makeup-content .modal-actions .secondary-btn { width: 100%; }
+}
 .v2-empty {
     text-align: center; padding: 34px 16px; color: var(--muted);
     font-size: var(--fs-sm); border: 1px dashed var(--border-strong);
@@ -3744,15 +3756,17 @@ a:hover { text-decoration: underline; }
 .tci-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .today-checkin-row .v2-checkin-btn { flex: 0 0 auto; width: auto; max-width: 50%; white-space: nowrap; }
 .today-checkin-row .v2-makeup-btn { flex: 0 0 auto; padding: 8px 10px; font-size: var(--fs-xs); }
+.today-checkin-row .v2-del-btn { margin-left: 0; flex: 0 0 auto; }
 .today-checkin-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: var(--sp-4); color: var(--text-2); font-size: var(--fs-sm); text-align: center; }
 
-/* 今日打卡行：手机端按钮换行到第二行并压缩，避免溢出（须位于 .tci-actions 基础规则之后） */
+/* 今日打卡行：手机端按钮换行到第二行并压缩（须位于 .tci-actions 基础规则之后） */
 @media (max-width: 560px) {
     .today-checkin-row .tci-main { flex: 1 1 0; }
     .today-checkin-row .tci-actions { flex: 1 1 100%; margin-top: 4px; }
-    .today-checkin-row .v2-checkin-btn,
-    .today-checkin-row .v2-makeup-btn { padding: 7px 10px; font-size: var(--fs-xs); }
-    .today-checkin-row .v2-checkin-btn { max-width: none; }
+    .today-checkin-row .v2-checkin-btn { padding: 7px 10px; font-size: var(--fs-xs); max-width: none; }
+    /* 补卡：手机端变成纯图标方按钮，避免文字让按钮过长 */
+    .today-checkin-row .tci-makeup { width: 36px; height: 36px; padding: 0; justify-content: center; }
+    .today-checkin-row .tci-makeup .tmi-text { display: none; }
 }
 
 /* ── 成长成就页：汇总统计条 ── */
