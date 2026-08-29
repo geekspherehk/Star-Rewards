@@ -3548,6 +3548,26 @@ a:hover { text-decoration: underline; }
 }
 .v2-del-btn:hover { color: var(--danger); background: var(--danger-soft); border-color: transparent; }
 .v2-del-btn svg { width: 16px; height: 16px; }
+.v2-makeup-btn {
+    padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-md);
+    background: var(--surface); color: var(--text-2); font-weight: 700; font-size: var(--fs-sm);
+    cursor: pointer; transition: all .15s; box-shadow: var(--sh-sm);
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.v2-makeup-btn:hover { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent); }
+.v2-makeup-btn svg { width: 15px; height: 15px; }
+
+/* 补打卡弹窗 */
+.makeup-content input[type="date"] {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid var(--border-strong); border-radius: 8px;
+    font-size: 1rem; box-sizing: border-box; background: var(--surface);
+}
+.makeup-wish-name {
+    padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface-2); color: var(--text); font-weight: 600; font-size: .95rem;
+}
+.makeup-hint { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
 .v2-empty {
     text-align: center; padding: 34px 16px; color: var(--muted);
     font-size: var(--fs-sm); border: 1px dashed var(--border-strong);

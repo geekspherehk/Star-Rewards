@@ -3260,6 +3260,9 @@ function renderV2Wishes() {
                 actions.push('<button type="button" class="v2-checkin-btn ' + (doneToday ? 'is-done' : '') + '" ' + (doneToday ? 'disabled' : '') + ' onclick="v2Checkin(' + w.id + ')">' +
                     '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
                     escapeHtml(t(doneToday ? 'v2.checkedIn' : 'v2.checkin')) + '</button>');
+                actions.push('<button type="button" class="v2-makeup-btn" onclick="openMakeupCheckin(' + w.id + ')" title="' + escapeHtml(t('v2.makeupTip')) + '">' +
+                    '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>' +
+                    escapeHtml(t('v2.makeup')) + '</button>');
                 if (w.internalized) {
                     actions.push('<button type="button" class="v2-complete-btn" onclick="v2ExitProtocol(' + w.id + ')">' + escapeHtml(t('v2.exitProtocol')) + '</button>');
                 }
@@ -3297,10 +3300,11 @@ function applyPointsResult(res) {
     }
 }
 
-async function v2Checkin(id) {
+async function v2Checkin(id, date = null, note = '') {
     try {
-        const res = await api.addCheckin(id);
+        const res = await api.addCheckin(id, date, note);
         const ptsTxt = (res && res.points_awarded) ? (' · +' + res.points_awarded + V2_PTS_UNIT()) : '';
+        const isMakeup = !!date && date !== calendarDateKey(new Date());
         if (res.internalized) {
             showTemporaryMessage(t('v2.internalized') + ptsTxt, 'success');
             if (confirm(t('v2.exitProtocolConfirm'))) {
@@ -3308,15 +3312,68 @@ async function v2Checkin(id) {
                 applyPointsResult(done);
             }
         } else {
-            showTemporaryMessage(t('v2.checkinDone') + ptsTxt + ' · ' + t('v2.streak', { n: res.streak }), 'success');
+            showTemporaryMessage((isMakeup ? t('v2.makeupDone') : t('v2.checkinDone')) + ptsTxt + ' · ' + t('v2.streak', { n: res.streak }), 'success');
         }
         applyPointsResult(res);
         await loadV2Data();
     } catch (e) {
-        const msg = (e && e.message && /already checked/i.test(e.message)) ? t('v2.checkinDupe') : ((e && (e.error || e.message)) || t('common.error'));
+        const dupeMsg = date ? t('v2.makeupDupe') : t('v2.checkinDupe');
+        const msg = (e && e.message && /already checked/i.test(e.message)) ? dupeMsg : ((e && (e.error || e.message)) || t('common.error'));
         showTemporaryMessage(msg, 'error');
         await loadV2Data();
     }
+}
+
+// ── 补打卡：给最近 7 天内漏掉的日期补记 ──
+let makeupWishId = null;
+let makeupCheckedDates = [];
+
+async function openMakeupCheckin(id) {
+    const wishes = (v2Data && v2Data.wishes) || [];
+    const wish = wishes.find(w => w.id === id);
+    makeupWishId = id;
+    makeupCheckedDates = [];
+
+    const nameEl = document.getElementById('makeup-wish-name');
+    if (nameEl && wish) nameEl.textContent = wish.title;
+    const noteEl = document.getElementById('makeup-note');
+    if (noteEl) noteEl.value = '';
+
+    const today = new Date();
+    const max = calendarDateKey(today);
+    const min = calendarDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6));
+    const dateEl = document.getElementById('makeup-date');
+    const btn = document.getElementById('makeup-confirm-btn');
+    if (dateEl) { dateEl.min = min; dateEl.max = max; dateEl.value = ''; dateEl.disabled = true; }
+    if (btn) btn.disabled = true;
+    const hintEl = document.getElementById('makeup-hint');
+    if (hintEl) hintEl.textContent = t('v2.makeupRange', { min, max });
+
+    const modal = document.getElementById('makeup-modal');
+    if (modal) modal.style.display = 'flex';
+
+    try {
+        const res = await api.getCheckins(id);
+        makeupCheckedDates = (res && Array.isArray(res.checkins)) ? res.checkins.map(c => c.checkin_date) : [];
+    } catch (e) { /* 拉取失败不影响补卡，重复日期由后端兜底 */ }
+    if (dateEl) dateEl.disabled = false;
+    if (btn) btn.disabled = false;
+}
+
+function closeMakeupModal() {
+    const modal = document.getElementById('makeup-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function confirmMakeupCheckin() {
+    if (!makeupWishId) return;
+    const dateEl = document.getElementById('makeup-date');
+    const noteEl = document.getElementById('makeup-note');
+    const date = dateEl ? dateEl.value : '';
+    if (!date) { showTemporaryMessage(t('v2.makeupPickDate'), 'error'); return; }
+    if (makeupCheckedDates.indexOf(date) >= 0) { showTemporaryMessage(t('v2.makeupDupe'), 'error'); return; }
+    closeMakeupModal();
+    await v2Checkin(makeupWishId, date, noteEl ? noteEl.value : '');
 }
 
 // 撤卡仪式：习惯已内化，把打卡位让给下一个目标

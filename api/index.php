@@ -1800,6 +1800,12 @@ function handleAddCheckin($pdo, $data) {
     $checkinDate = isset($data['date']) ? trim((string)$data['date']) : date('Y-m-d');
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkinDate)) sendError('Invalid date', 400);
 
+    // 补卡限制：不能补未来日期；最多补最近 7 天（含今天）
+    $targetTs = strtotime($checkinDate);
+    $todayTs = strtotime(date('Y-m-d'));
+    if ($targetTs > $todayTs) sendError('Cannot check in for a future date', 400);
+    if ($targetTs < strtotime('-6 days', $todayTs)) sendError('Check-in only allowed within the last 7 days', 400);
+
     try {
         $stmt = $pdo->prepare('INSERT INTO checkins (family_id, profile_id, user_id, wish_id, checkin_date, note) VALUES (?, ?, ?, ?, ?, ?)');
         $stmt->execute([
