@@ -14,6 +14,9 @@ if (php_sapi_name() !== 'cli') {
     exit('Forbidden: CLI only');
 }
 
+// 最先记录"脚本被启动"（在 require 之前）——用来区分"cron 没执行脚本"还是"脚本启动后出错"
+@file_put_contents(__DIR__ . '/cron_remind.log', date('Y-m-d H:i:s') . ' cron start (php ' . PHP_VERSION . ')' . "\n", FILE_APPEND | LOCK_EX);
+
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/webpush.php';
 
