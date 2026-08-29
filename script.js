@@ -2980,8 +2980,14 @@ function getSelectedBehaviorDimension() {
 }
 
 // 拉取该档案的打卡记录（含补卡），供成长日历按日期展示
-async function refreshCheckins() {
+// 节流：同一分钟内最多拉取一次（force=true 强制刷新，用于打卡/补卡后），
+// 避免每次切换模块/每次操作都多发一个 get_checkins 请求把 DB 连接配额打满
+let lastCheckinsRefresh = 0;
+async function refreshCheckins(force = false) {
     if (!api.getToken()) { checkins = []; return; }
+    const now = Date.now();
+    if (!force && now - lastCheckinsRefresh < 60000) return;
+    lastCheckinsRefresh = now;
     try {
         const res = await api.getCheckins(0);
         checkins = (res && Array.isArray(res.checkins)) ? res.checkins : [];
@@ -2990,11 +2996,11 @@ async function refreshCheckins() {
     }
 }
 
-async function loadV2Data() {
+async function loadV2Data(forceCheckins = false) {
     if (!api.getToken()) return null;
     try {
         v2Data = await api.getV2Overview();
-        await refreshCheckins();
+        await refreshCheckins(forceCheckins);
         renderV2All();
         return v2Data;
     } catch (e) {
@@ -3347,12 +3353,12 @@ async function v2Checkin(id, date = null, note = '') {
             showTemporaryMessage((isMakeup ? t('v2.makeupDone') : t('v2.checkinDone')) + ptsTxt + ' · ' + t('v2.streak', { n: res.streak }), 'success');
         }
         applyPointsResult(res);
-        await loadV2Data();
+        await loadV2Data(true);
     } catch (e) {
         const dupeMsg = date ? t('v2.makeupDupe') : t('v2.checkinDupe');
         const msg = (e && e.message && /already checked/i.test(e.message)) ? dupeMsg : ((e && (e.error || e.message)) || t('common.error'));
         showTemporaryMessage(msg, 'error');
-        await loadV2Data();
+        await loadV2Data(true);
     }
 }
 
