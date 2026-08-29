@@ -3034,13 +3034,19 @@ function renderHomeCheckin() {
         el.innerHTML = active.map(w => {
             const c = (typeof V2_CATS !== 'undefined' && V2_CATS.find(x => x.code === w.category)) || fallbackCat;
             const done = !!w.today_checked;
+            const checkinBtn = done
+                ? '<button type="button" class="v2-checkin-btn is-done" disabled><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkedIn')) + '</button>'
+                : '<button type="button" class="v2-checkin-btn" onclick="v2Checkin(' + w.id + ')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkin')) + ' +5</button>';
+            const makeupBtn = '<button type="button" class="v2-makeup-btn tci-makeup" onclick="openMakeupCheckin(' + w.id + ')" title="' + escapeHtml(t('v2.makeupTip')) + '">' +
+                '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>' +
+                escapeHtml(t('v2.makeup')) + '</button>';
             return '<div class="today-checkin-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
                 '<span class="tci-cat">' + c.short + '</span>' +
-                '<span class="tci-title">' + escapeHtml(w.title || '') + '</span>' +
-                '<span class="tci-streak">' + escapeHtml(t('v2.streak', { n: w.streak || 0 })) + '</span>' +
-                (done
-                    ? '<button type="button" class="v2-checkin-btn is-done" disabled><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkedIn')) + '</button>'
-                    : '<button type="button" class="v2-checkin-btn" onclick="v2Checkin(' + w.id + ')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkin')) + ' +5</button>') +
+                '<div class="tci-main">' +
+                    '<span class="tci-title">' + escapeHtml(w.title || '') + '</span>' +
+                    '<span class="tci-streak">' + escapeHtml(t('v2.streak', { n: w.streak || 0 })) + '</span>' +
+                '</div>' +
+                '<div class="tci-actions">' + checkinBtn + makeupBtn + '</div>' +
             '</div>';
         }).join('');
     } catch (err) {
@@ -3292,9 +3298,6 @@ function renderV2Wishes() {
                 actions.push('<button type="button" class="v2-checkin-btn ' + (doneToday ? 'is-done' : '') + '" ' + (doneToday ? 'disabled' : '') + ' onclick="v2Checkin(' + w.id + ')">' +
                     '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
                     escapeHtml(t(doneToday ? 'v2.checkedIn' : 'v2.checkin')) + '</button>');
-                actions.push('<button type="button" class="v2-makeup-btn" onclick="openMakeupCheckin(' + w.id + ')" title="' + escapeHtml(t('v2.makeupTip')) + '">' +
-                    '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>' +
-                    escapeHtml(t('v2.makeup')) + '</button>');
                 if (w.internalized) {
                     actions.push('<button type="button" class="v2-complete-btn" onclick="v2ExitProtocol(' + w.id + ')">' + escapeHtml(t('v2.exitProtocol')) + '</button>');
                 }

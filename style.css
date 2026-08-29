@@ -3649,6 +3649,14 @@ a:hover { text-decoration: underline; }
 }
 .v2-guide-close:hover { background: var(--brand-600, var(--brand)); }
 
+/* 新手引导横幅 + 今日打卡行：手机端竖排，避免挤压 */
+@media (max-width: 560px) {
+    .v2-guide { flex-direction: column; }
+    .v2-guide-close { width: 100%; text-align: center; }
+    .today-checkin-row .tci-main { flex: 1 1 0; }
+    .today-checkin-row .tci-actions { flex: 1 1 100%; justify-content: flex-end; margin-top: 4px; }
+}
+
 /* ── 愿望表单：渐进式高级项 ── */
 .v2-adv-toggle {
     display: inline-block; cursor: pointer; margin: 2px 0 6px;
@@ -3727,14 +3735,17 @@ a:hover { text-decoration: underline; }
 }
 .today-checkin-list { display: flex; flex-direction: column; gap: 8px; }
 .today-checkin-row {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
     padding: 10px 12px; border-radius: var(--r-md);
     background: var(--pc-soft); border: 1px solid transparent;
 }
 .tci-cat { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--pc); color: #fff; font-weight: 800; font-size: 12px; }
+.tci-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px; }
 .tci-title { flex: 1 1 auto; min-width: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tci-streak { flex: 0 0 auto; font-size: var(--fs-xs); color: var(--text-2); white-space: nowrap; }
+.tci-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
 .today-checkin-row .v2-checkin-btn { flex: 0 0 auto; width: auto; max-width: 50%; white-space: nowrap; }
+.today-checkin-row .v2-makeup-btn { flex: 0 0 auto; padding: 8px 10px; font-size: var(--fs-xs); }
 .today-checkin-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: var(--sp-4); color: var(--text-2); font-size: var(--fs-sm); text-align: center; }
 
 /* ── 成长成就页：汇总统计条 ── */
