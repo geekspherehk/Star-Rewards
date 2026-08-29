@@ -2069,14 +2069,13 @@ async function loadDataFromCloud() {
         if (!api.getToken()) {
             throw new Error(t('common.notLoggedIn'));        }
         
-        const [profile, profilesData, behaviorsData, giftsData, redeemedGiftsData, familyData, checkinsData] = await Promise.all([
+        const [profile, profilesData, behaviorsData, giftsData, redeemedGiftsData, familyData] = await Promise.all([
             api.getProfile(),
             api.getProfiles(),
             api.getBehaviors(),
             api.getGifts(),
             api.getRedeemedGifts(),
-            api.getFamily().catch(() => null),
-            api.getCheckins(0).catch(() => ({ checkins: [] }))
+            api.getFamily().catch(() => null)
         ]);
         
         console.log('Script.js: 数据加载成功:');
@@ -2084,7 +2083,6 @@ async function loadDataFromCloud() {
         console.log('- 行为记录:', behaviorsData.length, '条');
         console.log('- 礼物:', giftsData.length, '个');
         console.log('- 已兑换礼物:', redeemedGiftsData.length, '个');
-        console.log('- 打卡记录:', (checkinsData && checkinsData.checkins) ? checkinsData.checkins.length : 0, '条');
         
         if (profile) {
             currentPoints = profile.current_points || 0;
@@ -2112,7 +2110,7 @@ async function loadDataFromCloud() {
             original_url: gift.original_url || ''
         }));
 
-        checkins = (checkinsData && Array.isArray(checkinsData.checkins)) ? checkinsData.checkins : [];
+        // 打卡记录由 loadV2Data→refreshCheckins 负责加载（节流），不再在首屏并发批量拉取，降低 DB 连接峰值
 
         currentFamily = normalizeFamily(familyData && familyData.family ? familyData : null);
 
@@ -2901,7 +2899,8 @@ function renderCalendarDayDetail() {
     });
     (Array.isArray(checkins) ? checkins : []).forEach(c => {
         if (c.checkin_date === calendarSelectedDay) {
-            items.push({ type: 'c', id: c.id, points: 5, desc: c.wish_title || t('v2.checkin') });
+            const note = c.note ? ('：' + c.note) : '';
+            items.push({ type: 'c', id: c.id, points: 5, desc: (c.wish_title || t('v2.checkin')) + note });
         }
     });
     (Array.isArray(redeemedGifts) ? redeemedGifts : []).forEach(r => {
@@ -3002,6 +3001,7 @@ async function loadV2Data(forceCheckins = false) {
         v2Data = await api.getV2Overview();
         await refreshCheckins(forceCheckins);
         renderV2All();
+        updateDiaryList();   // 打卡记录就绪后刷新成长日历（含本周成长）
         return v2Data;
     } catch (e) {
         console.warn('V2 overview load failed:', e);
@@ -3077,6 +3077,33 @@ function renderAchStats() {
         '<div class="ach-stat"><span class="as-val">' + checkinDays + '</span><span class="as-label">' + escapeHtml(t('ach.statCheckins')) + '</span></div>' +
         '<div class="ach-stat"><span class="as-val">' + badgeCount + '/' + Object.keys(badges).length + '</span><span class="as-label">' + escapeHtml(t('ach.statBadges')) + '</span></div>' +
         '<div class="ach-stat"><span class="as-val">' + cov + '/8</span><span class="as-label">' + escapeHtml(t('ach.statRose')) + '</span></div>';
+    renderWeeklyReport();
+}
+
+// ── 本周成长：本周打卡次数 / 获得积分 / 统计区间 ──
+function renderWeeklyReport() {
+    const el = document.getElementById('weekly-stats');
+    if (!el) return;
+    const now = new Date();
+    const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+    const key = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const monKey = key(mon);
+    const sunKey = key(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6));
+    let checkins = 0, pts = 0;
+    (Array.isArray(checkins) ? checkins : []).forEach(c => {
+        if (c.checkin_date >= monKey && c.checkin_date <= sunKey) { checkins++; pts += 5; }
+    });
+    (Array.isArray(behaviors) ? behaviors : []).forEach(b => {
+        const d = new Date(b.timestamp);
+        if (!isNaN(d)) {
+            const k = key(d);
+            if (k >= monKey && k <= sunKey && Number(b.points) > 0) pts += Number(b.points);
+        }
+    });
+    el.innerHTML =
+        '<div class="ws-stat"><span class="ws-value">' + checkins + '</span><span class="ws-label">' + escapeHtml(t('v2.weeklyCheckins')) + '</span></div>' +
+        '<div class="ws-stat"><span class="ws-value">+' + pts + '</span><span class="ws-label">' + escapeHtml(t('v2.weeklyPoints')) + '</span></div>' +
+        '<div class="ws-stat ws-stat--closest"><span class="ws-value">' + escapeHtml(monKey.slice(5)) + '~' + escapeHtml(sunKey.slice(5)) + '</span><span class="ws-label">' + escapeHtml(t('v2.weeklyRange')) + '</span></div>';
 }
 
 // ── 全人玫瑰：8 瓣覆盖 + 全能小星星进度 ──
@@ -3341,16 +3368,18 @@ function applyPointsResult(res) {
 async function v2Checkin(id, date = null, note = '') {
     try {
         const res = await api.addCheckin(id, date, note);
-        const ptsTxt = (res && res.points_awarded) ? (' · +' + res.points_awarded + V2_PTS_UNIT()) : '';
         const isMakeup = !!date && date !== calendarDateKey(new Date());
+        const wish = ((v2Data && v2Data.wishes) || []).find(w => w.id === id);
         if (res.internalized) {
-            showTemporaryMessage(t('v2.internalized') + ptsTxt, 'success');
             if (confirm(t('v2.exitProtocolConfirm'))) {
                 const done = await api.completeWish(id);
                 applyPointsResult(done);
+                showCelebrate(wish, done);
+            } else {
+                showCheckinRitual(wish, res, isMakeup);
             }
         } else {
-            showTemporaryMessage((isMakeup ? t('v2.makeupDone') : t('v2.checkinDone')) + ptsTxt + ' · ' + t('v2.streak', { n: res.streak }), 'success');
+            showCheckinRitual(wish, res, isMakeup);
         }
         applyPointsResult(res);
         await loadV2Data(true);
@@ -3360,6 +3389,45 @@ async function v2Checkin(id, date = null, note = '') {
         showTemporaryMessage(msg, 'error');
         await loadV2Data(true);
     }
+}
+
+// ── 打卡仪式卡：连续天数 / 距达成 / 鼓励 ──
+function closeRitualModal() {
+    const m = document.getElementById('ritual-modal');
+    if (m) m.style.display = 'none';
+}
+function showCheckinRitual(wish, res, isMakeup) {
+    const m = document.getElementById('ritual-modal');
+    if (!m || !wish) { showTemporaryMessage(t('v2.checkinDone'), 'success'); return; }
+    const streak = (res && typeof res.streak === 'number') ? res.streak : (wish.streak || 0);
+    const days = Number(wish.persistence_days) || 0;
+    const remain = Math.max(0, days - streak);
+    const pts = (res && res.points_awarded) || 5;
+    const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    set('ritual-wish', wish.title || '');
+    set('ritual-streak', t('v2.ritualStreak', { n: streak }));
+    set('ritual-pts', remain > 0 ? t('v2.ritualRemain', { n: remain, pts }) : t('v2.ritualReached', { pts }));
+    set('ritual-msg', t(isMakeup ? 'v2.ritualMakeupMsg' : (remain > 0 ? 'v2.ritualMsg' : 'v2.ritualDoneMsg')));
+    m.style.display = 'flex';
+}
+
+// ── 达成庆祝：目标达成 + 分享海报 ──
+function closeCelebrateModal() {
+    const m = document.getElementById('celebrate-modal');
+    if (m) m.style.display = 'none';
+}
+function celebrateShare() {
+    closeCelebrateModal();
+    openPosterModal();
+}
+function showCelebrate(wish, res) {
+    const m = document.getElementById('celebrate-modal');
+    if (!m || !wish) { showTemporaryMessage(t('v2.achieved'), 'success'); return; }
+    const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    set('celebrate-wish', wish.title || '');
+    set('celebrate-pts', t('v2.celebratePts', { pts: (res && res.points_awarded) || 0 }));
+    m.style.display = 'flex';
+    track('wish_celebrate', { wish_id: wish.id });
 }
 
 // ── 补打卡：给最近 7 天内漏掉的日期补记 ──
@@ -3419,8 +3487,9 @@ async function v2ExitProtocol(id) {
     if (!confirm(t('v2.exitProtocolConfirm'))) return;
     try {
         const res = await api.completeWish(id);
-        showTemporaryMessage(t('v2.achieved') + ((res && res.points_awarded) ? (' · +' + res.points_awarded + V2_PTS_UNIT()) : ''), 'success');
         applyPointsResult(res);
+        const wish = ((v2Data && v2Data.wishes) || []).find(w => w.id === id);
+        showCelebrate(wish, res);
         await loadV2Data();
     } catch (e) {
         showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
@@ -3431,8 +3500,9 @@ async function v2CompleteWish(id) {
     if (!confirm(t('v2.completeWishConfirm'))) return;
     try {
         const res = await api.completeWish(id);
-        showTemporaryMessage(t('v2.achieved') + ((res && res.points_awarded) ? (' · +' + res.points_awarded + V2_PTS_UNIT()) : ''), 'success');
         applyPointsResult(res);
+        const wish = ((v2Data && v2Data.wishes) || []).find(w => w.id === id);
+        showCelebrate(wish, res);
         await loadV2Data();
     } catch (e) {
         showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
