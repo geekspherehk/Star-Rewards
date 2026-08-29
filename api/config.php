@@ -1,4 +1,7 @@
 <?php
+// 统一时区：香港时间（+8）——服务器默认 UTC，会导致"今日打卡/提醒时段"按 UTC 算错
+date_default_timezone_set('Asia/Hong_Kong');
+
 // 数据库配置 - 必须通过环境变量设置，禁止硬编码凭据
 // 部署时请在服务器环境中设置以下变量：
 //   DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS
