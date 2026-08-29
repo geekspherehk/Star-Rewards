@@ -46,6 +46,10 @@ define('VAPID_PUBLIC_KEY', $env['VAPID_PUBLIC_KEY'] ?? '');
 define('VAPID_SUBJECT', $env['VAPID_SUBJECT'] ?? 'mailto:admin@gaocaihk.com');
 define('PUSH_CRON_KEY', $env['PUSH_CRON_KEY'] ?? '');
 
+// 打卡提醒时间段（服务器时区，含头含尾）：cron 每小时跑，但只在此时段内真正发送
+define('REMIND_HOUR_FROM', 18);
+define('REMIND_HOUR_TO', 22);
+
 if (empty(DB_HOST) || empty(DB_NAME) || empty(DB_USER) || empty(DB_PASS)) {
     http_response_code(500);
     header('Content-Type: application/json');

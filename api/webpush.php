@@ -197,8 +197,12 @@ if (!defined('SR_WEBPUSH_LOADED')) {
         return $ok ? 'sent' : 'send_failed';
     }
 
-    // ── 全量提醒（供 cron 调用，需密钥）──
+    // ── 全量提醒（供 cron 调用，需密钥；仅在提醒时间段内发送）──
     function wp_remindAll($pdo) {
+        $hour = (int)date('G');
+        $from = defined('REMIND_HOUR_FROM') ? REMIND_HOUR_FROM : 0;
+        $to = defined('REMIND_HOUR_TO') ? REMIND_HOUR_TO : 23;
+        if ($hour < $from || $hour > $to) return -1; // -1 = 非提醒时段（cron 每小时跑也只在晚间生效）
         $sent = 0;
         foreach (wp_subs_load() as $userId => $entry) {
             if (empty($entry['enabled']) || empty($entry['sub'])) continue;

@@ -26,7 +26,11 @@ try {
         ]
     );
     $sent = wp_remindAll($pdo);
-    echo date('Y-m-d H:i:s') . " cron_remind done, sent: {$sent}\n";
+    if ($sent === -1) {
+        echo date('Y-m-d H:i:s') . " cron_remind: 非提醒时段（" . (defined('REMIND_HOUR_FROM') ? REMIND_HOUR_FROM : 0) . '-' . (defined('REMIND_HOUR_TO') ? REMIND_HOUR_TO : 23) . "时），未发送\n";
+    } else {
+        echo date('Y-m-d H:i:s') . " cron_remind done, sent: {$sent}\n";
+    }
 } catch (Exception $e) {
     fwrite(STDERR, 'cron_remind error: ' . $e->getMessage() . "\n");
     exit(1);
