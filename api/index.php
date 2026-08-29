@@ -1972,8 +1972,7 @@ function handleSendAllDailyReminders($pdo, $data) {
     $key = $data['key'] ?? ($_GET['key'] ?? '');
     $expect = defined('PUSH_CRON_KEY') ? PUSH_CRON_KEY : '';
     if (!$expect || !hash_equals($expect, (string)$key)) {
-        http_response_code(401);
-        sendJson(['success' => false, 'error' => 'Unauthorized']);
+        sendJson(['success' => false, 'error' => 'Unauthorized'], 401);
     }
     $sent = wp_remindAll($pdo);
     sendJson(['success' => true, 'sent' => $sent]);
