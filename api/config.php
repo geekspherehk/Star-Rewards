@@ -40,6 +40,12 @@ define('TOKEN_SECRET', getenv('TOKEN_SECRET') ?: ($env['TOKEN_SECRET'] ?? ''));
 // Token 有效期（秒）
 define('TOKEN_TTL', getenv('TOKEN_TTL') ?: ($env['TOKEN_TTL'] ?? 86400));
 
+// Web Push（VAPID + cron 密钥，见 api/.env.php）
+define('VAPID_PRIVATE_KEY', $env['VAPID_PRIVATE_KEY'] ?? '');
+define('VAPID_PUBLIC_KEY', $env['VAPID_PUBLIC_KEY'] ?? '');
+define('VAPID_SUBJECT', $env['VAPID_SUBJECT'] ?? 'mailto:admin@gaocaihk.com');
+define('PUSH_CRON_KEY', $env['PUSH_CRON_KEY'] ?? '');
+
 if (empty(DB_HOST) || empty(DB_NAME) || empty(DB_USER) || empty(DB_PASS)) {
     http_response_code(500);
     header('Content-Type: application/json');

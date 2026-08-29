@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once 'webpush.php';
 
 // ── Analytics event tracking (埋点) ──
 define('TRACK_ALLOWED_EVENTS', [
@@ -7,7 +8,8 @@ define('TRACK_ALLOWED_EVENTS', [
     'view_poster', 'share_poster', 'create_invite', 'join_family',
     'open_family', 'view_seo_article', 'first_session',
     'growth_add', 'achieve_cert', 'share_wechat', 'share_whatsapp', 'share_pinterest',
-    'v2_view', 'add_wish', 'complete_wish', 'add_checkin', 'set_focus', 'growth_indicator_add'
+    'v2_view', 'add_wish', 'complete_wish', 'add_checkin', 'set_focus', 'growth_indicator_add',
+    'push_subscription'
 ]);
 
 // ── V2 全人版：8 大素养维度（与 behaviors.dimension / wishes.category 共用） ──
@@ -440,6 +442,15 @@ switch ($action) {
     case 'get_badges':
         handleGetBadges($pdo, $data);
         break;
+    case 'save_push_subscription':
+        handleSavePushSubscription($pdo, $data);
+        break;
+    case 'send_daily_reminder':
+        handleSendDailyReminder($pdo, $data);
+        break;
+    case 'send_all_daily_reminders':
+        handleSendAllDailyReminders($pdo, $data);
+        break;
     default:
         sendError('Invalid action', 400);
 }
@@ -481,6 +492,26 @@ function handleRegister($pdo, $data) {
             if ((int)$stmt->fetch()['cnt'] >= FAMILY_MAX_MEMBERS) sendError('Family is full (max ' . FAMILY_MAX_MEMBERS . ')', 403);
             $stmt = $pdo->prepare('INSERT INTO family_members (family_id, user_id, role, display_name) VALUES (?, ?, "member", ?)');
             $stmt->execute([$familyId, $userId, $local]);
+
+            // 邀请激励：邀请人（家庭 owner）获「好友之星」徽章 +20 分（INSERT IGNORE 保证每用户首次）
+            $stmt = $pdo->prepare('SELECT user_id FROM family_members WHERE family_id = ? AND role = \'owner\' LIMIT 1');
+            $stmt->execute([$familyId]);
+            $ownerRow = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($ownerRow && (int)$ownerRow['user_id'] !== $userId) {
+                $ownerUserId = (int)$ownerRow['user_id'];
+                $stmt = $pdo->prepare('SELECT id FROM profiles WHERE user_id = ? ORDER BY id ASC LIMIT 1');
+                $stmt->execute([$ownerUserId]);
+                $ownerProfile = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($ownerProfile) {
+                    $ownerProfileId = (int)$ownerProfile['id'];
+                    $stmt = $pdo->prepare('INSERT IGNORE INTO user_badges (family_id, profile_id, user_id, badge_code) VALUES (?, ?, ?, \'invite_friend\')');
+                    $stmt->execute([$familyId, $ownerProfileId, $ownerUserId]);
+                    if ($stmt->rowCount() > 0) {
+                        $stmt = $pdo->prepare('UPDATE profiles SET current_points = current_points + 20, total_points = total_points + 20 WHERE id = ?');
+                        $stmt->execute([$ownerProfileId]);
+                    }
+                }
+            }
         } else {
             // create a solo family for the new user (owner) so every account belongs to a family
             $code = generateInviteCode($pdo);
@@ -1533,6 +1564,11 @@ function v2ComputeBadges($pdo, $familyId, $profileId, $userId) {
     $badges['rose_all_rounder'] = ['unlocked' => $allRounder, 'unlocked_at' => null];
     $badges['rose_persist_21'] = ['unlocked' => $persist21, 'unlocked_at' => null];
 
+    // 好友之星徽章：邀请家人加入后由 handleRegister 发放，长期荣誉
+    $stmt = $pdo->prepare('SELECT 1 FROM user_badges WHERE family_id = ? AND profile_id = ? AND badge_code = ? LIMIT 1');
+    $stmt->execute([$familyId, $profileId, 'invite_friend']);
+    $badges['invite_friend'] = ['unlocked' => (bool)$stmt->fetch(PDO::FETCH_COLUMN), 'unlocked_at' => null];
+
     // 持久化已解锁徽章
     $stmt = $pdo->prepare('INSERT IGNORE INTO user_badges (family_id, profile_id, user_id, badge_code) VALUES (?, ?, ?, ?)');
     $unlockedAt = date('Y-m-d H:i:s');
@@ -1895,4 +1931,50 @@ function handleGetBadges($pdo, $data) {
     $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
     $badges = v2ComputeBadges($pdo, $familyId, $profileId, $userId);
     sendJson(['success' => true, 'badges' => $badges]);
+}
+
+// ── Web Push：保存/移除订阅 + 每日打卡提醒 ──
+function handleSavePushSubscription($pdo, $data) {
+    $userId = getUserId();
+    requireFamilyMember($pdo, $userId);
+    $enabled = !empty($data['enabled']);
+    $sub = $data['subscription'] ?? null;
+    $entry = wp_subs_get($userId);
+    if (!$entry) $entry = ['enabled' => false, 'sub' => null, 'last_sent_date' => null];
+    if ($enabled && is_array($sub) && !empty($sub['endpoint'])) {
+        $endpoint = (string)$sub['endpoint'];
+        if (strlen($endpoint) > 2048) sendError('Invalid subscription', 400);
+        $keys = [
+            'p256dh' => isset($sub['keys']['p256dh']) ? substr((string)$sub['keys']['p256dh'], 0, 256) : '',
+            'auth' => isset($sub['keys']['auth']) ? substr((string)$sub['keys']['auth'], 0, 128) : ''
+        ];
+        if (empty($keys['p256dh']) || empty($keys['auth'])) sendError('Invalid subscription keys', 400);
+        $entry['enabled'] = true;
+        $entry['sub'] = ['endpoint' => $endpoint, 'keys' => $keys];
+    } else {
+        $entry['enabled'] = false;
+        $entry['sub'] = null;
+    }
+    wp_subs_put($userId, $entry);
+    trackEvent($pdo, $userId, 'push_subscription', ['enabled' => $enabled ? 1 : 0]);
+    sendJson(['success' => true, 'enabled' => $enabled]);
+}
+
+function handleSendDailyReminder($pdo, $data) {
+    $userId = getUserId();
+    requireFamilyMember($pdo, $userId);
+    $result = wp_tryRemind($pdo, $userId);
+    sendJson(['success' => true, 'result' => $result]);
+}
+
+function handleSendAllDailyReminders($pdo, $data) {
+    // cron 专用：需 PUSH_CRON_KEY 密钥（hPanel 定时任务每小时调一次）
+    $key = $data['key'] ?? ($_GET['key'] ?? '');
+    $expect = defined('PUSH_CRON_KEY') ? PUSH_CRON_KEY : '';
+    if (!$expect || !hash_equals($expect, (string)$key)) {
+        http_response_code(401);
+        sendJson(['success' => false, 'error' => 'Unauthorized']);
+    }
+    $sent = wp_remindAll($pdo);
+    sendJson(['success' => true, 'sent' => $sent]);
 }

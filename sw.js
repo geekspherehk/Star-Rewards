@@ -1,17 +1,17 @@
 // Service Worker 文件
-const CACHE_NAME = 'star-rewards-v76';
+const CACHE_NAME = 'star-rewards-v77';
 const urlsToCache = [
   '/',
   '/index.html',
   '/login.html',
-  '/style.css?v=44',
-  '/script.js?v=64',
+  '/style.css?v=45',
+  '/script.js?v=65',
   '/poster-bg.png?v=2',
   '/qrcode-generator.js?v=1',
   '/login.js?v=9',
-  '/i18n.js?v=45',
+  '/i18n.js?v=46',
   '/utils.js?v=1',
-  '/api/api-client.js?v=23',
+  '/api/api-client.js?v=24',
   '/themes.js?v=1',
   '/theme-selector.html',
   '/pwa-styles.css?v=1',
@@ -87,40 +87,43 @@ self.addEventListener('sync', (event) => {
 
 // 推送通知
 self.addEventListener('push', (event) => {
-  const options = {
-    body: event.data ? event.data.text() : '您有新的奖励消息！',
-    vibrate: [200, 100, 200],
-    data: {
-      dateOfArrival: Date.now(),
-      primaryKey: 1
-    },
-    actions: [
-      {
-        action: 'view',
-        title: '查看详情'
-      },
-      {
-        action: 'close',
-        title: '关闭'
+  let title = 'Star Rewards';
+  let body = '您有新的奖励消息！';
+  let url = '/';
+  try {
+    if (event.data) {
+      const payload = event.data.json();
+      if (payload && typeof payload === 'object') {
+        if (payload.title) title = payload.title;
+        if (payload.body) body = payload.body;
+        if (payload.url) url = payload.url;
       }
-    ]
+    }
+  } catch (e) { /* 非 JSON 时用默认文案 */ }
+  const options = {
+    body: body,
+    icon: '/icon-192.png',
+    badge: '/icon-maskable-192.png',
+    vibrate: [200, 100, 200],
+    data: { url: url }
   };
-
   event.waitUntil(
-    self.registration.showNotification('Star Rewards', options)
+    self.registration.showNotification(title, options)
   );
 });
 
 // 通知点击事件
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-
-  if (event.action === 'view') {
-    // 打开应用
-    event.waitUntil(
-      clients.openWindow('/')
-    );
-  }
+  const url = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if ('focus' in client) { client.focus(); return; }
+      }
+      return clients.openWindow(url);
+    })
+  );
 });
 
 // 数据同步函数

@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=44">
+    <link rel="stylesheet" href="style.css?v=45">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
-    <script defer src="api/api-client.js?v=23"></script>
+    <script defer src="api/api-client.js?v=24"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=45"></script>
+    <script defer src="i18n.js?v=46"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -49,6 +49,13 @@
     </script>
 </head>
 <body>
+    <!-- 微信等应用内浏览器提示：建议用系统浏览器打开以获得完整体验 -->
+    <div id="wechat-browser-hint" class="wb-browser-hint" style="display:none;">
+        <span data-i18n="v2.wechatHint">请在浏览器中打开，以体验完整功能（安装到主屏幕 / 打卡提醒）</span>
+        <button type="button" class="wb-hint-close" onclick="closeWechatHint()" aria-label="关闭">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+    </div>
     <header class="app-topbar">
         <div class="topbar-inner">
             <div class="brand">
@@ -129,6 +136,17 @@
                         <p class="v2-sub" data-i18n="home.todayCheckinSub">每天完成一个小目标 · 打卡一次 +5 分</p>
                     </div>
                     <div id="today-checkin-list" class="today-checkin-list"></div>
+                    <div class="push-toggle-row" id="push-toggle-row" style="display:none;">
+                        <div class="push-info">
+                            <span class="push-title"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span data-i18n="v2.pushTitle">打卡提醒</span></span>
+                            <span class="push-sub" data-i18n="v2.pushSub">每天未打卡时推送提醒（iOS 需先安装到主屏幕）</span>
+                        </div>
+                        <label class="push-switch">
+                            <input type="checkbox" id="push-toggle" onchange="togglePushReminder()">
+                            <span class="push-slider"></span>
+                        </label>
+                        <span class="push-state-label" id="push-toggle-label"></span>
+                    </div>
                 </div>
 
                 <div class="points-display">
@@ -439,7 +457,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=64"></script>
+    <script defer src="script.js?v=65"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
@@ -476,6 +494,35 @@
             </div>
         </div>
     </div>
+    <!-- 添加到主屏幕引导（移动端） -->
+    <div id="a2hs-banner" class="a2hs-banner" style="display:none;">
+        <div class="a2hs-info">
+            <span class="a2hs-title" data-i18n="v2.a2hsTitle">安装到主屏幕</span>
+            <span class="a2hs-sub" data-i18n="v2.a2hsSub">像 APP 一样全屏使用，打卡更方便</span>
+        </div>
+        <div class="a2hs-actions">
+            <button type="button" class="a2hs-install" onclick="a2hsInstall()" data-i18n="v2.a2hsInstall">安装</button>
+            <button type="button" class="a2hs-later" onclick="a2hsDismiss()" data-i18n="v2.a2hsLater">稍后</button>
+        </div>
+    </div>
+    <!-- iOS 安装指引 -->
+    <div id="a2hs-ios-overlay" class="modal-overlay" style="display:none;">
+        <div class="modal-content a2hs-ios">
+            <button type="button" class="modal-close" onclick="a2hsCloseIos()" aria-label="关闭">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <h3 data-i18n="v2.a2hsIosTitle">添加到主屏幕</h3>
+            <ol class="a2hs-steps">
+                <li data-i18n="v2.a2hsStep1">点击浏览器底部的「分享」按钮</li>
+                <li data-i18n="v2.a2hsStep2">向下滑动，点「添加到主屏幕」</li>
+                <li data-i18n="v2.a2hsStep3">从主屏幕打开，全屏使用体验更佳</li>
+            </ol>
+            <div class="modal-actions">
+                <button class="primary-btn" onclick="a2hsCloseIos()" data-i18n="v2.a2hsGotIt">知道了</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 悬浮快速记分按钮 -->
     <button type="button" id="quick-add-fab" class="quick-add-fab" style="display:none;" onclick="quickCheckin()" title="去打卡" aria-label="去打卡"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
 

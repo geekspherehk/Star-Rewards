@@ -2009,6 +2009,7 @@ async function initializeApp() {
         console.log('Script.js: 开始初始化应用...');
         
         initLanguage();
+        setupH5();
         
         const token = api.getToken();
         const inviteParam = (new URLSearchParams(window.location.search).get('invite') || '').trim().toUpperCase();
@@ -2030,6 +2031,8 @@ async function initializeApp() {
         showLoggedInState(currentUser);
         
         updateUI();
+        setupA2HS();
+        setupPushReminder();
 
         // 处理分享海报/邀请链接带来的 ?invite=CODE 深链
         const inviteCode = new URLSearchParams(window.location.search).get('invite');
@@ -2760,6 +2763,131 @@ function quickCheckin() {
     }
 }
 
+// ── 添加到主屏幕引导（A2HS）──
+let deferredInstallPrompt = null;
+function isStandaloneMode() {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+        (window.navigator.standalone === true) ||
+        (window.matchMedia && window.matchMedia('(display-mode: minimal-ui)').matches);
+}
+function isIOSDevice() {
+    return /iP(hone|od|ad)/.test(navigator.userAgent) && !window.MSStream;
+}
+function a2hsDismiss() {
+    try { localStorage.setItem('a2hs_dismissed', '1'); } catch (e) {}
+    const b = document.getElementById('a2hs-banner');
+    if (b) b.style.display = 'none';
+}
+function a2hsCloseIos() {
+    const o = document.getElementById('a2hs-ios-overlay');
+    if (o) o.style.display = 'none';
+}
+function a2hsInstall() {
+    if (deferredInstallPrompt) { deferredInstallPrompt.prompt(); return; }
+    if (isIOSDevice()) {
+        const o = document.getElementById('a2hs-ios-overlay');
+        if (o) o.style.display = 'flex';
+        return;
+    }
+    a2hsDismiss();
+}
+function setupA2HS() {
+    if (isStandaloneMode()) return;
+    let dismissed = false;
+    try { dismissed = !!localStorage.getItem('a2hs_dismissed'); } catch (e) {}
+    if (dismissed) return;
+    const isMobile = /Mobi|Android|iPhone|iPad/.test(navigator.userAgent) || (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+    if (!isMobile) return;
+    setTimeout(() => {
+        const b = document.getElementById('a2hs-banner');
+        if (!b || b.style.display === 'flex') return;
+        const openModal = document.querySelector('.modal-overlay[style*="flex"]');
+        if (!openModal) b.style.display = 'flex';
+    }, 2500);
+}
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    try { if (localStorage.getItem('a2hs_dismissed')) return; } catch (err) {}
+    if (isStandaloneMode()) return;
+    const b = document.getElementById('a2hs-banner');
+    if (b) b.style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => { a2hsDismiss(); deferredInstallPrompt = null; });
+
+// ── 微信/应用内浏览器提示：建议用系统浏览器打开 ──
+function closeWechatHint() {
+    const el = document.getElementById('wechat-browser-hint');
+    if (el) el.style.display = 'none';
+}
+function setupH5() {
+    if (/MicroMessenger|QQ/i.test(navigator.userAgent)) {
+        const el = document.getElementById('wechat-browser-hint');
+        if (el) el.style.display = 'flex';
+    }
+}
+
+// ── Web Push 打卡提醒 ──
+const PUSH_VAPID_PUBLIC = 'BLVaoZiNBa--RnEpgOg40pd6cLrpxXOe5oYZhg_Q0LsY_-w-oLhWgvjY06cADVwpS3NaiZQBIE1r1xLLFrAlte4';
+function pushState() { try { return localStorage.getItem('push_reminder') === '1'; } catch (e) { return false; } }
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+}
+function pushSupported() {
+    return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+}
+async function setupPushReminder() {
+    renderPushToggle();
+    // 已开启提醒：每次进入 App 触发一次每日提醒检查（免 cron 兜底）
+    if (pushState()) {
+        api.sendDailyReminder().catch(() => {});
+    }
+}
+function renderPushToggle() {
+    const el = document.getElementById('push-toggle-row');
+    if (!el) return;
+    if (!pushSupported()) { el.style.display = 'none'; return; }
+    el.style.display = 'flex';
+    const label = document.getElementById('push-toggle-label');
+    if (label) label.textContent = t(pushState() ? 'push.on' : 'push.off');
+    const box = document.getElementById('push-toggle');
+    if (box) box.checked = pushState();
+}
+async function togglePushReminder() {
+    const el = document.getElementById('push-toggle');
+    const want = !!(el && el.checked);
+    try {
+        if (want) {
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') {
+                if (el) el.checked = false;
+                showTemporaryMessage(t('v2.pushDenied'), 'error');
+                return;
+            }
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(PUSH_VAPID_PUBLIC)
+            });
+            await api.savePushSubscription(sub, true);
+            try { localStorage.setItem('push_reminder', '1'); } catch (e) {}
+        } else {
+            await api.savePushSubscription(null, false);
+            try { localStorage.setItem('push_reminder', '0'); } catch (e) {}
+        }
+        renderPushToggle();
+        showTemporaryMessage(want ? t('v2.pushEnabled') : t('v2.pushDisabled'), 'success');
+    } catch (e) {
+        if (el) el.checked = !want;
+        showTemporaryMessage((e && e.message) || t('common.error'), 'error');
+    }
+}
+
 // 更新成长日记列表
 function updateDiaryList() {
     if (!calendarCursor) {
@@ -2962,7 +3090,8 @@ const V2_BADGE_SVGS = {
     health: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
     aesthetics: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="11" cy="11" r="2"/></svg>',
     all_rounder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.8 2.4 4.6 3.6 7.5 3.5-0.4 3-1.6 5.7-4 7.5 2.4 1.8 3.6 4.5 4 7.5-2.9-.1-5.7 1.1-7.5 3.5-1.8-2.4-4.6-3.6-7.5-3.5 0.4-3 1.6-5.7 4-7.5-2.4-1.8-3.6-4.5-4-7.5 2.9.1 5.7-1.1 7.5-3.5z"/><circle cx="12" cy="12" r="2.6"/></svg>',
-    persist_21: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="9 16 11 18 15 14"/></svg>'
+    persist_21: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="9 16 11 18 15 14"/></svg>',
+    invite_friend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
 };
 
 let v2Data = null;          // get_v2_overview 缓存
@@ -3648,10 +3777,10 @@ function renderV2Badges() {
     const el = document.getElementById('v2-badge-wall');
     if (!el || !v2Data) return;
     const badges = v2Data.badges || {};
-    // 8 枚素养徽章已在玫瑰图（成长总览）呈现，此处徽章墙仅展示 2 枚里程碑成就
-    const order = ['rose_all_rounder', 'rose_persist_21'];
+    // 8 枚素养徽章已在玫瑰图（成长总览）呈现，此处徽章墙仅展示里程碑 + 好友之星
+    const order = ['rose_all_rounder', 'rose_persist_21', 'invite_friend'];
     // 新解锁检测仍需覆盖全部徽章，保证解锁 +20 分提示照常弹出
-    const allCodes = V2_CATS.map(c => 'rose_' + c.code).concat(['rose_all_rounder', 'rose_persist_21']);
+    const allCodes = V2_CATS.map(c => 'rose_' + c.code).concat(['rose_all_rounder', 'rose_persist_21', 'invite_friend']);
 
     // 新解锁检测（首次渲染不算「新」）
     const nowUnlocked = {};
@@ -3660,7 +3789,7 @@ function renderV2Badges() {
     if (newOnes.length) {
         const names = newOnes.map(code => {
             const cat = code.replace('rose_', '');
-            return code === 'rose_all_rounder' ? t('v2.badgeAllRounder') : (code === 'rose_persist_21' ? t('v2.badgePersist21') : t('v2.badge.' + cat));
+            return code === 'rose_all_rounder' ? t('v2.badgeAllRounder') : (code === 'rose_persist_21' ? t('v2.badgePersist21') : (code === 'invite_friend' ? t('v2.badgeInviteFriend') : t('v2.badge.' + cat)));
         });
         showTemporaryMessage(t('v2.badgeNew') + ': ' + names.join('、') + ' · +' + (newOnes.length * 20) + V2_PTS_UNIT(), 'success');
         // 徽章解锁奖励已由服务端入账，刷新积分显示
@@ -3679,11 +3808,12 @@ function renderV2Badges() {
         const cat = code.replace('rose_', '');
         const isAR = code === 'rose_all_rounder';
         const isP21 = code === 'rose_persist_21';
-        const pcVar = isAR ? 'var(--cat-all-rounder)' : v2CatVar(cat);
-        const pcSoft = isAR ? 'var(--cat-all-rounder-soft)' : v2CatSoftVar(cat);
-        const name = isAR ? t('v2.badgeAllRounder') : (isP21 ? t('v2.badgePersist21') : t('v2.badge.' + cat));
-        const desc = isAR ? t('v2.allRounderDesc') : (isP21 ? '' : t('v2.badgeDesc.' + cat));
-        const icon = isAR ? V2_BADGE_SVGS.all_rounder : (isP21 ? V2_BADGE_SVGS.persist_21 : (V2_BADGE_SVGS[cat] || V2_BADGE_SVGS.self_drive));
+        const isInvite = code === 'invite_friend';
+        const pcVar = isAR ? 'var(--cat-all-rounder)' : (isInvite ? 'var(--brand)' : v2CatVar(cat));
+        const pcSoft = isAR ? 'var(--cat-all-rounder-soft)' : (isInvite ? 'var(--brand-soft)' : v2CatSoftVar(cat));
+        const name = isAR ? t('v2.badgeAllRounder') : (isP21 ? t('v2.badgePersist21') : (isInvite ? t('v2.badgeInviteFriend') : t('v2.badge.' + cat)));
+        const desc = isAR ? t('v2.allRounderDesc') : (isP21 ? '' : (isInvite ? t('v2.badgeInviteDesc') : t('v2.badgeDesc.' + cat)));
+        const icon = isAR ? V2_BADGE_SVGS.all_rounder : (isP21 ? V2_BADGE_SVGS.persist_21 : (isInvite ? V2_BADGE_SVGS.invite_friend : (V2_BADGE_SVGS[cat] || V2_BADGE_SVGS.self_drive)));
         const isNew = newOnes.indexOf(code) !== -1;
         return '<div class="v2-badge ' + (info.unlocked ? '' : 'is-locked') + ' ' + (isNew ? 'is-new' : '') + '" style="--pc:' + pcVar + ';--pc-soft:' + pcSoft + '">' +
             '<div class="v2-badge-ico">' + icon + '</div>' +

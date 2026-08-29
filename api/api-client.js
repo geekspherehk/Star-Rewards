@@ -323,6 +323,29 @@ class ApiClient {
         return await this.request('getUserConfig');
     }
 
+    // ── Web Push：保存/移除订阅 + 每日打卡提醒 ──
+    async savePushSubscription(subscription, enabled) {
+        const subPayload = subscription ? {
+            endpoint: subscription.endpoint,
+            keys: {
+                p256dh: subscription.getKey('p256dh') ? this._bufToB64url(subscription.getKey('p256dh')) : '',
+                auth: subscription.getKey('auth') ? this._bufToB64url(subscription.getKey('auth')) : ''
+            }
+        } : null;
+        return await this.request('save_push_subscription', { subscription: subPayload, enabled });
+    }
+
+    async sendDailyReminder() {
+        return await this.request('send_daily_reminder', {});
+    }
+
+    _bufToB64url(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
     // ── V2 全人版愿望清单体系（8 大素养 × 愿望/打卡/指标/徽章） ──
     async getV2Overview() {
         return await this.request('get_v2_overview', { profile_id: this.selectedProfileId });
