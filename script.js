@@ -3294,10 +3294,7 @@ function renderV2Wishes() {
         const actions = [];
         if (!achieved) {
             if (!isExp) {
-                const doneToday = !!w.today_checked;
-                actions.push('<button type="button" class="v2-checkin-btn ' + (doneToday ? 'is-done' : '') + '" ' + (doneToday ? 'disabled' : '') + ' onclick="v2Checkin(' + w.id + ')">' +
-                    '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
-                    escapeHtml(t(doneToday ? 'v2.checkedIn' : 'v2.checkin')) + '</button>');
+                // 打卡/补卡已移到首页「今日打卡」，目标页仅做目标管理
                 if (w.internalized) {
                     actions.push('<button type="button" class="v2-complete-btn" onclick="v2ExitProtocol(' + w.id + ')">' + escapeHtml(t('v2.exitProtocol')) + '</button>');
                 }

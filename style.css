@@ -2851,8 +2851,8 @@ button:active { transform: translateY(0); }
     box-shadow: var(--sh-sm); padding: 12px 30px; font-size: 1rem;
 }
 .add-points-btn:hover { background: var(--brand-600); box-shadow: var(--sh-md); border: none; }
-.add-gift-btn { background: var(--brand-700); border: none; }
-.add-gift-btn:hover { background: var(--brand-600); }
+.add-gift-btn { background: var(--brand-700); border: none; color: #fff; }
+.add-gift-btn:hover { background: var(--brand-600); color: #fff; }
 .import-btn { background: var(--info); border: none; border-radius: var(--r-md); }
 .import-btn:hover:not(:disabled) { background: #2f6fe0; transform: translateY(-1px); opacity: 1; }
 .preset-btn {
@@ -3649,12 +3649,10 @@ a:hover { text-decoration: underline; }
 }
 .v2-guide-close:hover { background: var(--brand-600, var(--brand)); }
 
-/* 新手引导横幅 + 今日打卡行：手机端竖排，避免挤压 */
+/* 新手引导横幅：手机端竖排，避免挤压 */
 @media (max-width: 560px) {
     .v2-guide { flex-direction: column; }
     .v2-guide-close { width: 100%; text-align: center; }
-    .today-checkin-row .tci-main { flex: 1 1 0; }
-    .today-checkin-row .tci-actions { flex: 1 1 100%; justify-content: flex-end; margin-top: 4px; }
 }
 
 /* ── 愿望表单：渐进式高级项 ── */
@@ -3743,10 +3741,19 @@ a:hover { text-decoration: underline; }
 .tci-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px; }
 .tci-title { flex: 1 1 auto; min-width: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tci-streak { flex: 0 0 auto; font-size: var(--fs-xs); color: var(--text-2); white-space: nowrap; }
-.tci-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
+.tci-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .today-checkin-row .v2-checkin-btn { flex: 0 0 auto; width: auto; max-width: 50%; white-space: nowrap; }
 .today-checkin-row .v2-makeup-btn { flex: 0 0 auto; padding: 8px 10px; font-size: var(--fs-xs); }
 .today-checkin-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: var(--sp-4); color: var(--text-2); font-size: var(--fs-sm); text-align: center; }
+
+/* 今日打卡行：手机端按钮换行到第二行并压缩，避免溢出（须位于 .tci-actions 基础规则之后） */
+@media (max-width: 560px) {
+    .today-checkin-row .tci-main { flex: 1 1 0; }
+    .today-checkin-row .tci-actions { flex: 1 1 100%; margin-top: 4px; }
+    .today-checkin-row .v2-checkin-btn,
+    .today-checkin-row .v2-makeup-btn { padding: 7px 10px; font-size: var(--fs-xs); }
+    .today-checkin-row .v2-checkin-btn { max-width: none; }
+}
 
 /* ── 成长成就页：汇总统计条 ── */
 .ach-stats {
