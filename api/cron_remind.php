@@ -4,8 +4,9 @@
  * 直接以 PHP CLI 运行，直连数据库执行全量提醒；不走 HTTP、无密钥泄露。
  * 仅命令行可运行；HTTP 直接访问返回 403。
  *
- * 每次执行都会追加一行到 api/cron_remind.log —— Hostinger cron 面板输出不可靠时，
- * 在 File Manager 里看这个日志即可确认 cron 是否真的执行。
+ * 诊断设计：脚本启动立刻在「api/cron_remind.log」和「/tmp/star_cron_remind.log」
+ * 各写一行，并把环境信息 echo 出来 —— 用来判断 cron 是否真的执行了脚本、
+ * 以及 PHP 能否写 web 目录。
  *
  * 用法：php api/cron_remind.php
  */
@@ -14,20 +15,24 @@ if (php_sapi_name() !== 'cli') {
     exit('Forbidden: CLI only');
 }
 
-// 最先记录"脚本被启动"（在 require 之前）——用来区分"cron 没执行脚本"还是"脚本启动后出错"
-@file_put_contents(__DIR__ . '/cron_remind.log', date('Y-m-d H:i:s') . ' cron start (php ' . PHP_VERSION . ')' . "\n", FILE_APPEND | LOCK_EX);
+$now = date('Y-m-d H:i:s');
+$diag = "=== {$now} cron start | php " . PHP_VERSION . " | sapi=" . php_sapi_name()
+    . " | basedir=" . (ini_get('open_basedir') ?: 'none')
+    . " | cwd=" . getcwd()
+    . " | uid=" . (function_exists('posix_geteuid') ? posix_geteuid() : '?')
+    . "\n";
+$okApi = @file_put_contents(__DIR__ . '/cron_remind.log', $diag, FILE_APPEND | LOCK_EX);
+$okTmp = @file_put_contents('/tmp/star_cron_remind.log', $diag, FILE_APPEND | LOCK_EX);
+echo $diag . 'write_api=' . var_export($okApi, true) . ' | write_tmp=' . var_export($okTmp, true) . "\n";
+
+function cron_log($msg) {
+    $line = date('Y-m-d H:i:s') . ' ' . $msg . "\n";
+    @file_put_contents(__DIR__ . '/cron_remind.log', $line, FILE_APPEND | LOCK_EX);
+    @file_put_contents('/tmp/star_cron_remind.log', $line, FILE_APPEND | LOCK_EX);
+}
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/webpush.php';
-
-function cron_log($msg) {
-    $log = __DIR__ . '/cron_remind.log';
-    try {
-        @file_put_contents($log, date('Y-m-d H:i:s') . ' ' . $msg . "\n", FILE_APPEND | LOCK_EX);
-    } catch (Exception $e) {
-        // 日志写失败不影响主流程
-    }
-}
 
 try {
     $pdo = new PDO(
