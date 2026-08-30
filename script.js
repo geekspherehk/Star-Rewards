@@ -3451,51 +3451,55 @@ async function v2SetFocus(code) {
 function renderV2Suggestions() {
     const el = document.getElementById('v2-suggest');
     if (!el || !v2Data) return;
-    const covMap = v2Data.coverage || {};
-    const rank = V2_CATS.map(c => ({ c, v: v2CatScore(covMap[c.code] || {}) }))
-        .sort((a, b) => a.v - b.v); // 升序：最弱在前
-    if (!rank.some(x => x.v > 0)) {
-        el.innerHTML =
-            '<div class="v2-suggest-card v2-suggest-empty">' +
+    try {
+        const covMap = v2Data.coverage || {};
+        const rank = V2_CATS.map(c => ({ c, v: v2CatScore(covMap[c.code] || {}) }))
+            .sort((a, b) => a.v - b.v); // 升序：最弱在前
+        if (!rank.some(x => x.v > 0)) {
+            el.innerHTML =
+                '<div class="v2-suggest-card v2-suggest-empty">' +
+                    '<div class="v2-suggest-kicker">' + escapeHtml(t('v2.suggestTitle')) + '</div>' +
+                    '<p class="v2-suggest-empty-txt">' + escapeHtml(t('v2.suggestEmpty')) + '</p>' +
+                '</div>';
+            return;
+        }
+        // 主推 = 用户已选的 focus（本月主打）；若未选或已选 code 失效则回退到最弱
+        const focusCode = v2Data.focus;
+        const focusObj = focusCode ? V2_CATS.find(x => x.code === focusCode) : null;
+        const focus = focusObj || rank[0].c;
+        // 副推 = 排除 focus 后最弱的 2 项
+        const others = rank.filter(x => x.c.code !== focus.code).slice(0, 2);
+        const isFocus = !!focusObj;
+        let html =
+            '<div class="v2-suggest-card">' +
                 '<div class="v2-suggest-kicker">' + escapeHtml(t('v2.suggestTitle')) + '</div>' +
-                '<p class="v2-suggest-empty-txt">' + escapeHtml(t('v2.suggestEmpty')) + '</p>' +
-            '</div>';
-        return;
+                '<div class="v2-suggest-focus">' +
+                    '<span class="v2-suggest-cat" style="--pc:' + v2CatVar(focus.code) + '">' + focus.short + '</span>' +
+                    '<div class="v2-suggest-focus-body">' +
+                        '<div class="v2-suggest-focus-name">' + escapeHtml(t('v2.badge.' + focus.code)) + '</div>' +
+                        '<div class="v2-suggest-focus-desc">' + escapeHtml(t('v2.suggestWeak', { name: focus.short })) + '</div>' +
+                    '</div>' +
+                    (isFocus
+                        ? '<button type="button" class="v2-suggest-btn is-done" disabled>' + escapeHtml(t('v2.suggestDone')) + '</button>'
+                        : '<button type="button" class="v2-suggest-btn" onclick="v2SetFocus(\'' + focus.code + '\')">' + escapeHtml(t('v2.suggestSet')) + '</button>') +
+                '</div>';
+        if (others.length) {
+            html +=
+                '<div class="v2-suggest-divider"></div>' +
+                '<div class="v2-suggest-sub">' + escapeHtml(t('v2.suggestStrengthen')) + '</div>' +
+                '<div class="v2-suggest-list">' +
+                    others.map(o =>
+                        '<div class="v2-suggest-item"><span class="v2-suggest-dot" style="--pc:' + v2CatVar(o.c.code) + '"></span>' +
+                        '<span>' + o.c.short + ' · ' + escapeHtml(t('v2.badge.' + o.c.code)) + '</span></div>'
+                    ).join('') +
+                '</div>';
+        }
+        html += '</div>';
+        el.innerHTML = html;
+    } catch (e) {
+        console.warn('renderV2Suggestions 渲染失败:', e);
+        el.innerHTML = '<div class="v2-suggest-card v2-suggest-empty"><div class="v2-suggest-kicker">' + escapeHtml(t('v2.suggestTitle')) + '</div><p class="v2-suggest-empty-txt">—</p></div>';
     }
-    // 主推 = 用户已选的 focus（本月主打）；若未选则回退到最弱
-    const focusCode = v2Data.focus;
-    const focus = (focusCode && V2_CATS.find(x => x.code === focusCode))
-        ? V2_CATS.find(x => x.code === focusCode)
-        : rank[0].c;
-    // 副推 = 排除 focus 后最弱的 2 项
-    const others = rank.filter(x => x.c.code !== focus.code).slice(0, 2);
-    const isFocus = !!focusCode;
-    let html =
-        '<div class="v2-suggest-card">' +
-            '<div class="v2-suggest-kicker">' + escapeHtml(t('v2.suggestTitle')) + '</div>' +
-            '<div class="v2-suggest-focus">' +
-                '<span class="v2-suggest-cat" style="--pc:' + v2CatVar(focus.code) + '">' + focus.short + '</span>' +
-                '<div class="v2-suggest-focus-body">' +
-                    '<div class="v2-suggest-focus-name">' + escapeHtml(t('v2.badge.' + focus.code)) + '</div>' +
-                    '<div class="v2-suggest-focus-desc">' + escapeHtml(t('v2.suggestWeak', { name: focus.short })) + '</div>' +
-                '</div>' +
-                (isFocus
-                    ? '<button type="button" class="v2-suggest-btn is-done" disabled>' + escapeHtml(t('v2.suggestDone')) + '</button>'
-                    : '<button type="button" class="v2-suggest-btn" onclick="v2SetFocus(\'' + focus.code + '\')">' + escapeHtml(t('v2.suggestSet')) + '</button>') +
-            '</div>';
-    if (others.length) {
-        html +=
-            '<div class="v2-suggest-divider"></div>' +
-            '<div class="v2-suggest-sub">' + escapeHtml(t('v2.suggestStrengthen')) + '</div>' +
-            '<div class="v2-suggest-list">' +
-                others.map(o =>
-                    '<div class="v2-suggest-item"><span class="v2-suggest-dot" style="--pc:' + v2CatVar(o.c.code) + '"></span>' +
-                    '<span>' + o.c.short + ' · ' + escapeHtml(t('v2.badge.' + o.c.code)) + '</span></div>'
-                ).join('') +
-            '</div>';
-    }
-    html += '</div>';
-    el.innerHTML = html;
 }
 
 // ── 成长愿望列表 ──

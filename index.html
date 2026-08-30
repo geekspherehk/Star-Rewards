@@ -164,6 +164,24 @@
                     </div>
                 </div>
 
+                <!-- 行为记录：临时加分入口（紧跟打卡，扫一眼就能用） -->
+                <div class="v2-section" id="quick-behavior-card">
+                    <div class="v2-section-head">
+                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4 2 7-6.5-4-6.5 4 2-7L2 9h7z"/></svg><span data-i18n="home.recordBehavior">记录一次行为</span></h3>
+                        <p class="v2-sub" data-i18n="home.recordBehaviorSub">孩子做了一件值得鼓励的事 · 立刻记一笔</p>
+                    </div>
+                    <div class="qb-grid">
+                        <input type="text" id="qb-desc" class="qb-input" placeholder="" data-i18n-placeholder="home.recordBehaviorPlaceholder" maxlength="60">
+                        <select id="qb-cat" class="qb-select"></select>
+                        <div class="qb-points">
+                            <button type="button" class="qb-step" onclick="qbStep(-1)" aria-label="减">−</button>
+                            <input type="number" id="qb-pts" class="qb-pts-input" value="3" min="1" max="20" step="1">
+                            <button type="button" class="qb-step" onclick="qbStep(1)" aria-label="加">+</button>
+                        </div>
+                        <button type="button" class="qb-save" onclick="quickAddBehavior()" data-i18n="home.recordBehaviorSave">记下来</button>
+                    </div>
+                </div>
+
                     <!-- 教育专栏：家长可读的方法论 / 案例文章 -->
                 <section class="edu-column" id="edu-column">
                     <div class="v2-section-head">
@@ -182,24 +200,6 @@
                 <div class="export-bar">
                     <button type="button" class="poster-btn" onclick="openPosterModal()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span data-i18n="home.sharePoster">分享海报</span></button>
                     <button type="button" class="export-btn" onclick="exportData()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span data-i18n="home.exportData">导出数据</span></button>
-                </div>
-
-                <!-- 行为记录：临时加分入口（不在打卡日历里的好事） -->
-                <div class="v2-section" id="quick-behavior-card">
-                    <div class="v2-section-head">
-                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4 2 7-6.5-4-6.5 4 2-7L2 9h7z"/></svg><span data-i18n="home.recordBehavior">记录一次行为</span></h3>
-                        <p class="v2-sub" data-i18n="home.recordBehaviorSub">孩子做了一件值得鼓励的事 · 立刻记一笔</p>
-                    </div>
-                    <div class="qb-grid">
-                        <input type="text" id="qb-desc" class="qb-input" placeholder="" data-i18n-placeholder="home.recordBehaviorPlaceholder" maxlength="60">
-                        <select id="qb-cat" class="qb-select"></select>
-                        <div class="qb-points">
-                            <button type="button" class="qb-step" onclick="qbStep(-1)" aria-label="减">−</button>
-                            <input type="number" id="qb-pts" class="qb-pts-input" value="3" min="1" max="20" step="1">
-                            <button type="button" class="qb-step" onclick="qbStep(1)" aria-label="加">+</button>
-                        </div>
-                        <button type="button" class="qb-save" onclick="quickAddBehavior()" data-i18n="home.recordBehaviorSave">记下来</button>
-                    </div>
                 </div>
             </div>
 

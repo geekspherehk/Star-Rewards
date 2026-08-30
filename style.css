@@ -684,10 +684,14 @@ h3 {
 .poster-btn {
     color: #ad1457;
     background: #fce4ec;
-    flex: 0 0 auto;        /* 移动端不被挤换行 */
+    flex: 0 0 auto;
     white-space: nowrap;
-    padding: 6px 10px;     /* 紧凑一些 */
-    font-size: 0.78rem;
+}
+
+.poster-btn:hover {
+    background: #ad1457;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(173, 20, 87, 0.3);
 }
 
 .export-btn:hover {
@@ -701,6 +705,15 @@ h3 {
     color: #fff;
     box-shadow: 0 4px 12px rgba(173, 20, 87, 0.3);
 }
+
+/* 成长日历标题旁的分享海报：紧贴、不占位（图标 + 字不超 100px） */
+.diary-header .poster-btn {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    border-radius: 16px;
+    gap: 4px;
+}
+.diary-header .poster-btn svg { width: 14px; height: 14px; }
 
 /* 悬浮快速记分按钮 */
 .quick-add-fab {
