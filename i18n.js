@@ -1524,6 +1524,8 @@ function setLanguage(lang) {
     currentLanguage = lang;
     localStorage.setItem('language', lang);
     updateLanguageUI();
+    // 礼物模板重渲染（模板文案随语言变）
+    try { if (typeof renderGiftTemplateTabs === 'function') { renderGiftTemplateTabs(); renderGiftTemplateGrid(); } } catch (e) { console.warn('[gt] rerender on lang change', e); }
 }
 
 function getLanguage() {
@@ -1533,15 +1535,15 @@ function getLanguage() {
 function t(key, params) {
     const keys = key.split('.');
     let value = translations[currentLanguage];
-    
+
     for (const k of keys) {
-        if (value && value[k]) {
+        if (value && value[k] !== undefined) {
             value = value[k];
         } else {
             return key;
         }
     }
-    
+
     if (typeof value === 'string') {
         let result = value;
         if (params && typeof params === 'object') {
@@ -1551,8 +1553,9 @@ function t(key, params) {
         }
         return result;
     }
-    
-    return key;
+
+    // 数组 / 对象直接返回（如模板数据）
+    return value;
 }
 
 function updateLanguageUI() {

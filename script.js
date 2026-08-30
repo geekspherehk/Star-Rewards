@@ -849,8 +849,14 @@ let gtActiveCat = 'time';
 let gtCustomMode = false;
 
 function getGiftTemplates() {
-    const raw = t('giftTemplates.list') || {};
-    return raw;
+    // 直接读 translations，避免 t() 旧版对对象返 key 字符串
+    const lang = (typeof currentLanguage !== 'undefined' && currentLanguage)
+              || localStorage.getItem('language')
+              || 'zh';
+    const dict = (typeof translations !== 'undefined' && translations && translations[lang]) || null;
+    const raw = dict && dict.giftTemplates && dict.giftTemplates.list;
+    if (!raw) console.warn('[gt] giftTemplates.list 缺失,lang=', lang);
+    return raw || {};
 }
 
 function renderGiftTemplateTabs() {
@@ -874,11 +880,19 @@ function renderGiftTemplateTabs() {
 
 function renderGiftTemplateGrid() {
     const grid = document.getElementById('gt-grid');
-    if (!grid) return;
+    if (!grid) { console.warn('[gt] #gt-grid 不存在'); return; }
     const list = getGiftTemplates();
     grid.innerHTML = '';
+    const keys = Object.keys(list);
+    if (keys.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'gt-empty';
+        empty.textContent = t('giftTemplates.emptyHint') || '暂无可选模板';
+        grid.appendChild(empty);
+        return;
+    }
     let count = 0;
-    Object.keys(list).forEach(key => {
+    keys.forEach(key => {
         if (!key.startsWith(gtActiveCat + '_')) return;
         const tmpl = list[key];
         if (!tmpl || !tmpl.name) return;
@@ -900,23 +914,21 @@ function renderGiftTemplateGrid() {
     if (count === 0) {
         const empty = document.createElement('div');
         empty.className = 'gt-empty';
-        empty.textContent = t('giftTemplates.emptyHint');
+        empty.textContent = t('giftTemplates.emptyHint') || '该分类暂无模板';
         grid.appendChild(empty);
     }
+    console.log('[gt] 渲染', count, '个模板,分类=', gtActiveCat);
 }
 
 function fillGiftFromTemplate(tmpl) {
     const nameInput = document.getElementById('gift-name');
     const pointsInput = document.getElementById('gift-points');
-    const descInput = document.getElementById('gift-description');
     if (nameInput) {
         nameInput.value = tmpl.name || '';
         nameInput.focus();
         nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     if (pointsInput) pointsInput.value = tmpl.points || '';
-    if (descInput) descInput.value = tmpl.desc || '';
-    // 闪一下反馈
     if (nameInput) {
         nameInput.classList.add('gt-flash');
         setTimeout(() => nameInput.classList.remove('gt-flash'), 700);
@@ -926,12 +938,7 @@ function fillGiftFromTemplate(tmpl) {
 function setGiftCustomMode(on) {
     gtCustomMode = !!on;
     const box = document.getElementById('gift-template-box');
-    const rows = ['gift-form-rows', 'gift-desc-row', 'gift-link-row', 'gift-image-row'];
     if (box) box.style.display = on ? 'none' : '';
-    rows.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = '';
-    });
     const btn = document.getElementById('gt-custom-btn');
     if (btn) btn.style.display = on ? 'none' : '';
 }
