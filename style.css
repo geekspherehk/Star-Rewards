@@ -3226,9 +3226,10 @@ li, .gift-item, .redeemed-item, .behavior-item {
     border: 1px solid var(--border); border-radius: var(--r-md);
     background: var(--surface-2); color: var(--muted);
     cursor: pointer; transition: color .15s, background .15s, border-color .15s;
+    padding: 0;
 }
 .gc-del:hover { color: var(--danger); background: var(--danger-soft); border-color: transparent; }
-.gc-del svg { width: 17px; height: 17px; }
+.gc-del svg { width: 17px; height: 17px; display: block; stroke: currentColor; }
 
 /* 空状态 */
 .gift-empty {
@@ -3550,9 +3551,10 @@ a:hover { text-decoration: underline; }
     display: inline-flex; align-items: center; justify-content: center;
     border: 1px solid var(--border); border-radius: var(--r-md);
     background: var(--surface); color: var(--muted); cursor: pointer;
+    flex: 0 0 auto; padding: 0;
 }
 .v2-del-btn:hover { color: var(--danger); background: var(--danger-soft); border-color: transparent; }
-.v2-del-btn svg { width: 16px; height: 16px; }
+.v2-del-btn svg { width: 16px; height: 16px; display: block; stroke: currentColor; }
 .v2-makeup-btn {
     padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-md);
     background: var(--surface); color: var(--text-2); font-weight: 700; font-size: var(--fs-sm);
@@ -3851,6 +3853,8 @@ a:hover { text-decoration: underline; }
     /* 补卡：手机端变成纯图标方按钮，避免文字让按钮过长 */
     .today-checkin-row .tci-makeup { width: 36px; height: 36px; padding: 0; justify-content: center; }
     .today-checkin-row .tci-makeup .tmi-text { display: none; }
+    /* 图标模式下清掉 .btn-ico 的右外边距，否则会把图标向左推 3px 偏离中心 */
+    .today-checkin-row .tci-makeup .btn-ico { margin-right: 0; }
 }
 
 /* ── 成长成就页：汇总统计条 ── */

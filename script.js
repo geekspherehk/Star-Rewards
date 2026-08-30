@@ -868,10 +868,13 @@ function updateGiftList() {
         const ready = currentPoints >= pts && pts > 0;
         if (ready) card.classList.add('is-ready');
 
-        const media = document.createElement('div');
-        media.className = 'gc-media';
-        const hasOriginalUrl = gift.original_url && isEcommerceUrl(gift.original_url);
-        if (gift.image_url) {
+        // 有图才渲染图区（电商图保留外链 badge；纯图直接展示）；
+        // 无图时不渲染 .gc-media，避免默认占位图占满卡片上半部
+        const hasImage = !!gift.image_url;
+        if (hasImage) {
+            const media = document.createElement('div');
+            media.className = 'gc-media';
+            const hasOriginalUrl = gift.original_url && isEcommerceUrl(gift.original_url);
             if (hasOriginalUrl) {
                 const link = document.createElement('a');
                 link.href = gift.original_url;
@@ -901,14 +904,8 @@ function updateGiftList() {
                 img.onerror = function () { this.src = 'placeholder.svg'; this.alt = t('common.giftImage'); };
                 media.appendChild(img);
             }
-        } else {
-            const img = document.createElement('img');
-            img.src = 'placeholder.svg';
-            img.alt = gift.name || t('common.giftImage');
-            img.loading = 'lazy';
-            media.appendChild(img);
+            card.appendChild(media);
         }
-        card.appendChild(media);
 
         const body = document.createElement('div');
         body.className = 'gc-body';
@@ -2870,7 +2867,7 @@ function renderPushToggle() {
     if (!pushSupported()) { el.style.display = 'none'; return; }
     el.style.display = 'flex';
     const label = document.getElementById('push-toggle-label');
-    if (label) label.textContent = t(pushState() ? 'push.on' : 'push.off');
+    if (label) label.textContent = t(pushState() ? 'v2.pushOn' : 'v2.pushOff');
     const box = document.getElementById('push-toggle');
     if (box) box.checked = pushState();
 }
@@ -3114,8 +3111,10 @@ let v2Data = null;          // get_v2_overview 缓存
 let v2PrevUnlocked = null;  // 徽章解锁状态（用于「新徽章」提示）
 let v2CoveredCount = 0;
 
-function v2CatVar(code) { return 'var(--cat-' + code + ')'; }
-function v2CatSoftVar(code) { return 'var(--cat-' + code + '-soft)'; }
+// 注：CSS 变量名使用连字符（--cat-self-drive），而 DB 里的 category code 用下划线（self_drive），
+// 因此在生成 var() 引用时把下划线转成连字符，避免 var(--cat-self_drive) 失效导致色块变透明
+function v2CatVar(code) { return 'var(--cat-' + (code || '').replace(/_/g, '-') + ')'; }
+function v2CatSoftVar(code) { return 'var(--cat-' + (code || '').replace(/_/g, '-') + '-soft)'; }
 
 // 行为表单素养标注（激活 behaviors.dimension）
 function getSelectedBehaviorDimension() {
