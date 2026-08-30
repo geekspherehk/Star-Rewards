@@ -684,6 +684,10 @@ h3 {
 .poster-btn {
     color: #ad1457;
     background: #fce4ec;
+    flex: 0 0 auto;        /* 移动端不被挤换行 */
+    white-space: nowrap;
+    padding: 6px 10px;     /* 紧凑一些 */
+    font-size: 0.78rem;
 }
 
 .export-btn:hover {
@@ -749,10 +753,13 @@ h3 {
     justify-content: space-between;
     gap: 10px;
     margin-bottom: 15px;
+    flex-wrap: nowrap;
 }
 
 .diary-header h3 {
     margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .calendar-card {
@@ -3333,6 +3340,53 @@ a:hover { text-decoration: underline; }
     --cat-health: #58B368;       --cat-health-soft: #E9F6EC;
     --cat-aesthetics: #9B72CF;   --cat-aesthetics-soft: #F1EBFA;
     --cat-all-rounder: #7C6CF0;  --cat-all-rounder-soft: #F0EDFF;
+}
+
+/* ── 行为记录卡（V2 临时加分入口）── */
+.qb-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr auto auto;
+    gap: 8px;
+    align-items: center;
+}
+.qb-input, .qb-select {
+    height: 38px; padding: 0 10px;
+    border: 1px solid var(--border); border-radius: var(--r-md);
+    background: var(--surface-2); color: var(--text);
+    font-size: var(--fs-sm); min-width: 0;
+}
+.qb-input:focus, .qb-select:focus { outline: 2px solid var(--brand-soft); border-color: var(--brand); }
+.qb-points {
+    display: inline-flex; align-items: center;
+    border: 1px solid var(--border); border-radius: var(--r-md);
+    background: var(--surface-2); overflow: hidden;
+}
+.qb-step {
+    width: 32px; height: 36px; border: none; background: transparent;
+    color: var(--muted); font-size: 18px; font-weight: 700; cursor: pointer;
+}
+.qb-step:hover { color: var(--brand); background: var(--brand-soft); }
+.qb-pts-input {
+    width: 40px; height: 36px; border: none; text-align: center;
+    background: transparent; color: var(--text); font-weight: 700; font-size: var(--fs-sm);
+    -moz-appearance: textfield;
+}
+.qb-pts-input::-webkit-outer-spin-button,
+.qb-pts-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.qb-save {
+    height: 38px; padding: 0 16px;
+    border: none; border-radius: var(--r-md);
+    background: var(--brand); color: #fff;
+    font-weight: 700; font-size: var(--fs-sm); cursor: pointer;
+    box-shadow: var(--sh-sm);
+    transition: background .15s, transform .12s;
+}
+.qb-save:hover { background: var(--brand-600); transform: translateY(-1px); }
+.qb-save:active { transform: translateY(0); }
+@media (max-width: 560px) {
+    .qb-grid { grid-template-columns: 1fr 1fr; }
+    .qb-input { grid-column: 1 / -1; }
+    .qb-save { grid-column: 1 / -1; }
 }
 
 .v2-section {

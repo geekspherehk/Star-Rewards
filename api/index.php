@@ -1551,6 +1551,10 @@ function v2ComputeBadges($pdo, $familyId, $profileId, $userId) {
     $stmt = $pdo->prepare('SELECT wish_id, COUNT(*) c FROM checkins WHERE family_id = ? AND profile_id = ? AND wish_id IS NOT NULL GROUP BY wish_id HAVING c >= 21 LIMIT 1');
     $stmt->execute([$familyId, $profileId]);
     $persist21 = $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+    // 21 天坚持进度：取单个愿望的最高连续打卡次数（用于徽章墙展示"已坚持 X/21 天"）
+    $stmt = $pdo->prepare('SELECT MAX(c) max_c FROM (SELECT COUNT(*) c FROM checkins WHERE family_id = ? AND profile_id = ? AND wish_id IS NOT NULL GROUP BY wish_id) t');
+    $stmt->execute([$familyId, $profileId]);
+    $persist21Max = (int)($stmt->fetchColumn() ?: 0);
 
     $covered = 0;
     $badges = [];
@@ -1561,8 +1565,8 @@ function v2ComputeBadges($pdo, $familyId, $profileId, $userId) {
         $badges['rose_' . $cat] = ['unlocked' => $unlocked, 'unlocked_at' => null];
     }
     $allRounder = $covered >= 6;
-    $badges['rose_all_rounder'] = ['unlocked' => $allRounder, 'unlocked_at' => null];
-    $badges['rose_persist_21'] = ['unlocked' => $persist21, 'unlocked_at' => null];
+    $badges['rose_all_rounder'] = ['unlocked' => $allRounder, 'unlocked_at' => null, 'progress' => $covered, 'target' => 6];
+    $badges['rose_persist_21'] = ['unlocked' => $persist21, 'unlocked_at' => null, 'progress' => $persist21Max, 'target' => 21];
 
     // 好友之星徽章：邀请家人加入后由 handleRegister 发放，长期荣誉
     $stmt = $pdo->prepare('SELECT 1 FROM user_badges WHERE family_id = ? AND profile_id = ? AND badge_code = ? LIMIT 1');

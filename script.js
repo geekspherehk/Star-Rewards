@@ -3155,6 +3155,7 @@ async function loadV2Data(forceCheckins = false) {
 
 function renderV2All() {
     if (!v2Data) return;
+    renderQuickBehaviorCat();
     renderV2Flower();
     renderV2Legend();
     renderV2Focus();
@@ -3168,7 +3169,51 @@ function renderV2All() {
     updateV2ModuleStat();
 }
 
-// ── 首页「今日打卡」：进行中的目标一键打卡 +5 分 ──
+// ── 行为记录卡（V2 临时加分入口）──
+function renderQuickBehaviorCat() {
+    const sel = document.getElementById('qb-cat');
+    if (!sel) return;
+    if (sel.children.length) return;  // 只渲染一次
+    sel.innerHTML = V2_CATS.map(c =>
+        '<option value="' + c.code + '">' + escapeHtml(c.short) + ' · ' + escapeHtml(t('v2.badge.' + c.code)) + '</option>'
+    ).join('');
+}
+function qbStep(delta) {
+    const el = document.getElementById('qb-pts');
+    if (!el) return;
+    const v = Math.max(1, Math.min(20, (parseInt(el.value, 10) || 0) + delta));
+    el.value = v;
+}
+async function quickAddBehavior() {
+    const descEl = document.getElementById('qb-desc');
+    const catEl = document.getElementById('qb-cat');
+    const ptsEl = document.getElementById('qb-pts');
+    if (!descEl || !catEl || !ptsEl) return;
+    const desc = descEl.value.trim();
+    const cat = catEl.value;
+    const pts = parseInt(ptsEl.value, 10);
+    if (!desc) { descEl.focus(); showTemporaryMessage(t('common.enterBehaviorDesc'), 'error'); return; }
+    if (!pts || pts < 1) { ptsEl.focus(); showTemporaryMessage(t('common.enterValidPointsPositive'), 'error'); return; }
+    try {
+        await api.addBehavior(desc, pts, { dimension: cat });
+        track('quick_add_behavior', { points: pts, category: cat });
+        const catObj = V2_CATS.find(x => x.code === cat);
+        showTemporaryMessage(t('home.recordBehaviorSuccess', { points: pts, cat: catObj ? catObj.short : cat }), 'success');
+        descEl.value = '';
+        ptsEl.value = 3;
+        // 立即刷新（积分/雷达图/指标）
+        try { v2Data = await api.getV2Overview(); renderV2All(); } catch (e) {}
+        try {
+            const prof = await api.getProfile();
+            if (prof && typeof prof.current_points === 'number') {
+                currentPoints = prof.current_points;
+                updatePointsDisplay();
+            }
+        } catch (e) {}
+    } catch (e) {
+        showTemporaryMessage(t('common.addPointsFailed') + (e && e.error ? ': ' + e.error : ''), 'error');
+    }
+}
 function renderHomeCheckin() {
     const el = document.getElementById('today-checkin-list');
     if (!el) return;
@@ -3402,7 +3447,7 @@ async function v2SetFocus(code) {
     }
 }
 
-// ── 右侧成长建议：本月主打推荐 + 可加强方向 ──
+// ── 右侧成长建议：本月主打 = 用户已选 focus；副推 = 剩余最弱 2 项 ──
 function renderV2Suggestions() {
     const el = document.getElementById('v2-suggest');
     if (!el || !v2Data) return;
@@ -3417,21 +3462,26 @@ function renderV2Suggestions() {
             '</div>';
         return;
     }
-    const focus = rank[0];
-    const others = rank.slice(1, 3);           // 次弱 2 项
-    const isFocus = v2Data.focus === focus.c.code;
+    // 主推 = 用户已选的 focus（本月主打）；若未选则回退到最弱
+    const focusCode = v2Data.focus;
+    const focus = (focusCode && V2_CATS.find(x => x.code === focusCode))
+        ? V2_CATS.find(x => x.code === focusCode)
+        : rank[0].c;
+    // 副推 = 排除 focus 后最弱的 2 项
+    const others = rank.filter(x => x.c.code !== focus.code).slice(0, 2);
+    const isFocus = !!focusCode;
     let html =
         '<div class="v2-suggest-card">' +
             '<div class="v2-suggest-kicker">' + escapeHtml(t('v2.suggestTitle')) + '</div>' +
             '<div class="v2-suggest-focus">' +
-                '<span class="v2-suggest-cat" style="--pc:' + v2CatVar(focus.c.code) + '">' + focus.c.short + '</span>' +
+                '<span class="v2-suggest-cat" style="--pc:' + v2CatVar(focus.code) + '">' + focus.short + '</span>' +
                 '<div class="v2-suggest-focus-body">' +
-                    '<div class="v2-suggest-focus-name">' + escapeHtml(t('v2.badge.' + focus.c.code)) + '</div>' +
-                    '<div class="v2-suggest-focus-desc">' + escapeHtml(t('v2.suggestWeak', { name: focus.c.short })) + '</div>' +
+                    '<div class="v2-suggest-focus-name">' + escapeHtml(t('v2.badge.' + focus.code)) + '</div>' +
+                    '<div class="v2-suggest-focus-desc">' + escapeHtml(t('v2.suggestWeak', { name: focus.short })) + '</div>' +
                 '</div>' +
                 (isFocus
                     ? '<button type="button" class="v2-suggest-btn is-done" disabled>' + escapeHtml(t('v2.suggestDone')) + '</button>'
-                    : '<button type="button" class="v2-suggest-btn" onclick="v2SetFocus(\'' + focus.c.code + '\')">' + escapeHtml(t('v2.suggestSet')) + '</button>') +
+                    : '<button type="button" class="v2-suggest-btn" onclick="v2SetFocus(\'' + focus.code + '\')">' + escapeHtml(t('v2.suggestSet')) + '</button>') +
             '</div>';
     if (others.length) {
         html +=
