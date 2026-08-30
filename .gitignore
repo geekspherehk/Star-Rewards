@@ -54,3 +54,4 @@ temp/
 scripts/.ftp-creds.json
 __pycache__/
 *.pyc
+screenshots/
