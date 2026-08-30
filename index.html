@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=50">
+    <link rel="stylesheet" href="style.css?v=52">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=24"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=49"></script>
+    <script defer src="i18n.js?v=51"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -296,18 +296,29 @@
 
                 <div class="form-group">
                     <h3 data-i18n="gifts.addGift">添加愿望</h3>
-                    <div class="form-row">
+
+                    <!-- 礼物模板快速选择 -->
+                    <div class="gift-template-box" id="gift-template-box">
+                        <div class="gt-header">
+                            <span class="gt-title" data-i18n="giftTemplates.choose">从模板选一个</span>
+                            <button type="button" class="gt-custom-btn" id="gt-custom-btn" data-i18n="giftTemplates.custom">自定义</button>
+                        </div>
+                        <div class="gt-tabs" id="gt-tabs"></div>
+                        <div class="gt-grid" id="gt-grid"></div>
+                    </div>
+
+                    <div class="form-row" id="gift-form-rows">
                         <input type="text" id="gift-name" data-i18n-placeholder="gifts.name" placeholder="愿望名称">
                         <input type="number" id="gift-points" data-i18n-placeholder="gifts.points" placeholder="所需积分">
                     </div>
-                    <div class="form-row">
+                    <div class="form-row" id="gift-desc-row">
                         <input type="text" id="gift-description" data-i18n-placeholder="gifts.description" placeholder="愿望描述">
                     </div>
-                    <div class="form-row">
+                    <div class="form-row" id="gift-link-row">
                         <input type="text" id="gift-link" data-i18n-placeholder="gifts.link" placeholder="商品链接（京东/淘宝/亚马逊…）">
                         <button type="button" class="import-btn" onclick="importProductInfo()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="gifts.importButton">一键导入</span></button>
                     </div>
-                    <div class="form-row form-row--center">
+                    <div class="form-row form-row--center" id="gift-image-row">
                         <input type="text" id="gift-image" data-i18n-placeholder="gifts.image" placeholder="图片URL（可选）">
                         <img id="gift-image-preview" class="gift-image-preview" style="display:none;" alt="preview">
                     </div>
@@ -475,7 +486,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=70"></script>
+    <script defer src="script.js?v=72"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
@@ -587,16 +598,16 @@
         </div>
     </div>
 
-    <!-- 成长成就证书弹窗 -->
+    <!-- 心愿达成祝贺弹窗（礼物兑换） -->
     <div id="certificate-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content cert-modal">
-            <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg><span data-i18n="common.certTitle">成长成就证书</span></h3>
+            <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span data-i18n="common.wishAchieveTitle">心愿达成</span></h3>
             <div class="cert-preview-wrap">
                 <canvas id="cert-canvas" width="800" height="600"></canvas>
             </div>
-            <p class="cert-sub" data-i18n="common.certSub">这是对你努力与坚持的见证</p>
+            <p class="cert-sub" data-i18n="common.wishAchieveBlessing">愿这份快乐，陪伴你继续成长</p>
             <div class="modal-actions">
-                <button class="primary-btn" onclick="downloadCertificate()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="common.certDownload">保存证书</span></button>
+                <button class="primary-btn" onclick="downloadCertificate()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="common.wishAchieveDownload">保存心愿卡</span></button>
                 <button class="secondary-btn" onclick="closeCertificateModal()" data-i18n="common.cancel">关闭</button>
             </div>
         </div>

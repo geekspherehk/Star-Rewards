@@ -837,6 +837,112 @@ function updateWishlistSummary() {
     wsClosest.textContent = closestPct + '%';
 }
 
+// ── 礼物模板（5 大类 50 个，一键填好名称/分/图） ──
+const GT_CATS = [
+    { key: 'time',       icon: '⏰' },
+    { key: 'privilege',  icon: '👑' },
+    { key: 'fun',        icon: '🎉' },
+    { key: 'experience', icon: '🌟' },
+    { key: 'item',       icon: '🎁' }
+];
+let gtActiveCat = 'time';
+let gtCustomMode = false;
+
+function getGiftTemplates() {
+    const raw = t('giftTemplates.list') || {};
+    return raw;
+}
+
+function renderGiftTemplateTabs() {
+    const box = document.getElementById('gt-tabs');
+    if (!box) return;
+    box.innerHTML = '';
+    GT_CATS.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'gt-tab' + (cat.key === gtActiveCat ? ' is-active' : '');
+        btn.dataset.cat = cat.key;
+        btn.innerHTML = '<span class="gt-tab-ico">' + cat.icon + '</span><span class="gt-tab-name">' + escapeHtml(t('giftTemplates.cat.' + cat.key) || cat.key) + '</span>';
+        btn.onclick = () => {
+            gtActiveCat = cat.key;
+            renderGiftTemplateTabs();
+            renderGiftTemplateGrid();
+        };
+        box.appendChild(btn);
+    });
+}
+
+function renderGiftTemplateGrid() {
+    const grid = document.getElementById('gt-grid');
+    if (!grid) return;
+    const list = getGiftTemplates();
+    grid.innerHTML = '';
+    let count = 0;
+    Object.keys(list).forEach(key => {
+        if (!key.startsWith(gtActiveCat + '_')) return;
+        const tmpl = list[key];
+        if (!tmpl || !tmpl.name) return;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'gt-card';
+        if (tmpl.badge === 'time') card.classList.add('gt-card--time');
+        if (tmpl.badge === 'priv') card.classList.add('gt-card--priv');
+        const badgeText = tmpl.badge === 'time' ? t('giftTemplates.badgeTime')
+                         : tmpl.badge === 'priv' ? t('giftTemplates.badgePrivilege') : '';
+        card.innerHTML = (badgeText ? '<span class="gt-card-badge">' + escapeHtml(badgeText) + '</span>' : '')
+            + '<span class="gt-card-name">' + escapeHtml(tmpl.name) + '</span>'
+            + '<span class="gt-card-desc">' + escapeHtml(tmpl.desc || '') + '</span>'
+            + '<span class="gt-card-pts">' + (tmpl.points || 0) + ' <svg class="gt-coin" viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><circle cx="12" cy="12" r="9"/></svg></span>';
+        card.onclick = () => fillGiftFromTemplate(tmpl);
+        grid.appendChild(card);
+        count++;
+    });
+    if (count === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'gt-empty';
+        empty.textContent = t('giftTemplates.emptyHint');
+        grid.appendChild(empty);
+    }
+}
+
+function fillGiftFromTemplate(tmpl) {
+    const nameInput = document.getElementById('gift-name');
+    const pointsInput = document.getElementById('gift-points');
+    const descInput = document.getElementById('gift-description');
+    if (nameInput) {
+        nameInput.value = tmpl.name || '';
+        nameInput.focus();
+        nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    if (pointsInput) pointsInput.value = tmpl.points || '';
+    if (descInput) descInput.value = tmpl.desc || '';
+    // 闪一下反馈
+    if (nameInput) {
+        nameInput.classList.add('gt-flash');
+        setTimeout(() => nameInput.classList.remove('gt-flash'), 700);
+    }
+}
+
+function setGiftCustomMode(on) {
+    gtCustomMode = !!on;
+    const box = document.getElementById('gift-template-box');
+    const rows = ['gift-form-rows', 'gift-desc-row', 'gift-link-row', 'gift-image-row'];
+    if (box) box.style.display = on ? 'none' : '';
+    rows.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = '';
+    });
+    const btn = document.getElementById('gt-custom-btn');
+    if (btn) btn.style.display = on ? 'none' : '';
+}
+
+function initGiftTemplates() {
+    const customBtn = document.getElementById('gt-custom-btn');
+    if (customBtn) customBtn.onclick = () => setGiftCustomMode(true);
+    renderGiftTemplateTabs();
+    renderGiftTemplateGrid();
+}
+
 function updateGiftList() {
     const giftList = document.getElementById('gift-list');
 
@@ -1480,7 +1586,7 @@ async function redeemGift(giftId) {
 
             hideLoading();
             showTemporaryMessage(t('common.achieveSuccess'), 'success');
-            showCelebrationCertificate(gift);
+            showWishAchieveCard(gift);
 
         } catch (error) {
             console.error('兑换礼物失败:', error);
@@ -1758,6 +1864,107 @@ function drawCertStar(ctx, cx, cy, r) {
     ctx.restore();
 }
 
+// 礼物兑换 → 暖色「心愿达成」祝贺卡片（区别于成长成就证书）
+function drawWishHeart(ctx, cx, cy, r) {
+    // 简化的心形 path，居中绘制
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.beginPath();
+    ctx.moveTo(0, r * 0.3);
+    ctx.bezierCurveTo(0, -r * 0.4, -r, -r * 0.4, -r, r * 0.1);
+    ctx.bezierCurveTo(-r, r * 0.7, -r * 0.2, r * 0.95, 0, r * 1.2);
+    ctx.bezierCurveTo(r * 0.2, r * 0.95, r, r * 0.7, r, r * 0.1);
+    ctx.bezierCurveTo(r, -r * 0.4, 0, -r * 0.4, 0, r * 0.3);
+    ctx.closePath();
+    ctx.fillStyle = '#ff7a8a';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
+}
+
+function showWishAchieveCard(gift) {
+    const canvas = document.getElementById('cert-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const profile = getSelectedProfile();
+    const childName = profile.name || t('home.profile.add');
+    const giftName = gift.name || '';
+    const dateStr = new Date().toLocaleDateString(
+        (localStorage.getItem('lang') || 'zh-CN').startsWith('en') ? 'en-US' : 'zh-CN'
+    );
+
+    // 暖色粉橘渐变背景
+    const grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, '#ffd6a5');
+    grad.addColorStop(0.5, '#ffadad');
+    grad.addColorStop(1, '#ff8fab');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // 白色卡片
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    const roundRect = (x, y, w, h, r) => {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+    };
+    roundRect(28, 28, W - 56, H - 56, 18);
+    ctx.fill();
+
+    // 顶部小彩带：3 个圆点
+    [W / 2 - 60, W / 2, W / 2 + 60].forEach((x, i) => {
+        ctx.beginPath();
+        ctx.arc(x, 70, 8, 0, Math.PI * 2);
+        ctx.fillStyle = ['#ff8fab', '#ffb300', '#6c5ce7'][i];
+        ctx.fill();
+    });
+
+    // 标题：心愿达成
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#d6336c';
+    ctx.font = 'bold 46px sans-serif';
+    ctx.fillText(t('common.wishAchieveTitle'), W / 2, 140);
+
+    // 孩子名
+    ctx.fillStyle = '#444';
+    ctx.font = '24px sans-serif';
+    ctx.fillText(childName, W / 2, 200);
+
+    // 副标
+    ctx.fillStyle = '#888';
+    ctx.font = '18px sans-serif';
+    ctx.fillText(t('common.wishAchieveSub'), W / 2, 232);
+
+    // 礼物名（加引号、突出）
+    ctx.fillStyle = '#d6336c';
+    ctx.font = 'bold 34px sans-serif';
+    ctx.fillText('「' + (giftName || '') + '」', W / 2, 310);
+
+    // 心形装饰
+    drawWishHeart(ctx, W / 2, 410, 38);
+
+    // 温暖祝福
+    ctx.fillStyle = '#555';
+    ctx.font = '20px sans-serif';
+    ctx.fillText(t('common.wishAchieveBlessing'), W / 2, 490);
+
+    // 底部日期 + 签名
+    ctx.fillStyle = '#aaa';
+    ctx.font = '15px sans-serif';
+    ctx.fillText(dateStr, W / 2, H - 70);
+    ctx.fillText(t('common.wishAchieveFoot'), W / 2, H - 45);
+
+    document.getElementById('certificate-modal').style.display = 'flex';
+    track('wish_achieved', { gift_id: gift.id });
+}
+
 function showCelebrationCertificate(gift) {
     const canvas = document.getElementById('cert-canvas');
     if (!canvas) return;
@@ -1807,7 +2014,7 @@ function downloadCertificate() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'star-rewards-cert-' + (getSelectedProfile().name || 'cert') + '.png';
+        a.download = 'star-rewards-wish-' + (getSelectedProfile().name || 'wish') + '.png';
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(url), 1000);
     }, 'image/png');
@@ -2613,6 +2820,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.log('Script.js: 在主页，开始初始化应用...');
         await initializeApp();
         initReminder();
+        initGiftTemplates();
     }
 });
 

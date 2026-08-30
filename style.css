@@ -4191,3 +4191,178 @@ a:hover { text-decoration: underline; }
 @media (max-width: 420px) {
     .edu-cards { grid-template-columns: 1fr; }
 }
+
+/* ── 礼物模板选择区（gt = gift template） ── */
+.gift-template-box {
+    background: linear-gradient(135deg, var(--surface-soft, #f6f7fb) 0%, #fff 100%);
+    border: 1px solid var(--border-soft, #e8eaf0);
+    border-radius: var(--r-md, 14px);
+    padding: 14px;
+    margin-bottom: 16px;
+    position: relative;
+}
+.gt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.gt-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main, #2a2d3a);
+}
+.gt-custom-btn {
+    background: transparent;
+    border: 1px solid var(--brand, #6c5ce7);
+    color: var(--brand, #6c5ce7);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.gt-custom-btn:hover {
+    background: var(--brand, #6c5ce7);
+    color: #fff;
+}
+.gt-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    margin-bottom: 12px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.gt-tabs::-webkit-scrollbar { display: none; }
+.gt-tab {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: 1px solid var(--border-soft, #e8eaf0);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--text-muted, #6b7280);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+.gt-tab:hover {
+    border-color: var(--brand, #6c5ce7);
+    color: var(--brand, #6c5ce7);
+}
+.gt-tab.is-active {
+    background: var(--brand, #6c5ce7);
+    color: #fff;
+    border-color: var(--brand, #6c5ce7);
+}
+.gt-tab-ico { font-size: 0.95rem; }
+.gt-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+@media (min-width: 720px) {
+    .gt-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1024px) {
+    .gt-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.gt-card {
+    position: relative;
+    background: #fff;
+    border: 1px solid var(--border-soft, #e8eaf0);
+    border-radius: 10px;
+    padding: 10px 10px 8px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 88px;
+    font: inherit;
+    color: inherit;
+}
+.gt-card:hover {
+    border-color: var(--brand, #6c5ce7);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(108, 92, 231, 0.12);
+}
+.gt-card--time {
+    background: linear-gradient(135deg, #fff7e6 0%, #fff 100%);
+    border-color: #ffd591;
+}
+.gt-card--time:hover {
+    border-color: #ff8c00;
+    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.18);
+}
+.gt-card--priv {
+    background: linear-gradient(135deg, #f3e7ff 0%, #fff 100%);
+    border-color: #d3adf7;
+}
+.gt-card--priv:hover {
+    border-color: #722ed1;
+    box-shadow: 0 4px 12px rgba(114, 46, 209, 0.18);
+}
+.gt-card-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 0.62rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: var(--accent, #ffb300);
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+.gt-card--time .gt-card-badge { background: #ff8c00; }
+.gt-card--priv .gt-card-badge { background: #722ed1; }
+.gt-card-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-main, #2a2d3a);
+    padding-right: 50px;
+    line-height: 1.3;
+}
+.gt-card-desc {
+    font-size: 0.72rem;
+    color: var(--text-muted, #6b7280);
+    line-height: 1.35;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.gt-card-pts {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--brand, #6c5ce7);
+}
+.gt-coin { color: var(--accent, #ffb300); }
+.gt-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--text-muted, #6b7280);
+    font-size: 0.85rem;
+    padding: 20px 0;
+}
+.gt-flash {
+    animation: gtFlash 0.7s ease;
+}
+@keyframes gtFlash {
+    0% { background: #fff7e6; }
+    100% { background: transparent; }
+}
