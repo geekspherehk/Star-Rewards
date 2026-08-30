@@ -2264,6 +2264,19 @@ function renderFamilyModal() {
 
     const nameEl = document.getElementById('family-my-name');
     if (nameEl) nameEl.value = myMember ? (myMember.display_name || '') : '';
+
+    // 邀请进度：成员数 / 1 起步（有 2+ 成员=完成一次邀请）
+    const memberCount = (currentFamily.members || []).length;
+    const progressBox = document.getElementById('family-invite-progress-box');
+    const progressVal = document.getElementById('family-invite-progress-val');
+    const progressFill = document.getElementById('family-invite-progress-fill');
+    if (progressBox && progressVal && progressFill) {
+        const invited = Math.max(0, memberCount - 1);   // 除自己外
+        const pct = Math.min(100, Math.round((invited / 1) * 100));
+        progressVal.textContent = invited + '/1';
+        progressFill.style.width = (invited > 0 ? pct : 0) + '%';
+        progressBox.style.display = isOwner ? 'block' : 'none';
+    }
 }
 
 async function familyNewInvite() {

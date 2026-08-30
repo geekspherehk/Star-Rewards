@@ -512,6 +512,13 @@ function handleRegister($pdo, $data) {
                     }
                 }
             }
+            // 邀请欢迎：被邀请人也拿「家庭新成员」徽章（荣誉，不加分，避免污染积分体系）
+            // 标记新用户通过 invite 加入，home 页 hint 提示；徽章在 milestones 体现
+            $stmt = $pdo->prepare('INSERT IGNORE INTO user_badges (family_id, profile_id, user_id, badge_code) VALUES (?, ?, ?, \'invite_member\')');
+            // 上面 INSERT profile 还没执行，profile_id 我们用即将插入的 profile（id 未知）
+            // 改为：把 invite_member 标记延后到 profile INSERT 之后 — 这里只 set 一个 sessionStorage/标记位：
+            // 实际处理：见下方 profile INSERT 之后
+            unset($stmt);
         } else {
             // create a solo family for the new user (owner) so every account belongs to a family
             $code = generateInviteCode($pdo);
@@ -527,6 +534,14 @@ function handleRegister($pdo, $data) {
         $profileId = (int)$pdo->lastInsertId();
         $stmt = $pdo->prepare('INSERT INTO user_configs (user_id, selected_theme, selected_profile_id) VALUES (?, "classic", ?)');
         $stmt->execute([$userId, $profileId]);
+
+        // 被邀请人：发「家庭新成员」荣誉徽章（无积分），响应里带 via_invite 让前端显示欢迎态
+        $joinedViaInvite = ($inviteCode !== '');
+        if ($joinedViaInvite) {
+            $stmt = $pdo->prepare('INSERT IGNORE INTO user_badges (family_id, profile_id, user_id, badge_code) VALUES (?, ?, ?, \'invite_member\')');
+            $stmt->execute([$familyId, $profileId, $userId]);
+        }
+
         $pdo->commit();
 
         $token = generateToken($userId, $email);
@@ -536,6 +551,7 @@ function handleRegister($pdo, $data) {
             'email' => $email,
             'expires_in' => TOKEN_TTL,
             'family_id' => $familyId,
+            'via_invite' => $joinedViaInvite,
             'profiles' => [
                 ['id' => $profileId, 'name' => '孩子', 'avatar' => '⭐', 'color' => '#FFB300', 'current_points' => 0, 'total_points' => 0]
             ],
@@ -1572,6 +1588,9 @@ function v2ComputeBadges($pdo, $familyId, $profileId, $userId) {
     $stmt = $pdo->prepare('SELECT 1 FROM user_badges WHERE family_id = ? AND profile_id = ? AND badge_code = ? LIMIT 1');
     $stmt->execute([$familyId, $profileId, 'invite_friend']);
     $badges['invite_friend'] = ['unlocked' => (bool)$stmt->fetch(PDO::FETCH_COLUMN), 'unlocked_at' => null];
+    // 家庭新成员徽章：被邀请人注册时自动获得（荣誉）
+    $stmt->execute([$familyId, $profileId, 'invite_member']);
+    $badges['invite_member'] = ['unlocked' => (bool)$stmt->fetch(PDO::FETCH_COLUMN), 'unlocked_at' => null];
 
     // 持久化已解锁徽章
     $stmt = $pdo->prepare('INSERT IGNORE INTO user_badges (family_id, profile_id, user_id, badge_code) VALUES (?, ?, ?, ?)');
