@@ -3884,10 +3884,30 @@ function renderV2Badges() {
         const desc = isAR ? t('v2.allRounderDesc') : (isP21 ? '' : (isInvite ? t('v2.badgeInviteDesc') : t('v2.badgeDesc.' + cat)));
         const icon = isAR ? V2_BADGE_SVGS.all_rounder : (isP21 ? V2_BADGE_SVGS.persist_21 : (isInvite ? V2_BADGE_SVGS.invite_friend : (V2_BADGE_SVGS[cat] || V2_BADGE_SVGS.self_drive)));
         const isNew = newOnes.indexOf(code) !== -1;
+        // 进度环：未解锁时若后端给了 progress/target，渲染半透 SVG 进度环
+        const progress = typeof info.progress === 'number' ? Math.max(0, info.progress) : 0;
+        const target = typeof info.target === 'number' && info.target > 0 ? info.target : 0;
+        const showRing = !info.unlocked && target > 0;
+        const pct = showRing ? Math.min(1, progress / target) : 0;
+        const RING_R = 22, RING_C = 2 * Math.PI * RING_R;
+        const dash = (pct * RING_C).toFixed(2);
+        const ringHtml = showRing
+            ? '<svg class="v2-badge-ring" viewBox="0 0 52 52" aria-hidden="true">' +
+                '<circle class="v2-badge-ring-bg" cx="26" cy="26" r="' + RING_R + '"></circle>' +
+                '<circle class="v2-badge-ring-fg" cx="26" cy="26" r="' + RING_R + '" ' +
+                    'stroke-dasharray="' + dash + ' ' + RING_C.toFixed(2) + '" ' +
+                    'style="--pc:' + pcVar + '"></circle>' +
+              '</svg>'
+            : '';
+        const progressText = showRing ? progress + '/' + target : '';
         return '<div class="v2-badge ' + (info.unlocked ? '' : 'is-locked') + ' ' + (isNew ? 'is-new' : '') + '" style="--pc:' + pcVar + ';--pc-soft:' + pcSoft + '">' +
-            '<div class="v2-badge-ico">' + icon + '</div>' +
+            '<div class="v2-badge-ico-wrap">' +
+                '<div class="v2-badge-ico">' + icon + '</div>' +
+                ringHtml +
+            '</div>' +
             '<div class="v2-badge-name">' + escapeHtml(name) + '</div>' +
             '<div class="v2-badge-desc">' + (desc ? escapeHtml(desc) : '&nbsp;') + '</div>' +
+            (progressText ? '<div class="v2-badge-progress">' + progressText + '</div>' : '') +
         '</div>';
     }).join('');
 }
