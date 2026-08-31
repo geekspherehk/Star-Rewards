@@ -264,15 +264,16 @@ const translations = {
             title: '礼物模板',
             choose: '从模板选一个',
             custom: '自定义',
+            customDesc: '自己起名、设积分',
             emptyHint: '从下面 50 个模板里选一个，或点「自定义」从零开始',
             badgeTime: '时光礼物',
             badgePrivilege: '自由特权',
             cat: {
                 fun: '娱乐类',
                 time: '时间类',
-                experience: '体验类',
+                exp: '体验类',
                 item: '实物类',
-                privilege: '特权类'
+                priv: '特权类'
             },
             list: {
                 // 娱乐类 10
@@ -1022,15 +1023,16 @@ const translations = {
             title: 'Gift Templates',
             choose: 'Pick a template',
             custom: 'Custom',
+            customDesc: 'Name it and set points',
             emptyHint: 'Pick from 50 templates below, or tap Custom to start from scratch',
             badgeTime: 'Time gift',
             badgePrivilege: 'Free pass',
             cat: {
                 fun: 'Fun',
                 time: 'Time',
-                experience: 'Experience',
+                exp: 'Experience',
                 item: 'Item',
-                privilege: 'Privilege'
+                priv: 'Privilege'
             },
             list: {
                 // Fun 10

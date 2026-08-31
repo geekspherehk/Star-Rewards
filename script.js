@@ -839,11 +839,11 @@ function updateWishlistSummary() {
 
 // ── 礼物模板（5 大类 50 个，一键填好名称/分/图） ──
 const GT_CATS = [
-    { key: 'time',       icon: '⏰' },
-    { key: 'privilege',  icon: '👑' },
-    { key: 'fun',        icon: '🎉' },
-    { key: 'experience', icon: '🌟' },
-    { key: 'item',       icon: '🎁' }
+    { key: 'time', icon: '⏰' },
+    { key: 'priv', icon: '👑' },
+    { key: 'fun',  icon: '🎉' },
+    { key: 'exp',  icon: '🌟' },
+    { key: 'item', icon: '🎁' }
 ];
 let gtActiveCat = 'time';
 let gtCustomMode = false;
@@ -899,25 +899,30 @@ function renderGiftTemplateGrid() {
         const card = document.createElement('button');
         card.type = 'button';
         card.className = 'gt-card';
+        // 时间/特权类用暖橙/淡紫底色突出，但不再每张卡加角标徽章（信息已在 tab 上）
         if (tmpl.badge === 'time') card.classList.add('gt-card--time');
         if (tmpl.badge === 'priv') card.classList.add('gt-card--priv');
-        const badgeText = tmpl.badge === 'time' ? t('giftTemplates.badgeTime')
-                         : tmpl.badge === 'priv' ? t('giftTemplates.badgePrivilege') : '';
-        card.innerHTML = (badgeText ? '<span class="gt-card-badge">' + escapeHtml(badgeText) + '</span>' : '')
-            + '<span class="gt-card-name">' + escapeHtml(tmpl.name) + '</span>'
+        card.innerHTML = '<span class="gt-card-name">' + escapeHtml(tmpl.name) + '</span>'
             + '<span class="gt-card-desc">' + escapeHtml(tmpl.desc || '') + '</span>'
             + '<span class="gt-card-pts">' + (tmpl.points || 0) + ' <svg class="gt-coin" viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><circle cx="12" cy="12" r="9"/></svg></span>';
         card.onclick = () => fillGiftFromTemplate(tmpl);
         grid.appendChild(card);
         count++;
     });
+    // 「自定义」卡片：作为当前分类最后一张卡
+    const customCard = document.createElement('button');
+    customCard.type = 'button';
+    customCard.className = 'gt-card gt-card--custom';
+    customCard.innerHTML = '<span class="gt-card-custom-plus">+</span>'
+        + '<span class="gt-card-name">' + escapeHtml(t('giftTemplates.custom') || '自定义') + '</span>'
+        + '<span class="gt-card-desc">' + escapeHtml(t('giftTemplates.customDesc') || '自己起名设分') + '</span>';
+    customCard.onclick = () => setGiftCustomMode(true);
+    grid.appendChild(customCard);
     if (count === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'gt-empty';
-        empty.textContent = t('giftTemplates.emptyHint') || '该分类暂无模板';
-        grid.appendChild(empty);
+        // 分类下没模板时，customCard 已经作为唯一一张显示
+        console.log('[gt] 分类', gtActiveCat, '无模板，只显示自定义卡');
     }
-    console.log('[gt] 渲染', count, '个模板,分类=', gtActiveCat);
+    console.log('[gt] 渲染', count, '个模板+自定义卡,分类=', gtActiveCat);
 }
 
 function fillGiftFromTemplate(tmpl) {
@@ -941,6 +946,16 @@ function setGiftCustomMode(on) {
     if (box) box.style.display = on ? 'none' : '';
     const btn = document.getElementById('gt-custom-btn');
     if (btn) btn.style.display = on ? 'none' : '';
+    // 进入自定义时聚焦名称输入框
+    if (on) {
+        const nameInput = document.getElementById('gift-name');
+        if (nameInput) {
+            nameInput.value = '';
+            nameInput.focus();
+        }
+        const ptsInput = document.getElementById('gift-points');
+        if (ptsInput) ptsInput.value = '';
+    }
 }
 
 function initGiftTemplates() {
