@@ -946,6 +946,8 @@ function setGiftCustomMode(on) {
     if (box) box.style.display = on ? 'none' : '';
     const btn = document.getElementById('gt-custom-btn');
     if (btn) btn.style.display = on ? 'none' : '';
+    const back = document.getElementById('gift-custom-back');
+    if (back) back.style.display = on ? '' : 'none';
     // 进入自定义时聚焦名称输入框
     if (on) {
         const nameInput = document.getElementById('gift-name');
@@ -1471,9 +1473,13 @@ async function importProductInfo() {
 async function addGift() {
     const name = document.getElementById('gift-name').value.trim();
     const giftPoints = parseInt(document.getElementById('gift-points').value);
-    const description = document.getElementById('gift-description').value.trim();
-    const imageUrl = document.getElementById('gift-image').value.trim();
-    const originalUrl = document.getElementById('gift-link') ? document.getElementById('gift-link').value.trim() : '';
+    // 表单已精简为「名称 + 积分」，描述/图片/链接输入框已移除，需做空值保护
+    const descriptionEl = document.getElementById('gift-description');
+    const description = descriptionEl ? descriptionEl.value.trim() : '';
+    const imageEl = document.getElementById('gift-image');
+    const imageUrl = imageEl ? imageEl.value.trim() : '';
+    const linkEl = document.getElementById('gift-link');
+    const originalUrl = linkEl ? linkEl.value.trim() : '';
 
     if (!name) {
         alert(t('common.enterGiftName'));
@@ -1515,9 +1521,12 @@ async function addGift() {
         
         document.getElementById('gift-name').value = '';
         document.getElementById('gift-points').value = '';
-        document.getElementById('gift-description').value = '';
-        document.getElementById('gift-image').value = '';
-        if (document.getElementById('gift-link')) document.getElementById('gift-link').value = '';
+        const descEl = document.getElementById('gift-description');
+        if (descEl) descEl.value = '';
+        const imgEl = document.getElementById('gift-image');
+        if (imgEl) imgEl.value = '';
+        const lkEl = document.getElementById('gift-link');
+        if (lkEl) lkEl.value = '';
         const preview = document.getElementById('gift-image-preview');
         if (preview) preview.style.display = 'none';
         document.getElementById('gift-name').focus();
