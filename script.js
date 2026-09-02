@@ -1923,9 +1923,11 @@ function showWishAchieveCard(gift) {
     const profile = getSelectedProfile();
     const childName = profile.name || t('home.profile.add');
     const giftName = gift.name || '';
-    const dateStr = new Date().toLocaleDateString(
-        (localStorage.getItem('lang') || 'zh-CN').startsWith('en') ? 'en-US' : 'zh-CN'
-    );
+    const d = new Date();
+    const isEn = (localStorage.getItem('lang') || 'zh-CN').startsWith('en');
+    const dateStr = isEn
+        ? d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        : (d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日');
 
     // 暖色粉橘渐变背景
     const grad = ctx.createLinearGradient(0, 0, W, H);
@@ -1952,45 +1954,61 @@ function showWishAchieveCard(gift) {
     // 顶部小彩带：3 个圆点
     [W / 2 - 60, W / 2, W / 2 + 60].forEach((x, i) => {
         ctx.beginPath();
-        ctx.arc(x, 70, 8, 0, Math.PI * 2);
+        ctx.arc(x, 66, 8, 0, Math.PI * 2);
         ctx.fillStyle = ['#ff8fab', '#ffb300', '#6c5ce7'][i];
         ctx.fill();
     });
 
-    // 标题：心愿达成
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#d6336c';
-    ctx.font = 'bold 46px sans-serif';
-    ctx.fillText(t('common.wishAchieveTitle'), W / 2, 140);
+    const pink = '#d6336c';
+    const warm = '#e8590c';
 
-    // 孩子名
-    ctx.fillStyle = '#444';
-    ctx.font = '24px sans-serif';
-    ctx.fillText(childName, W / 2, 200);
+    // 称呼（贺卡式：左上，大字）
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = pink;
+    ctx.font = 'bold 32px sans-serif';
+    ctx.fillText(t('common.wishAchieveSalutation', { name: childName }), 72, 128);
+
+    // 标题：心愿达成（居中，特大）
+    ctx.textAlign = 'center';
+    ctx.fillStyle = pink;
+    ctx.font = 'bold 58px sans-serif';
+    ctx.fillText(t('common.wishAchieveTitle'), W / 2, 212);
 
     // 副标
-    ctx.fillStyle = '#888';
-    ctx.font = '18px sans-serif';
-    ctx.fillText(t('common.wishAchieveSub'), W / 2, 232);
+    ctx.fillStyle = '#999';
+    ctx.font = '22px sans-serif';
+    ctx.fillText(t('common.wishAchieveSub'), W / 2, 258);
 
-    // 礼物名（加引号、突出）
-    ctx.fillStyle = '#d6336c';
-    ctx.font = 'bold 34px sans-serif';
-    ctx.fillText('「' + (giftName || '') + '」', W / 2, 310);
+    // 礼物名（加引号、突出、暖色）
+    ctx.fillStyle = warm;
+    ctx.font = 'bold 44px sans-serif';
+    ctx.fillText('「' + giftName + '」', W / 2, 348);
 
     // 心形装饰
-    drawWishHeart(ctx, W / 2, 410, 38);
+    drawWishHeart(ctx, W / 2, 416, 40);
 
     // 温暖祝福
     ctx.fillStyle = '#555';
-    ctx.font = '20px sans-serif';
-    ctx.fillText(t('common.wishAchieveBlessing'), W / 2, 490);
+    ctx.font = '24px sans-serif';
+    ctx.fillText(t('common.wishAchieveBlessing'), W / 2, 488);
 
-    // 底部日期 + 签名
-    ctx.fillStyle = '#aaa';
+    // 日期（醒目，右下）
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#666';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText(dateStr, W - 72, 528);
+
+    // 落款（右下，大字）
+    ctx.fillStyle = pink;
+    ctx.font = 'bold 28px sans-serif';
+    ctx.fillText(t('common.wishAchieveFrom'), W - 72, 568);
+
+    // 页脚（卡片底部居中）
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#bcbcbc';
     ctx.font = '15px sans-serif';
-    ctx.fillText(dateStr, W / 2, H - 70);
-    ctx.fillText(t('common.wishAchieveFoot'), W / 2, H - 45);
+    ctx.fillText(t('common.wishAchieveFoot'), W / 2, 590);
 
     document.getElementById('certificate-modal').style.display = 'flex';
     track('wish_achieved', { gift_id: gift.id });
