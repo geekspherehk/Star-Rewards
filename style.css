@@ -3458,6 +3458,15 @@ a:hover { text-decoration: underline; }
 /* 花瓣标签：二字素养名，统一深色（不与雷达彩色点混淆） */
 .petal-label-txt { font-size: 11px; font-weight: 800; fill: var(--text-2); font-family: var(--font); }
 
+/* 本月主打瓣高亮：光晕圈 + 星标，看花即知本月重点 */
+.petal-g.is-focus .petal-bg {
+    stroke: var(--pc, var(--brand));
+    stroke-width: 2;
+    fill: color-mix(in srgb, var(--pc, var(--brand)) 18%, #fff);
+}
+.petal-focus-ring { fill: none; stroke: var(--pc, var(--brand)); stroke-width: 2; opacity: .55; }
+.petal-focus-star { fill: var(--pc, var(--brand)); }
+
 /* 雷达参考网格：作为底层背景，最外圈 = 范围边界，清晰可见 */
 .radar-backdrop { pointer-events: none; }
 .radar-ring { fill: none; stroke: #C7C7D8; stroke-width: 1.2; opacity: .9; }
@@ -3519,6 +3528,35 @@ a:hover { text-decoration: underline; }
 .v2-suggest-item { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--text-2); }
 .v2-suggest-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--pc, var(--brand)); flex: 0 0 auto; }
 
+/* 本月主打横幅：让成长建议卡一眼看出「这就是本月主打」，不再淹没成普通文字 */
+.v2-suggest-banner {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px; border-radius: 12px;
+    background: color-mix(in srgb, var(--pc, var(--brand)) 14%, #fff);
+    border: 1px solid color-mix(in srgb, var(--pc, var(--brand)) 34%, #fff);
+    margin-bottom: 10px;
+}
+.v2-sb-ico { font-size: 14px; line-height: 1; }
+.v2-sb-label { font-size: 0.7rem; font-weight: 700; letter-spacing: .04em; color: color-mix(in srgb, var(--pc, var(--brand)) 68%, #444); }
+.v2-sb-name { font-size: 0.98rem; font-weight: 800; color: var(--pc, var(--brand)); }
+
+/* 首页「本月主打」小条 */
+.home-focus-banner {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; margin: 0 0 14px; border-radius: 14px;
+    background: color-mix(in srgb, var(--pc, var(--brand)) 12%, #fff);
+    border: 1px solid color-mix(in srgb, var(--pc, var(--brand)) 30%, #fff);
+}
+.hfb-ico { font-size: 15px; line-height: 1; }
+.hfb-label { font-size: 0.7rem; font-weight: 700; color: color-mix(in srgb, var(--pc, var(--brand)) 65%, #555); }
+.hfb-name { font-size: 1rem; font-weight: 800; color: var(--pc, var(--brand)); }
+.hfb-go {
+    margin-left: auto; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+    color: var(--pc, var(--brand)); background: #fff;
+    border: 1px solid color-mix(in srgb, var(--pc, var(--brand)) 40%, #fff);
+    border-radius: 999px; padding: 4px 12px; white-space: nowrap;
+}
+
 /* 窄屏：花朵与建议上下堆叠 */
 @media (max-width: 560px) {
     .growth-flower-row { flex-direction: column; align-items: stretch; }
@@ -3538,6 +3576,17 @@ a:hover { text-decoration: underline; }
 .v2-ar-count { font-size: var(--fs-sm); font-weight: 700; color: var(--brand); white-space: nowrap; }
 
 /* ── 本月主打瓣 ── */
+.v2-focus-block { margin-top: var(--sp-3); }
+.v2-focus-label {
+    display: flex; align-items: center; gap: 7px;
+    font-size: var(--fs-md); font-weight: 700; color: var(--text-1);
+    margin-bottom: 4px;
+}
+.v2-focus-ico { font-size: 1.05rem; line-height: 1; }
+.v2-focus-desc {
+    font-size: var(--fs-sm); color: var(--text-2);
+    margin: 0 0 10px; line-height: 1.5;
+}
 .v2-focus-chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .v2-focus-chip {
     display: inline-flex; align-items: center; gap: 6px;
@@ -4383,16 +4432,17 @@ a:hover { text-decoration: underline; }
    注意：必须写在 .gt-tabs 基础规则之后（同特异性后写者胜） */
 @media (max-width: 600px) {
     .gt-tabs {
-        flex-wrap: wrap;
-        overflow-x: visible;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
         gap: 6px;
+        overflow: visible;
     }
     .gt-tab {
-        flex: 1 1 auto;
         justify-content: center;
+        width: 100%;
         min-width: 0;
-        padding: 6px 10px;
-        font-size: 0.78rem;
+        padding: 7px 8px;
+        font-size: 0.8rem;
     }
     .gift-template-box {
         padding: 12px 10px;
@@ -4408,4 +4458,25 @@ a:hover { text-decoration: underline; }
     }
     .gt-card-name { font-size: 0.82rem; }
     .gt-card-desc { font-size: 0.68rem; }
+}
+
+/* 移动端：成长日历标题不被分享按钮挤成竖排 + 日历格子收紧 */
+@media (max-width: 600px) {
+    .diary-header {
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    .diary-header .poster-btn {
+        padding: 6px;
+        flex: 0 0 auto;
+    }
+    .diary-header .poster-btn span { display: none; }
+    .diary-header h3 { flex: 1 1 auto; }
+
+    .calendar-card { padding: 12px; }
+    .cal-cells { gap: 3px; }
+    .cal-cell { min-height: 46px; padding: 3px 3px; }
+    .cal-day-num { font-size: 0.78rem; }
+    .calendar-month-label { min-width: 88px; font-size: 0.95rem; }
 }

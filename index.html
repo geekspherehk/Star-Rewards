@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=53">
+    <link rel="stylesheet" href="style.css?v=55">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=24"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=53"></script>
+    <script defer src="i18n.js?v=55"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -128,6 +128,9 @@
                     </div>
                     <button type="button" class="welcome-banner-cta" onclick="focusBehaviorForm()" data-i18n="home.welcomeCta">记录第一个行为</button>
                 </div>
+
+                <!-- 首页「本月主打」小条：focus 在首页也可见，与成长总览呼应 -->
+                <div id="home-focus-banner" class="home-focus-banner" style="display:none;"></div>
 
                 <!-- 今日打卡：主操作前置，直接打卡 +5 分 -->
                 <div class="today-checkin" id="today-checkin">
@@ -392,8 +395,12 @@
                         <div class="v2-ar-track"><div id="v2-ar-fill" class="v2-ar-fill"></div></div>
                         <span id="v2-ar-count" class="v2-ar-count">0/8</span>
                     </div>
-                    <div id="v2-focus-chips" class="v2-focus-chips"></div>
-                    <div id="v2-focus-hint" class="v2-focus-hint" style="display:none"></div>
+                    <div class="v2-focus-block">
+                        <div class="v2-focus-label"><span class="v2-focus-ico">🎯</span><span data-i18n="v2.focusLabel">本月主打</span></div>
+                        <p class="v2-focus-desc" data-i18n="v2.focusDesc">挑 1 个本月重点培养方向，上方「成长建议」会优先围绕它展开</p>
+                        <div id="v2-focus-chips" class="v2-focus-chips"></div>
+                        <div id="v2-focus-hint" class="v2-focus-hint" style="display:none"></div>
+                    </div>
                     <button type="button" class="v2-legend-toggle" id="v2-legend-toggle" onclick="toggleV2Legend()"><span data-i18n="v2.legendToggle">素养图鉴：8 大方向各是什么意思</span><span class="v2-legend-chev" id="v2-legend-chev" aria-hidden="true">▸</span></button>
                     <div class="v2-legend" id="v2-legend" hidden></div>
                 </div>
@@ -474,7 +481,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=74"></script>
+    <script defer src="script.js?v=76"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {

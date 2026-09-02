@@ -3403,6 +3403,7 @@ function renderV2All() {
     renderV2Legend();
     renderV2Focus();
     renderV2Suggestions();
+    renderHomeFocusBanner();
     renderV2Wishes();
     renderV2Badges();
     renderV2Indicators();
@@ -3585,9 +3586,15 @@ function renderV2Flower() {
         const score = v2CatScore(cov);
         if (score > 0) v2CoveredCount++;
         const labelRot = ang <= 180 ? ang : ang - 360; // 标签始终正立
+        const isFocus = (v2Data && v2Data.focus === c.code);
+        const focusMark = isFocus
+            ? '<circle class="petal-focus-ring" cx="100" cy="22" r="15"/>' +
+              '<path class="petal-focus-star" transform="translate(100 22)" d="M0 -7 L1.76 -2.43 L6.66 -2.16 L2.85 0.93 L4.11 5.66 L0 3 L-4.11 5.66 L-2.85 0.93 L-6.66 -2.16 L-1.76 -2.43 Z"/>'
+            : '';
         petals +=
-            '<g class="petal-g" transform="rotate(' + ang + ' ' + cx + ' ' + cy + ')" title="' + escapeHtml(t('v2.badge.' + c.code)) + '">' +
+            '<g class="petal-g' + (isFocus ? ' is-focus' : '') + '"' + (isFocus ? ' style="--pc:' + v2CatVar(c.code) + '"' : '') + ' transform="rotate(' + ang + ' ' + cx + ' ' + cy + ')" title="' + escapeHtml(t('v2.badge.' + c.code)) + (isFocus ? ' · ' + escapeHtml(t('v2.focusLabel')) : '') + '">' +
                 '<path class="petal-bg" d="' + v2PetalPath() + '"/>' +
+                focusMark +
             '</g>' +
             '<g class="petal-label" transform="rotate(' + ang + ' ' + cx + ' ' + cy + ') translate(100 4) rotate(' + (-labelRot) + ')">' +
                 '<text class="petal-label-txt" text-anchor="middle">' + c.short + '</text>' +
@@ -3670,7 +3677,7 @@ function renderV2Focus() {
     if (hint) {
         if (v2Data.focus) {
             hint.style.display = 'flex';
-            hint.textContent = t('v2.focusHint');
+            hint.textContent = t('v2.focusHintLinked', { name: t('v2.badge.' + v2Data.focus) });
         } else {
             hint.style.display = 'none';
         }
@@ -3684,6 +3691,7 @@ async function v2SetFocus(code) {
         renderV2Focus();
         renderV2Flower();
         renderV2Suggestions();
+        renderHomeFocusBanner();
         showTemporaryMessage(t('v2.focusSetDone'), 'success');
     } catch (e) {
         showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
@@ -3714,7 +3722,14 @@ function renderV2Suggestions() {
         const others = rank.filter(x => x.c.code !== focus.code).slice(0, 2);
         const isFocus = !!focusObj;
         let html =
-            '<div class="v2-suggest-card">' +
+            '<div class="v2-suggest-card' + (isFocus ? ' has-focus' : '') + '">' +
+                (isFocus
+                    ? '<div class="v2-suggest-banner" style="--pc:' + v2CatVar(focus.code) + '">' +
+                        '<span class="v2-sb-ico">🎯</span>' +
+                        '<span class="v2-sb-label">' + escapeHtml(t('v2.focusLabel')) + '</span>' +
+                        '<span class="v2-sb-name">' + escapeHtml(t('v2.badge.' + focus.code)) + '</span>' +
+                      '</div>'
+                    : '') +
                 '<div class="v2-suggest-kicker">' + escapeHtml(t('v2.suggestTitle')) + '</div>' +
                 '<div class="v2-suggest-focus">' +
                     '<span class="v2-suggest-cat" style="--pc:' + v2CatVar(focus.code) + '">' + focus.short + '</span>' +
@@ -3743,6 +3758,22 @@ function renderV2Suggestions() {
         console.warn('renderV2Suggestions 渲染失败:', e);
         el.innerHTML = '<div class="v2-suggest-card v2-suggest-empty"><div class="v2-suggest-kicker">' + escapeHtml(t('v2.suggestTitle')) + '</div><p class="v2-suggest-empty-txt">—</p></div>';
     }
+}
+
+// ── 首页「本月主打」小条：让 focus 在首页也可见，形成跨页回声 ──
+function renderHomeFocusBanner() {
+    const el = document.getElementById('home-focus-banner');
+    if (!el) return;
+    if (!v2Data || !v2Data.focus) { el.style.display = 'none'; return; }
+    const c = V2_CATS.find(x => x.code === v2Data.focus);
+    if (!c) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    el.style.setProperty('--pc', v2CatVar(c.code));
+    el.innerHTML =
+        '<span class="hfb-ico">🎯</span>' +
+        '<span class="hfb-label">' + escapeHtml(t('v2.focusLabel')) + '</span>' +
+        '<span class="hfb-name">' + escapeHtml(t('v2.badge.' + c.code)) + '</span>' +
+        '<button type="button" class="hfb-go" onclick="showModule(\'achievements-module\')">' + escapeHtml(t('v2.focusGo')) + '</button>';
 }
 
 // ── 成长愿望列表 ──
