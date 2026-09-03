@@ -3,6 +3,8 @@
   "short_name": "Star Rewards",
   "description": "儿童积分奖励系统 - 用积分激励孩子养成好习惯，支持行为记录、愿望清单、积分兑换",
   "lang": "zh-CN",
+  "scope": "/",
+  "id": "/",
   "categories": ["education", "productivity", "kids"],
   "start_url": "/",
   "display": "standalone",

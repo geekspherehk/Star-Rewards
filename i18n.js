@@ -1,7 +1,7 @@
 // 多语言配置文件
 const translations = {
     zh: {
-        appTitle: 'Best Me',
+        appTitle: 'Star Rewards',
         login: {
             title: '登录',
             email: '邮箱',
@@ -818,7 +818,7 @@ const translations = {
         }
     },
     en: {
-        appTitle: 'Best Me',
+        appTitle: 'Star Rewards',
         login: {
             title: 'Login',
             email: 'Email',
