@@ -260,6 +260,54 @@ const translations = {
             giftTitle: '奖励目标',
             rewardSub: '他希望得到的礼物，攒够积分即可兑换'
         },
+        goalTemplates: {
+            title: '本月主打 · 推荐目标',
+            hint: '挑一个开始，点一下就填好表单',
+            noFocus: '先在成长之花上点选本月主打，这里会推荐对应目标',
+            use: '用这个',
+            list: {
+                self_drive: [
+                    { name: '每天自己收拾书包', type: 'persistence', days: 21, coef: 1 },
+                    { name: '独立完成当天作业', type: 'persistence', days: 14, coef: 1 },
+                    { name: '自己规划周末半天', type: 'experience', days: 0, coef: 1 }
+                ],
+                money: [
+                    { name: '存下零花钱的 1/3', type: 'persistence', days: 30, coef: 1 },
+                    { name: '记一笔收支账', type: 'experience', days: 0, coef: 1 },
+                    { name: '货比三家再买', type: 'experience', days: 0, coef: 1 }
+                ],
+                empathy: [
+                    { name: '每天说一句谢谢', type: 'persistence', days: 14, coef: 1 },
+                    { name: '给家人一个拥抱', type: 'experience', days: 0, coef: 1 },
+                    { name: '安慰难过的朋友', type: 'experience', days: 0, coef: 1.25 }
+                ],
+                relationship: [
+                    { name: '主动邀请同学一起玩', type: 'experience', days: 0, coef: 1.25 },
+                    { name: '分享玩具一次', type: 'experience', days: 0, coef: 1 },
+                    { name: '主持一次家庭会议', type: 'challenge', days: 0, coef: 1.5 }
+                ],
+                planning: [
+                    { name: '列明日待办清单', type: 'persistence', days: 14, coef: 1 },
+                    { name: '整理自己的书桌', type: 'experience', days: 0, coef: 1 },
+                    { name: '预估作业用时', type: 'experience', days: 0, coef: 1 }
+                ],
+                resilience: [
+                    { name: '重做一道错题', type: 'persistence', days: 21, coef: 1.25 },
+                    { name: '坚持运动 10 分钟', type: 'persistence', days: 14, coef: 1 },
+                    { name: '遇困难先试 3 次', type: 'experience', days: 0, coef: 1 }
+                ],
+                health: [
+                    { name: '每天跳绳 100 个', type: 'persistence', days: 21, coef: 1 },
+                    { name: '早睡早起坚持一周', type: 'persistence', days: 7, coef: 1 },
+                    { name: '每餐吃够蔬菜', type: 'persistence', days: 14, coef: 1 }
+                ],
+                aesthetics: [
+                    { name: '画一幅画', type: 'experience', days: 0, coef: 1 },
+                    { name: '拍一张好看的照片', type: 'experience', days: 0, coef: 1 },
+                    { name: '布置自己的小角落', type: 'challenge', days: 0, coef: 1.25 }
+                ]
+            }
+        },
         giftTemplates: {
             title: '礼物模板',
             choose: '从模板选一个',
@@ -1028,6 +1076,54 @@ const translations = {
             moduleDesc: 'Growth goals + Reward goals',
             giftTitle: 'Reward Goals',
             rewardSub: 'Rewards he or she hopes to get — redeem once enough points'
+        },
+        goalTemplates: {
+            title: 'Monthly Focus · Suggested Goals',
+            hint: 'Pick one to start — tap to fill the form',
+            noFocus: 'Pick a monthly focus on the growth flower first, and we’ll suggest goals here',
+            use: 'Use this',
+            list: {
+                self_drive: [
+                    { name: 'Pack school bag independently every day', type: 'persistence', days: 21, coef: 1 },
+                    { name: 'Finish daily homework on own', type: 'persistence', days: 14, coef: 1 },
+                    { name: 'Plan own weekend half-day', type: 'experience', days: 0, coef: 1 }
+                ],
+                money: [
+                    { name: 'Save one-third of pocket money', type: 'persistence', days: 30, coef: 1 },
+                    { name: 'Log one income/expense entry', type: 'experience', days: 0, coef: 1 },
+                    { name: 'Compare before buying', type: 'experience', days: 0, coef: 1 }
+                ],
+                empathy: [
+                    { name: 'Say thank you once a day', type: 'persistence', days: 14, coef: 1 },
+                    { name: 'Give family a hug', type: 'experience', days: 0, coef: 1 },
+                    { name: 'Comfort a sad friend', type: 'experience', days: 0, coef: 1.25 }
+                ],
+                relationship: [
+                    { name: 'Invite a classmate to play', type: 'experience', days: 0, coef: 1.25 },
+                    { name: 'Share a toy once', type: 'experience', days: 0, coef: 1 },
+                    { name: 'Host a family meeting', type: 'challenge', days: 0, coef: 1.5 }
+                ],
+                planning: [
+                    { name: 'List tomorrow’s to-do', type: 'persistence', days: 14, coef: 1 },
+                    { name: 'Tidy own desk', type: 'experience', days: 0, coef: 1 },
+                    { name: 'Estimate homework time', type: 'experience', days: 0, coef: 1 }
+                ],
+                resilience: [
+                    { name: 'Redo a wrong problem', type: 'persistence', days: 21, coef: 1.25 },
+                    { name: 'Exercise 10 min daily', type: 'persistence', days: 14, coef: 1 },
+                    { name: 'Try 3 times before asking', type: 'experience', days: 0, coef: 1 }
+                ],
+                health: [
+                    { name: 'Skip rope 100 times a day', type: 'persistence', days: 21, coef: 1 },
+                    { name: 'Early to bed, early to rise for a week', type: 'persistence', days: 7, coef: 1 },
+                    { name: 'Eat veggies every meal', type: 'persistence', days: 14, coef: 1 }
+                ],
+                aesthetics: [
+                    { name: 'Draw a picture', type: 'experience', days: 0, coef: 1 },
+                    { name: 'Take a nice photo', type: 'experience', days: 0, coef: 1 },
+                    { name: 'Decorate own corner', type: 'challenge', days: 0, coef: 1.25 }
+                ]
+            }
         },
         giftTemplates: {
             title: 'Gift Templates',

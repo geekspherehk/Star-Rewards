@@ -3434,6 +3434,7 @@ function renderV2All() {
     renderV2Suggestions();
     renderHomeFocusBanner();
     renderV2Wishes();
+    renderV2WishTemplates();
     renderV2Badges();
     renderV2Indicators();
     renderV2Report();
@@ -3733,6 +3734,7 @@ async function v2SetFocus(code) {
         renderV2Suggestions();
         renderHomeFocusBanner();
         renderFocusConfirmBar();
+        renderV2WishTemplates();
         showTemporaryMessage(t('v2.focusSetDone'), 'success');
     } catch (e) {
         showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
@@ -3821,6 +3823,73 @@ function renderHomeFocusBanner() {
         '<span class="hfb-label">' + escapeHtml(t('v2.focusLabel')) + '</span>' +
         '<span class="hfb-name">' + escapeHtml(t('v2.badge.' + c.code)) + '</span>' +
         '<button type="button" class="hfb-go" onclick="showModule(\'achievements-module\')">' + escapeHtml(t('v2.focusGo')) + '</button>';
+}
+
+// ── 成长目标：按本月主打推荐目标模板，点一下填好表单 ──
+function renderV2WishTemplates() {
+    const el = document.getElementById('v2-wish-templates');
+    if (!el) return;
+    if (!v2Data || !v2Data.focus) {
+        el.innerHTML = '<p class="v2-wt-hint">' + escapeHtml(t('goalTemplates.noFocus')) + '</p>';
+        return;
+    }
+    const focusCode = v2Data.focus;
+    const focusName = t('v2.badge.' + focusCode);
+    const list = ((typeof translations !== 'undefined') && translations[currentLanguage]
+        && translations[currentLanguage].goalTemplates
+        && translations[currentLanguage].goalTemplates.list
+        && translations[currentLanguage].goalTemplates.list[focusCode]) || [];
+    if (!list.length) { el.innerHTML = ''; return; }
+    let html =
+        '<div class="v2-wt-head">' +
+            '<span class="v2-wt-ico">💡</span>' +
+            '<span class="v2-wt-title">' + escapeHtml(t('goalTemplates.title')) + '</span>' +
+            '<span class="v2-wt-cat" style="--pc:' + v2CatVar(focusCode) + '">' + escapeHtml(focusName) + '</span>' +
+        '</div>' +
+        '<p class="v2-wt-sub">' + escapeHtml(t('goalTemplates.hint')) + '</p>' +
+        '<div class="v2-wt-list">';
+    list.forEach((g, i) => {
+        const typeLabel = g.type === 'persistence' ? t('v2.typePersistence')
+            : g.type === 'challenge' ? t('v2.typeChallenge') : t('v2.typeExperience');
+        html +=
+            '<button type="button" class="v2-wt-chip" onclick="fillWishFromGoal(' + i + ')">' +
+                '<span class="v2-wt-chip-name">' + escapeHtml(g.name) + '</span>' +
+                '<span class="v2-wt-chip-type">' + escapeHtml(typeLabel) + '</span>' +
+            '</button>';
+    });
+    html += '</div>';
+    el.innerHTML = html;
+    el._goalList = list; // 供 onclick 索引取值
+}
+
+function fillWishFromGoal(idx) {
+    const el = document.getElementById('v2-wish-templates');
+    const list = el && el._goalList;
+    if (!list || !list[idx]) return;
+    const g = list[idx];
+    const focusCode = v2Data && v2Data.focus;
+    const catEl = document.getElementById('v2-wish-category');
+    const typeEl = document.getElementById('v2-wish-type');
+    const nameEl = document.getElementById('v2-wish-name');
+    const descEl = document.getElementById('v2-wish-desc');
+    const daysEl = document.getElementById('v2-wish-days');
+    const coefEl = document.getElementById('v2-wish-coef');
+    if (catEl && focusCode) catEl.value = focusCode;
+    if (typeEl) typeEl.value = g.type || 'experience';
+    if (nameEl) { nameEl.value = g.name || ''; nameEl.focus(); }
+    if (descEl) descEl.value = g.desc || '';
+    if (daysEl) {
+        if (g.days && g.days > 0) {
+            const adv = document.getElementById('v2-advanced');
+            if (adv && adv.hasAttribute('hidden')) toggleV2Advanced();
+            daysEl.value = g.days;
+        } else {
+            daysEl.value = '';
+        }
+    }
+    if (coefEl) coefEl.value = (g.coef && String(g.coef)) || '1';
+    if (typeof updateV2StarsPreview === 'function') updateV2StarsPreview();
+    showTemporaryMessage(t('goalTemplates.use') + '：' + (g.name || ''), 'success');
 }
 
 // ── 成长愿望列表 ──

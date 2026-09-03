@@ -3658,6 +3658,39 @@ a:hover { text-decoration: underline; }
 }
 .v2-stars-preview em { font-style: normal; font-size: var(--fs-xs); color: var(--muted); letter-spacing: 0; }
 
+/* ── 本月主打推荐目标 ── */
+.v2-wish-templates {
+    margin: 4px 0 14px; padding: 14px 16px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-lg);
+}
+.v2-wt-hint { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
+.v2-wt-head { display: flex; align-items: center; gap: 8px; }
+.v2-wt-ico { font-size: 1.05rem; }
+.v2-wt-title { font-weight: 700; font-size: var(--fs-md); color: var(--text); }
+.v2-wt-cat {
+    margin-left: auto; font-size: var(--fs-xs); font-weight: 700;
+    color: var(--pc, var(--brand));
+    background: color-mix(in srgb, var(--pc, var(--brand)) 12%, #fff);
+    border: 1px solid color-mix(in srgb, var(--pc, var(--brand)) 35%, #fff);
+    border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+}
+.v2-wt-sub { margin: 4px 0 10px; font-size: var(--fs-sm); color: var(--muted); }
+.v2-wt-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.v2-wt-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; cursor: pointer;
+    background: var(--surface); border: 1.5px solid var(--border-strong);
+    border-radius: 999px; font-family: var(--font);
+    transition: border-color .15s, background .15s, transform .1s;
+}
+.v2-wt-chip:hover { border-color: var(--brand); background: var(--brand-soft); }
+.v2-wt-chip:active { transform: scale(.97); }
+.v2-wt-chip-name { font-size: var(--fs-base); font-weight: 600; color: var(--text); }
+.v2-wt-chip-type {
+    font-size: var(--fs-xs); color: var(--muted);
+    background: var(--surface-3); border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+}
+
 /* ── 愿望列表 ── */
 .v2-wish-list { display: flex; flex-direction: column; gap: var(--sp-3); }
 .v2-wish-card {
