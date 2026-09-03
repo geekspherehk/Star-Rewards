@@ -1614,6 +1614,7 @@ async function redeemGift(giftId) {
             updatePointsDisplay();
             updateGiftList();
             updateRedeemedList();
+            renderActivationChecklist();
 
             hideLoading();
             showTemporaryMessage(t('common.achieveSuccess'), 'success');
@@ -2308,6 +2309,18 @@ async function initializeApp() {
         // 教育专栏（静态文章卡片，无需等待云数据）
         renderEduColumn();
 
+        // 首次会话埋点：每浏览器仅记录一次，用于 D1/D7 留存基准
+        if (!localStorage.getItem('sr_first_session_done')) {
+            try { localStorage.setItem('sr_first_session_done', '1'); } catch (e) {}
+            track('first_session');
+        }
+
+        // 新用户激活清单（命名/目标/打卡/兑换）→ 进度可见，点亮成长之旅
+        renderActivationChecklist();
+
+        // 运营看板入口：仅站长账号可见（由服务端判定，前端不做邮箱比对）
+        maybeShowStatsNav();
+
         // 首次登录引导（仅首次，关闭后不再出现）
         maybeShowOnboarding();
 
@@ -2761,6 +2774,7 @@ async function saveProfile() {
         }
         closeProfileModal();
         await reloadProfiles();
+        renderActivationChecklist();
         showTemporaryMessage(t('home.profile.saved'), 'success');
     } catch (error) {
         console.error('保存孩子档案失败:', error);
@@ -3017,7 +3031,12 @@ function showModule(moduleId) {
     if (fab) {
         fab.style.display = (moduleId === 'points-module') ? 'flex' : 'none';
     }
-    
+
+    // 数据看板：进入即拉取实时统计
+    if (moduleId === 'stats-module') {
+        loadStats();
+    }
+
     console.log('切换到模块:', moduleId);
 }
 
@@ -3441,6 +3460,7 @@ function renderV2All() {
     renderHomeCheckin();
     renderAchStats();
     updateV2ModuleStat();
+    renderActivationChecklist();
 }
 
 // ── 行为记录卡（V2 临时加分入口）──
@@ -4153,6 +4173,158 @@ function dismissOnboarding() {
     if (el) el.style.display = 'none';
     try { localStorage.setItem(ONBOARD_KEY, '1'); } catch (e) {}
     track('onboarding_dismiss');
+    // 首启命名：若用户填了名字，立即更新当前档案（调现有 updateProfile）
+    const nameInput = document.getElementById('onboard-child-name');
+    const name = nameInput ? nameInput.value.trim() : '';
+    if (name && selectedProfileId) {
+        api.updateProfile(selectedProfileId, { name }).then(() => {
+            track('name_child');
+            reloadProfiles().then(renderActivationChecklist);
+        }).catch(() => {});
+    }
+}
+
+// ── 激活清单：新用户首启 4 步（命名 / 目标 / 打卡 / 兑换）──
+function renderActivationChecklist() {
+    const el = document.getElementById('activation-checklist');
+    if (!el) return;
+    const cur = (Array.isArray(profiles) ? profiles : []).find(p => p.id === selectedProfileId);
+    const named = !!(cur && cur.name && cur.name !== '孩子');
+    const wishes = (v2Data && v2Data.wishes) || [];
+    const goalSet = wishes.length > 0;
+    const checkedIn = (Array.isArray(checkins) && checkins.length > 0) || wishes.some(w => w.today_checked);
+    const redeemed = (Array.isArray(redeemedGifts) ? redeemedGifts : []).length > 0;
+    const steps = [
+        { go: 'name', done: named, label: t('home.actName') },
+        { go: 'goal', done: goalSet, label: t('home.actGoal') },
+        { go: 'checkin', done: checkedIn, label: t('home.actCheckin') },
+        { go: 'redeem', done: redeemed, label: t('home.actRedeem') }
+    ];
+    if (steps.every(s => s.done)) {
+        try { localStorage.setItem('sr_activation_done', '1'); } catch (e) {}
+        el.style.display = 'none';
+        el.innerHTML = '';
+        return;
+    }
+    const doneCount = steps.filter(s => s.done).length;
+    const items = steps.map((s, i) => {
+        const circle = s.done
+            ? '<span class="act-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>'
+            : '<span class="act-check act-check--todo">' + (i + 1) + '</span>';
+        const tail = s.done
+            ? '<span class="act-done-tag">' + escapeHtml(t('home.actDoneTag')) + '</span>'
+            : '<span class="act-go">' + escapeHtml(t('home.actGoHint')) + '</span>';
+        const action = s.done ? '' : ' onclick="actGo(\'' + s.go + '\')"';
+        return '<div class="act-item' + (s.done ? ' is-done' : ' is-todo') + '"' + action + '>' + circle + '<span class="act-label">' + escapeHtml(s.label) + '</span>' + tail + '</div>';
+    }).join('');
+    el.innerHTML =
+        '<div class="act-head">' +
+            '<div class="act-head-text"><h3 class="act-title">' + escapeHtml(t('home.activationTitle')) + '</h3>' +
+            '<p class="act-sub">' + escapeHtml(t('home.activationSub')) + '</p></div>' +
+            '<div class="act-progress"><span class="act-progress-num">' + doneCount + '/4</span></div>' +
+        '</div>' +
+        '<div class="act-list">' + items + '</div>';
+    el.style.display = 'block';
+}
+function actGo(step) {
+    if (step === 'name') { openProfileModal(selectedProfileId); return; }
+    if (step === 'goal') {
+        showModule('gifts-module');
+        const f = document.getElementById('v2-wish-form');
+        if (f) setTimeout(() => f.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+        return;
+    }
+    if (step === 'checkin') {
+        const c = document.getElementById('today-checkin');
+        if (c) c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+    if (step === 'redeem') {
+        showModule('gifts-module');
+        const g = document.getElementById('gifts-list');
+        if (g) setTimeout(() => g.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+        return;
+    }
+}
+
+// ── 数据看板（仅站长可见）──
+
+// 入口可见性：由服务端判定当前账号是否在站长白名单内。
+// 导航卡默认 display:none，只有探测通过才显示 —— 普通家长/孩子账号看不到入口。
+let statsNavAllowed = false;
+async function maybeShowStatsNav() {
+    const card = document.getElementById('stats-nav-card');
+    if (!card) return;
+    try {
+        statsNavAllowed = await api.canViewStats();
+    } catch (e) {
+        statsNavAllowed = false;
+    }
+    card.style.display = statsNavAllowed ? '' : 'none';
+    // 非站长：若当前正停在看板模块，退回首页，避免停留在无权限页面
+    if (!statsNavAllowed) {
+        const mod = document.getElementById('stats-module');
+        if (mod && mod.classList.contains('active')) {
+            showModule('points-module');
+        }
+    }
+}
+
+async function loadStats() {
+    // 双保险：即使绕过入口直接调用，非站长也拿不到数据（后端返回 403）
+    if (!statsNavAllowed) {
+        statsNavAllowed = await api.canViewStats().catch(() => false);
+        if (!statsNavAllowed) {
+            const grid0 = document.getElementById('stats-grid');
+            if (grid0) grid0.innerHTML = '<div class="stats-loading">' + escapeHtml(t('home.statsForbidden')) + '</div>';
+            return;
+        }
+    }
+    const grid = document.getElementById('stats-grid');
+    const inviteEl = document.getElementById('stats-invite');
+    const shareEl = document.getElementById('stats-share');
+    const trendEl = document.getElementById('stats-trend');
+    if (!grid) return;
+    grid.innerHTML = '<div class="stats-loading">' + escapeHtml(t('home.statsLoading')) + '</div>';
+    try {
+        const s = await api.getStats();
+        const cards = [
+            { v: s.registered_total, l: t('home.statsRegistered') },
+            { v: s.families_total, l: t('home.statsFamilies') },
+            { v: s.waf_7d, l: t('home.statsWaf') },
+            { v: s.wau_7d, l: t('home.statsWau') }
+        ];
+        grid.innerHTML = cards.map(c => '<div class="stats-card"><span class="stats-card-value">' + (c.v != null ? c.v : '–') + '</span><span class="stats-card-label">' + escapeHtml(c.l) + '</span></div>').join('');
+        const ret = s.retention || {};
+        grid.insertAdjacentHTML('beforeend',
+            '<div class="stats-card stats-card--ret">' +
+                '<span class="stats-card-label">' + escapeHtml(t('home.statsRetention')) + '</span>' +
+                '<div class="stats-ret-row"><span>' + escapeHtml(t('home.statsD1')) + '</span><b>' + pct(ret.d1) + '</b></div>' +
+                '<div class="stats-ret-row"><span>' + escapeHtml(t('home.statsD7')) + '</span><b>' + pct(ret.d7) + '</b></div>' +
+                '<div class="stats-ret-row"><span>' + escapeHtml(t('home.statsD30')) + '</span><b>' + pct(ret.d30) + '</b></div>' +
+            '</div>');
+        if (inviteEl) inviteEl.innerHTML = funnelRows(s.funnel_invite);
+        if (shareEl) shareEl.innerHTML = funnelRows(s.funnel_share);
+        if (trendEl) trendEl.innerHTML = renderTrend(s.trend_30d);
+    } catch (e) {
+        grid.innerHTML = '<div class="stats-loading">' + escapeHtml(t('home.statsEmpty')) + '</div>';
+    }
+}
+function pct(r) {
+    if (!r || !r.cohort) return '–';
+    return Math.round(r.rate * 100) + '%';
+}
+function funnelRows(obj) {
+    if (!obj) return '';
+    return Object.keys(obj).map(k => '<div class="stats-funnel-row"><span class="stats-funnel-key">' + escapeHtml(k) + '</span><span class="stats-funnel-val">' + (obj[k] != null ? obj[k] : 0) + '</span></div>').join('');
+}
+function renderTrend(rows) {
+    if (!rows || !rows.length) return '<div class="stats-trend-empty">—</div>';
+    const max = Math.max.apply(null, rows.map(r => r.c));
+    return rows.map(r => {
+        const h = max ? Math.max(4, Math.round(r.c / max * 100)) : 4;
+        return '<div class="stats-trend-bar" title="' + escapeHtml(r.d + ': ' + r.c) + '" style="height:' + h + '%"></div>';
+    }).join('');
 }
 
 // 帮助面板：全人体系说明 + 积分规则 + 教育专栏入口

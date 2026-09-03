@@ -6,7 +6,7 @@ require_once 'webpush.php';
 define('TRACK_ALLOWED_EVENTS', [
     'register', 'login', 'add_behavior', 'add_gift', 'redeem',
     'view_poster', 'share_poster', 'create_invite', 'join_family',
-    'open_family', 'view_seo_article', 'first_session',
+    'open_family', 'view_seo_article', 'first_session', 'name_child',
     'growth_add', 'achieve_cert', 'share_wechat', 'share_whatsapp', 'share_pinterest',
     'v2_view', 'add_wish', 'complete_wish', 'add_checkin', 'set_focus', 'growth_indicator_add',
     'push_subscription'
@@ -368,6 +368,12 @@ switch ($action) {
         break;
     case 'getUserConfig':
         handleGetUserConfig($pdo);
+        break;
+    case 'getStats':
+        handleGetStats($pdo);
+        break;
+    case 'canViewStats':
+        handleCanViewStats($pdo);
         break;
     case 'deleteBehavior':
         handleDeleteBehavior($pdo, $data);
@@ -1126,6 +1132,102 @@ function handleGetUserConfig($pdo) {
     } catch (Exception $e) {
         sendError('Failed to get user config', 500, $e->getMessage());
     }
+}
+
+// ── 运营看板权限：仅站长（白名单邮箱）可见，默认拒绝 ──
+function statOwnerEmails() {
+    $raw = defined('STATS_OWNER_EMAILS') ? STATS_OWNER_EMAILS : '';
+    $parts = array_filter(array_map('trim', explode(',', (string)$raw)));
+    return array_map('strtolower', $parts);
+}
+
+function isStatsOwner($pdo, $userId) {
+    $owners = statOwnerEmails();
+    if (empty($owners)) return false; // 未配置 => 谁都不能看
+    $s = $pdo->prepare('SELECT email FROM users WHERE id = ? LIMIT 1');
+    $s->execute([(int)$userId]);
+    $email = strtolower(trim((string)$s->fetchColumn()));
+    if ($email === '') return false;
+    return in_array($email, $owners, true);
+}
+
+function requireStatsOwner($pdo, $userId) {
+    if (!isStatsOwner($pdo, $userId)) {
+        sendError('Forbidden: stats dashboard is owner-only', 403);
+    }
+}
+
+// 轻量探测：前端用它决定要不要显示「数据看板」入口，不下发站长邮箱
+function handleCanViewStats($pdo) {
+    $userId = getUserId();
+    try {
+        sendJson(['allowed' => isStatsOwner($pdo, $userId)]);
+    } catch (Exception $e) {
+        sendError('Failed to check stats permission', 500, $e->getMessage());
+    }
+}
+
+function handleGetStats($pdo) {
+    $userId = getUserId();
+    requireStatsOwner($pdo, $userId); // 非站长直接 403，拿不到任何全站数据
+    try {
+        $stats = [];
+        $stats['registered_total'] = (int)statVal($pdo, 'SELECT COUNT(*) FROM users');
+        $stats['families_total']   = (int)statVal($pdo, 'SELECT COUNT(*) FROM families');
+        $stats['waf_7d'] = (int)statVal($pdo, "SELECT COUNT(DISTINCT family_id) FROM analytics_events WHERE created_at >= NOW() - INTERVAL 7 DAY");
+        $stats['wau_7d'] = (int)statVal($pdo, "SELECT COUNT(DISTINCT user_id) FROM analytics_events WHERE created_at >= NOW() - INTERVAL 7 DAY");
+        $stats['retention'] = [
+            'd1'  => statRetention($pdo, 1),
+            'd7'  => statRetention($pdo, 7),
+            'd30' => statRetention($pdo, 30),
+        ];
+        $stats['funnel_invite'] = [
+            'create_invite'        => statEvent($pdo, 'create_invite'),
+            'register_with_invite' => statEvent($pdo, 'register_with_invite'),
+            'join_family'          => statEvent($pdo, 'join_family'),
+        ];
+        $stats['funnel_share'] = [
+            'share_poster'   => statEvent($pdo, 'share_poster'),
+            'share_wechat'   => statEvent($pdo, 'share_wechat'),
+            'share_whatsapp' => statEvent($pdo, 'share_whatsapp'),
+            'share_pinterest'=> statEvent($pdo, 'share_pinterest'),
+        ];
+        $stats['trend_30d'] = statTrend($pdo, 30);
+        $stats['generated_at'] = date('c');
+        sendJson($stats);
+    } catch (Exception $e) {
+        sendError('Failed to get stats', 500, $e->getMessage());
+    }
+}
+function statVal($pdo, $sql) {
+    $s = $pdo->prepare($sql);
+    $s->execute();
+    return $s->fetchColumn();
+}
+function statEvent($pdo, $event) {
+    $s = $pdo->prepare('SELECT COUNT(*) FROM analytics_events WHERE event = ?');
+    $s->execute([$event]);
+    return (int)$s->fetchColumn();
+}
+// 留存：队列 = 至少 N+1 天前注册的用户；retained = 在注册后第 N 天有任意埋点事件
+function statRetention($pdo, $n) {
+    $s = $pdo->prepare('SELECT id, DATE(created_at) AS reg_day FROM users WHERE created_at <= NOW() - INTERVAL ? DAY');
+    $s->execute([$n + 1]);
+    $rows = $s->fetchAll(PDO::FETCH_ASSOC);
+    $cohort = count($rows);
+    if ($cohort === 0) return ['cohort' => 0, 'retained' => 0, 'rate' => 0];
+    $retained = 0;
+    foreach ($rows as $r) {
+        $q = $pdo->prepare('SELECT 1 FROM analytics_events WHERE user_id = ? AND DATE(created_at) = DATE(?) + INTERVAL ? DAY LIMIT 1');
+        $q->execute([(int)$r['id'], $r['reg_day'], $n]);
+        if ($q->fetch()) $retained++;
+    }
+    return ['cohort' => $cohort, 'retained' => $retained, 'rate' => round($retained / $cohort, 4)];
+}
+function statTrend($pdo, $days) {
+    $s = $pdo->prepare('SELECT DATE(created_at) AS d, COUNT(*) AS c FROM analytics_events WHERE created_at >= NOW() - INTERVAL ? DAY GROUP BY d ORDER BY d');
+    $s->execute([$days]);
+    return $s->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function handleDeleteBehavior($pdo, $data) {

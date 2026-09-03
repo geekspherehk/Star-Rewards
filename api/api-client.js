@@ -323,6 +323,21 @@ class ApiClient {
         return await this.request('getUserConfig');
     }
 
+    // ── 实时看板（仅站长可见）──
+    async getStats() {
+        return await this.request('getStats');
+    }
+
+    // 轻量探测：当前账号是否有权看运营看板（服务端判定，前端不存站长邮箱）
+    async canViewStats() {
+        try {
+            const res = await this.request('canViewStats');
+            return !!(res && res.allowed);
+        } catch (e) {
+            return false;
+        }
+    }
+
     // ── Web Push：保存/移除订阅 + 每日打卡提醒 ──
     async savePushSubscription(subscription, enabled) {
         const subPayload = subscription ? {

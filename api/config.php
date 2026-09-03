@@ -53,6 +53,15 @@ define('PUSH_CRON_KEY', $env['PUSH_CRON_KEY'] ?? '');
 define('REMIND_HOUR_FROM', 18);
 define('REMIND_HOUR_TO', 22);
 
+// ── 运营数据看板（getStats / canViewStats）站长白名单 ──
+// 站长（运营）账号邮箱，逗号分隔；只有这些账号能查看全站运营数据。
+// 未配置则任何人（含孩子账号）都拿不到全站数据 —— 默认拒绝，安全优先。
+// 优先级：系统环境变量 > api/.env.php 的 STATS_OWNER_EMAILS > 下方默认数组
+$statsOwnerDefaultEmails = [
+    // 'you@example.com',
+];
+define('STATS_OWNER_EMAILS', getenv('STATS_OWNER_EMAILS') ?: ($env['STATS_OWNER_EMAILS'] ?? implode(',', $statsOwnerDefaultEmails)));
+
 if (empty(DB_HOST) || empty(DB_NAME) || empty(DB_USER) || empty(DB_PASS)) {
     http_response_code(500);
     header('Content-Type: application/json');

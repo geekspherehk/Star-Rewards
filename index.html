@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=58">
+    <link rel="stylesheet" href="style.css?v=60">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
-    <script defer src="api/api-client.js?v=24"></script>
+    <script defer src="api/api-client.js?v=26"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=60"></script>
+    <script defer src="i18n.js?v=63"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -113,6 +113,12 @@
                 <p data-i18n="ach.moduleDesc">徽章 · 统计 · 故事</p>
                 <div class="module-stat" id="stat-ach"></div>
             </div>
+            <div class="module-card" id="stats-nav-card" style="display:none;" onclick="showModule('stats-module')">
+                <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg></span>
+                <h3 data-i18n="home.statsTitle">成长数据看板</h3>
+                <p data-i18n="home.statsSub">站长视角 · 全站活跃与留存</p>
+                <div class="module-stat" id="stat-stats"></div>
+            </div>
         </div>
 
         <!-- 功能模块内容区域 -->
@@ -131,6 +137,9 @@
 
                 <!-- 首页「本月主打」小条：focus 在首页也可见，与成长总览呼应 -->
                 <div id="home-focus-banner" class="home-focus-banner" style="display:none;"></div>
+
+                <!-- 激活清单：新用户首启引导，4 步点亮成长之旅 -->
+                <div id="activation-checklist" class="activation-checklist" style="display:none;"></div>
 
                 <!-- 今日打卡：主操作前置，直接打卡 +5 分 -->
                 <div class="today-checkin" id="today-checkin">
@@ -411,6 +420,29 @@
 
             </div>
 
+            <!-- 数据看板（站长视角 · 仅白名单账号可见，后端 403 兜底） -->
+            <div id="stats-module" class="module-content">
+                <div class="v2-section-head">
+                    <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg><span data-i18n="home.statsTitle">成长数据看板</span></h3>
+                    <p class="v2-sub" data-i18n="home.statsSub">家长视角 · 全家庭活跃与留存</p>
+                </div>
+                <div class="stats-grid" id="stats-grid"></div>
+                <div class="stats-funnels">
+                    <div class="stats-funnel">
+                        <h4 class="stats-funnel-title" data-i18n="home.statsInviteFunnel">邀请漏斗</h4>
+                        <div class="stats-funnel-list" id="stats-invite"></div>
+                    </div>
+                    <div class="stats-funnel">
+                        <h4 class="stats-funnel-title" data-i18n="home.statsShareFunnel">分享漏斗</h4>
+                        <div class="stats-funnel-list" id="stats-share"></div>
+                    </div>
+                </div>
+                <div class="stats-trend">
+                    <h4 class="stats-funnel-title" data-i18n="home.statsTrend">近 30 日活动趋势</h4>
+                    <div class="stats-trend-bars" id="stats-trend"></div>
+                </div>
+            </div>
+
             <!-- V2 全人成长内容已按功能拆入：首页今日打卡 / 目标（愿望+礼物） / 成长成就（统计+日历+里程碑+玫瑰） -->
         </div>
     </main>
@@ -484,7 +516,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=80"></script>
+    <script defer src="script.js?v=83"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
@@ -689,6 +721,10 @@
                 <li><span class="ob-num">2</span><span class="ob-text" data-i18n="home.onboardingStep2">每天打卡：完成目标打卡 1 次 +5 分，坚持越久成长之花越绽放</span></li>
                 <li><span class="ob-num">3</span><span class="ob-text" data-i18n="home.onboardingStep3">积分兑换：攒够积分兑换孩子心仪的礼物，达成愿望再 +星数×20 分</span></li>
             </ol>
+            <div class="onboarding-name">
+                <label class="onboarding-name-label" for="onboard-child-name" data-i18n="home.onboardNameLabel">先给孩子起个名字吧</label>
+                <input type="text" id="onboard-child-name" class="onboarding-name-input" maxlength="20" data-i18n-placeholder="home.onboardNamePlaceholder" placeholder="例如：小明">
+            </div>
             <button type="button" class="primary-btn onboarding-dismiss" onclick="dismissOnboarding()" data-i18n="home.onboardingDismiss">开始使用（不再提示）</button>
         </div>
     </div>
