@@ -9,7 +9,9 @@ define('TRACK_ALLOWED_EVENTS', [
     'open_family', 'view_seo_article', 'first_session', 'name_child',
     'growth_add', 'achieve_cert', 'share_wechat', 'share_whatsapp', 'share_pinterest',
     'v2_view', 'add_wish', 'complete_wish', 'add_checkin', 'set_focus', 'growth_indicator_add',
-    'push_subscription'
+    'push_subscription',
+    // 补齐前端实际在打、但此前被后端静默拒绝（400 Invalid event）的事件
+    'onboarding_dismiss', 'open_help', 'quick_add_behavior', 'wish_achieved', 'wish_celebrate'
 ]);
 
 // ── V2 全人版：8 大素养维度（与 behaviors.dimension / wishes.category 共用） ──
