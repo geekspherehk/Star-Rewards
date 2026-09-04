@@ -42,11 +42,18 @@ def center(text, font, y, fill=(255,255,255)):
     tb = d.textbbox((0,0), text, font=font)
     d.text(((W-(tb[2]-tb[0]))/2, y), text, font=font, fill=fill)
 
-# 品牌胶囊
-tb = d.textbbox((0,0), "★ Star Rewards", font=f_brand)
-pw = tb[2]-tb[0]+80
+# 品牌胶囊（星形用画的，Arial 无 ★ 字形会变豆腐块）
+tb = d.textbbox((0,0), "Star Rewards", font=f_brand)
+pw = tb[2]-tb[0]+110
 d.rounded_rectangle([(W-pw)/2, 78, (W+pw)/2, 148], radius=35, outline=(255,255,255), width=3)
-d.text(((W-(tb[2]-tb[0]))/2, 78+(70-(tb[3]-tb[1]))/2-tb[1]), "★ Star Rewards", font=f_brand, fill=(255,255,255))
+sx, sy, sr = (W-pw)/2+62, 113, 26
+pts = []
+for i in range(10):
+    ang = -math.pi/2 + i*math.pi/5
+    r = sr if i % 2 == 0 else sr*0.45
+    pts.append((sx + r*math.cos(ang), sy + r*math.sin(ang)))
+d.polygon(pts, fill=(255, 224, 102))
+d.text(((W-(tb[2]-tb[0]))/2+30, 78+(70-(tb[3]-tb[1]))/2-tb[1]), "Star Rewards", font=f_brand, fill=(255,255,255))
 
 center("Turn your kid's good habits", f_title, 205)
 center("into shining stars", f_title, 310)
