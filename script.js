@@ -522,11 +522,11 @@ async function renderPoster() {
         ctx.textBaseline = 'alphabetic';
     }
 
-    // ── 右下角二维码（动态绘制，扫码访问平台）──
+    // ── 右下角二维码（动态绘制，扫码访问平台；跟随当前域名，不写死）──
     const qrSize = 128;
     const qrX = W - 44 - qrSize;
     const qrY = H - 44 - qrSize;
-    drawQrCode(ctx, 'https://stellar.gaocaihk.com/', qrX, qrY, qrSize, true);
+    drawQrCode(ctx, location.origin + '/', qrX, qrY, qrSize, true);
 }
 
 // ── 海报二维码：把平台链接编码为二维码，扫码访问 ──
@@ -2096,6 +2096,24 @@ function shareToPinterest() {
     const text = getInviteShareText();
     window.open('https://pinterest.com/pin/create/button/?url=' + encodeURIComponent(link) + '&description=' + encodeURIComponent(text), '_blank');
     track('share_pinterest');
+}
+function shareToFacebook() {
+    const link = currentFamily && currentFamily.family ? currentFamily.family.invite_link : location.origin;
+    window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(link), '_blank');
+    track('share_facebook');
+}
+function shareToX() {
+    const link = currentFamily && currentFamily.family ? currentFamily.family.invite_link : location.origin;
+    const text = getInviteShareText();
+    window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(link), '_blank');
+    track('share_x');
+}
+function shareToEmail() {
+    const link = currentFamily && currentFamily.family ? currentFamily.family.invite_link : location.origin;
+    const subject = t('home.family.shareInvite');
+    const body = getInviteShareText() + '\n' + link;
+    window.open('mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body));
+    track('share_email');
 }
 
 // Delete a behavior record

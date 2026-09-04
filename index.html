@@ -516,7 +516,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=83"></script>
+    <script defer src="script.js?v=84"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
@@ -619,6 +619,9 @@
                 <button type="button" class="share-chip" onclick="shareToWeChat()"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span data-i18n="common.shareWeChat">微信</span></button>
                 <button type="button" class="share-chip" onclick="shareToWhatsApp()"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span data-i18n="common.shareWhatsApp">WhatsApp</span></button>
                 <button type="button" class="share-chip" onclick="shareToPinterest()"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span data-i18n="common.sharePinterest">Pinterest</span></button>
+                <button type="button" class="share-chip" onclick="shareToFacebook()"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg><span data-i18n="common.shareFacebook">Facebook</span></button>
+                <button type="button" class="share-chip" onclick="shareToX()"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"/><path d="M20 4L4 20"/></svg><span data-i18n="common.shareX">X</span></button>
+                <button type="button" class="share-chip" onclick="shareToEmail()"><svg class="chip-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span data-i18n="common.shareEmail">邮件</span></button>
             </div>
             <div class="modal-actions">
                 <button class="primary-btn" onclick="downloadPoster()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="home.posterDownload">保存图片</span></button>
