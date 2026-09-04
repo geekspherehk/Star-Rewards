@@ -2350,6 +2350,9 @@ async function initializeApp() {
         // 运营看板入口：仅站长账号可见（由服务端判定，前端不做邮箱比对）
         maybeShowStatsNav();
 
+        // 打卡提醒软引导：条件满足（未开/未拒/未展示过）则显示一次
+        maybeShowPushInvite();
+
         // 首次登录引导（仅首次，关闭后不再出现）
         maybeShowOnboarding();
 
@@ -3219,6 +3222,57 @@ async function togglePushReminder() {
     }
 }
 
+// ── 打卡提醒软引导：首次打卡成功后出现一次（应用内横幅，不用裸权限弹窗）──
+function pushInviteEligible() {
+    if (!pushSupported()) return false;
+    try {
+        if (localStorage.getItem('push_invite_done') === '1') return false;
+        if (localStorage.getItem('push_reminder') === '1') return false;
+    } catch (e) { return false; }
+    return Notification.permission === 'default';   // 已拒绝/已授权都不再打扰
+}
+function maybeShowPushInvite() {
+    const el = document.getElementById('push-invite');
+    if (!el) return;
+    if (!pushInviteEligible()) { el.style.display = 'none'; return; }
+    const tEl = document.getElementById('push-invite-title');
+    const dEl = document.getElementById('push-invite-desc');
+    const on = document.getElementById('push-invite-on');
+    const later = document.getElementById('push-invite-later');
+    if (tEl) tEl.textContent = t('v2.pushInviteTitle');
+    if (dEl) dEl.textContent = t('v2.pushInviteText');
+    if (on) { on.textContent = t('v2.pushInviteOn'); on.onclick = enablePushFromInvite; }
+    if (later) { later.textContent = t('v2.pushInviteLater'); later.onclick = dismissPushInvite; }
+    el.style.display = 'flex';
+}
+async function enablePushFromInvite() {
+    try {
+        const perm = await Notification.requestPermission();
+        try { localStorage.setItem('push_invite_done', '1'); } catch (e) {}
+        const el = document.getElementById('push-invite');
+        if (el) el.style.display = 'none';
+        if (perm !== 'granted') { showTemporaryMessage(t('v2.pushDenied'), 'error'); return; }
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(PUSH_VAPID_PUBLIC)
+        });
+        await api.savePushSubscription(sub, true);
+        try { localStorage.setItem('push_reminder', '1'); } catch (e) {}
+        renderPushToggle();
+        showTemporaryMessage(t('v2.pushEnabled'), 'success');
+        track('push_invite_accept');
+    } catch (e) {
+        showTemporaryMessage((e && e.message) || t('common.error'), 'error');
+    }
+}
+function dismissPushInvite() {
+    const el = document.getElementById('push-invite');
+    if (el) el.style.display = 'none';
+    try { localStorage.setItem('push_invite_done', '1'); } catch (e) {}
+    track('push_invite_dismiss');
+}
+
 // 更新成长日记列表
 function updateDiaryList() {
     if (!calendarCursor) {
@@ -4016,6 +4070,7 @@ async function v2Checkin(id, date = null, note = '') {
         } else {
             applyPointsResult(res);
             showCheckinRitual(wish, res, isMakeup);
+            if (!isMakeup) maybeShowPushInvite();   // 首次真实打卡后软引导推送（一次性）
             await loadV2Data(true);
         }
     } catch (e) {

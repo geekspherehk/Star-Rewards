@@ -12,7 +12,8 @@ define('TRACK_ALLOWED_EVENTS', [
     'v2_view', 'add_wish', 'complete_wish', 'add_checkin', 'set_focus', 'growth_indicator_add',
     'push_subscription',
     // 补齐前端实际在打、但此前被后端静默拒绝（400 Invalid event）的事件
-    'onboarding_dismiss', 'open_help', 'quick_add_behavior', 'wish_achieved', 'wish_celebrate'
+    'onboarding_dismiss', 'open_help', 'quick_add_behavior', 'wish_achieved', 'wish_celebrate',
+    'push_invite_accept', 'push_invite_dismiss'
 ]);
 
 // ── V2 全人版：8 大素养维度（与 behaviors.dimension / wishes.category 共用） ──
