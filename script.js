@@ -4334,7 +4334,10 @@ function pct(r) {
 }
 function funnelRows(obj) {
     if (!obj) return '';
-    return Object.keys(obj).map(k => '<div class="stats-funnel-row"><span class="stats-funnel-key">' + escapeHtml(k) + '</span><span class="stats-funnel-val">' + (obj[k] != null ? obj[k] : 0) + '</span></div>').join('');
+    // 标签走 i18n（直接读 translations 绕开 t() 对象 bug），缺失则回退原始 key
+    let labels = {};
+    try { labels = (translations[currentLanguage] && translations[currentLanguage].home && translations[currentLanguage].home.funnelLabels) || {}; } catch (e) {}
+    return Object.keys(obj).map(k => '<div class="stats-funnel-row"><span class="stats-funnel-key">' + escapeHtml(labels[k] || k) + '</span><span class="stats-funnel-val">' + (obj[k] != null ? obj[k] : 0) + '</span></div>').join('');
 }
 function renderTrend(rows) {
     if (!rows || !rows.length) return '<div class="stats-trend-empty">—</div>';

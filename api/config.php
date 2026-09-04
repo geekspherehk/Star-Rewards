@@ -62,6 +62,10 @@ $statsOwnerDefaultEmails = [
 ];
 define('STATS_OWNER_EMAILS', getenv('STATS_OWNER_EMAILS') ?: ($env['STATS_OWNER_EMAILS'] ?? implode(',', $statsOwnerDefaultEmails)));
 
+// 站点对外域名（用于邀请链接、海报二维码、OG 等）。优先级：env > .env.php > 默认
+// 末尾不带 /
+define('SITE_BASE_URL', getenv('SITE_BASE_URL') ?: ($env['SITE_BASE_URL'] ?? 'https://stellar.gaocaihk.com'));
+
 if (empty(DB_HOST) || empty(DB_NAME) || empty(DB_USER) || empty(DB_PASS)) {
     http_response_code(500);
     header('Content-Type: application/json');

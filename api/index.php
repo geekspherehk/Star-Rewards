@@ -8,6 +8,7 @@ define('TRACK_ALLOWED_EVENTS', [
     'view_poster', 'share_poster', 'create_invite', 'join_family',
     'open_family', 'view_seo_article', 'first_session', 'name_child',
     'growth_add', 'achieve_cert', 'share_wechat', 'share_whatsapp', 'share_pinterest',
+    'share_facebook', 'share_x', 'share_email',
     'v2_view', 'add_wish', 'complete_wish', 'add_checkin', 'set_focus', 'growth_indicator_add',
     'push_subscription',
     // 补齐前端实际在打、但此前被后端静默拒绝（400 Invalid event）的事件
@@ -282,7 +283,7 @@ function getFamilyInfo($pdo, $familyId, $userId) {
     $family['member_count'] = count($members);
     $family['max_members'] = FAMILY_MAX_MEMBERS;
     // 把 invite_link 一并放进 family 对象，前端统一从 currentFamily.family.invite_link 读取
-    $family['invite_link'] = 'https://stellar.gaocaihk.com/?invite=' . $family['invite_code'];
+    $family['invite_link'] = SITE_BASE_URL . '/?invite=' . $family['invite_code'];
     return [
         'family' => $family,
         'members' => $members,
@@ -551,6 +552,9 @@ function handleRegister($pdo, $data) {
         }
 
         $pdo->commit();
+
+        // 注册成功埋点（via_invite 供邀请漏斗使用）
+        trackEvent($pdo, $userId, 'register', ['via_invite' => $joinedViaInvite ? 1 : 0]);
 
         $token = generateToken($userId, $email);
         sendJson([
@@ -1185,14 +1189,18 @@ function handleGetStats($pdo) {
         ];
         $stats['funnel_invite'] = [
             'create_invite'        => statEvent($pdo, 'create_invite'),
-            'register_with_invite' => statEvent($pdo, 'register_with_invite'),
-            'join_family'          => statEvent($pdo, 'join_family'),
+            'register_total'       => statEvent($pdo, 'register'),
+            'register_via_invite'  => statEventMeta($pdo, 'register', '"via_invite":1'),
+            'first_session'        => statEvent($pdo, 'first_session'),
         ];
         $stats['funnel_share'] = [
             'share_poster'   => statEvent($pdo, 'share_poster'),
             'share_wechat'   => statEvent($pdo, 'share_wechat'),
             'share_whatsapp' => statEvent($pdo, 'share_whatsapp'),
             'share_pinterest'=> statEvent($pdo, 'share_pinterest'),
+            'share_facebook' => statEvent($pdo, 'share_facebook'),
+            'share_x'        => statEvent($pdo, 'share_x'),
+            'share_email'    => statEvent($pdo, 'share_email'),
         ];
         $stats['trend_30d'] = statTrend($pdo, 30);
         $stats['generated_at'] = date('c');
@@ -1209,6 +1217,12 @@ function statVal($pdo, $sql) {
 function statEvent($pdo, $event) {
     $s = $pdo->prepare('SELECT COUNT(*) FROM analytics_events WHERE event = ?');
     $s->execute([$event]);
+    return (int)$s->fetchColumn();
+}
+// 带 meta 条件的事件计数（如 register 且 via_invite=1）
+function statEventMeta($pdo, $event, $metaNeedle) {
+    $s = $pdo->prepare('SELECT COUNT(*) FROM analytics_events WHERE event = ? AND meta LIKE ?');
+    $s->execute([$event, '%' . $metaNeedle . '%']);
     return (int)$s->fetchColumn();
 }
 // 留存：队列 = 至少 N+1 天前注册的用户；retained = 在注册后第 N 天有任意埋点事件
@@ -1428,7 +1442,7 @@ function handleInviteMember($pdo, $data) {
         sendJson([
             'success' => true,
             'invite_code' => $code,
-            'invite_link' => 'https://stellar.gaocaihk.com/?invite=' . $code
+            'invite_link' => SITE_BASE_URL . '/?invite=' . $code
         ]);
     } catch (Exception $e) {
         sendError('Failed to create invite', 500, $e->getMessage());
