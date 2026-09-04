@@ -146,24 +146,38 @@ function updateStreak() {
     streakEl.textContent = calculateStreak(behaviors);
 }
 
-function calculateStreak(behaviorList) {
-    if (!Array.isArray(behaviorList) || behaviorList.length === 0) return 0;
+// 本地日期 key（YYYY-MM-DD），避免 toISOString 的 UTC 偏移把日子算错一天
+function localDayKey(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// 打卡日集合 = V1 行为时间戳 + V2 愿望打卡（含补卡）。
+// 只统计其一会让「补卡后连续性没接上」——两处必须合并（2026-09-04 修复）
+function collectCheckinDaySet() {
     const daySet = new Set();
-    behaviorList.forEach(b => {
+    (Array.isArray(behaviors) ? behaviors : []).forEach(b => {
         if (b && b.timestamp) {
             const d = new Date(b.timestamp);
-            if (!isNaN(d)) daySet.add(d.toDateString());
+            if (!isNaN(d)) daySet.add(localDayKey(d));
         }
     });
+    (Array.isArray(checkins) ? checkins : []).forEach(c => {
+        if (c && c.checkin_date) daySet.add(String(c.checkin_date).slice(0, 10));
+    });
+    return daySet;
+}
+
+function calculateStreak(behaviorList) {
+    const daySet = collectCheckinDaySet();
     if (daySet.size === 0) return 0;
 
     // 从今天开始往回数连续天数；今天没记录则从昨天开始
     let streak = 0;
-    let cursor = new Date();
-    if (!daySet.has(cursor.toDateString())) {
+    const cursor = new Date();
+    if (!daySet.has(localDayKey(cursor))) {
         cursor.setDate(cursor.getDate() - 1);
     }
-    while (daySet.has(cursor.toDateString())) {
+    while (daySet.has(localDayKey(cursor))) {
         streak++;
         cursor.setDate(cursor.getDate() - 1);
     }
@@ -1642,10 +1656,7 @@ function buildGrowthEvents() {
 }
 
 function computeBestStreak() {
-    const days = new Set((Array.isArray(behaviors) ? behaviors : []).map(b => {
-        const d = new Date(b.timestamp || b.created_at);
-        return isNaN(d) ? null : d.toISOString().slice(0, 10);
-    }).filter(Boolean));
+    const days = collectCheckinDaySet();
     if (days.size === 0) return 0;
     let best = 1, cur = 1;
     const sorted = [...days].sort();
@@ -3475,6 +3486,7 @@ function renderV2All() {
     renderV2Badges();
     renderV2Indicators();
     renderV2Report();
+    updateStreak();      // 打卡/补卡后立即刷新首页「连续打卡天数」（含 V2 checkins 口径）
     renderHomeCheckin();
     renderAchStats();
     updateV2ModuleStat();
