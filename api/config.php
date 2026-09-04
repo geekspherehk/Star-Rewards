@@ -58,7 +58,7 @@ define('REMIND_HOUR_TO', 22);
 // 未配置则任何人（含孩子账号）都拿不到全站数据 —— 默认拒绝，安全优先。
 // 优先级：系统环境变量 > api/.env.php 的 STATS_OWNER_EMAILS > 下方默认数组
 $statsOwnerDefaultEmails = [
-    // 'you@example.com',
+    'avadesian@qq.com',
 ];
 define('STATS_OWNER_EMAILS', getenv('STATS_OWNER_EMAILS') ?: ($env['STATS_OWNER_EMAILS'] ?? implode(',', $statsOwnerDefaultEmails)));
 
