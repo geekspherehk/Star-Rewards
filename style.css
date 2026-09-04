@@ -4648,3 +4648,9 @@ a:hover { text-decoration: underline; }
     .push-invite { bottom: 76px; }
     .push-invite-actions { width: 100%; justify-content: flex-end; }
 }
+
+/* ── 用户菜单「删除账号」── */
+.um-item--danger { color: var(--danger); }
+.um-item--danger:hover { background: var(--danger-soft); }
+.um-item--danger { border-top: 1px solid var(--border); border-radius: 0 0 var(--r-md) var(--r-md); }
+.user-menu .um-item--logout { border-radius: 0; border-top: 1px solid var(--border); }

@@ -182,6 +182,20 @@ class ApiClient {
         }
     }
 
+    // 账号删除（被遗忘权）：服务端级联清理全部数据
+    async deleteAccount() {
+        try {
+            await this.request('delete_account', { confirm: 'DELETE' });
+        } finally {
+            this.setToken(null);
+            localStorage.removeItem(USER_ID_KEY);
+            localStorage.removeItem(USER_EMAIL_KEY);
+            try { localStorage.removeItem('push_reminder'); } catch (e) {}
+            try { localStorage.removeItem('push_invite_done'); } catch (e) {}
+            try { localStorage.removeItem('sr_onboarded'); } catch (e) {}
+        }
+    }
+
     async getProfile() {
         return await this.request('getProfile', { profile_id: this.selectedProfileId });
     }

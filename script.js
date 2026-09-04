@@ -103,6 +103,26 @@ async function signOut() {
     }
 }
 
+// 账号删除（被遗忘权）：两次确认后级联清理全部数据并登出
+async function deleteMyAccount() {
+    const msg1 = t('home.deleteAccountConfirm1');
+    if (!confirm(msg1)) return;
+    const msg2 = t('home.deleteAccountConfirm2');
+    if (!confirm(msg2)) return;
+    try {
+        await api.deleteAccount();
+        sessionStorage.clear();
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_email');
+        currentUser = null;
+        showTemporaryMessage(t('home.deleteAccountDone'), 'success');
+        setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+    } catch (e) {
+        showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
+    }
+}
+
 // 简化版的更新认证UI状态 - 只处理显示逻辑
 function updateAuthUI(user) {
     console.log('更新认证UI状态，用户状态:', user ? '已登录' : '未登录');

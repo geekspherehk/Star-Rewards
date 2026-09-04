@@ -328,6 +328,9 @@ switch ($action) {
     case 'logout':
         handleLogout();
         break;
+    case 'delete_account':
+        handleDeleteAccount($pdo, $data);
+        break;
     case 'refreshToken':
         handleRefreshToken();
         break;
@@ -618,6 +621,59 @@ function handleLogin($pdo, $data) {
 function handleLogout() {
     getUserId();
     sendJson(['success' => true, 'message' => 'Logged out']);
+}
+
+// 账号删除（被遗忘权）：级联清理用户全部数据，并回收无成员的孤儿家庭
+// 依赖外键级联：users → profiles/family_members/user_configs/behaviors/gifts/redeemed_gifts/wishes
+//              profiles → checkins/milestones/growth_notes/child_voice/monthly_focus/growth_indicators/user_badges
+// analytics_events 无外键，需显式删；push 订阅为文件存储，用 wp_subs_delete
+function handleDeleteAccount($pdo, $data) {
+    $userId = getUserId();
+    $confirm = trim((string)($data['confirm'] ?? ''));
+    if ($confirm !== 'DELETE') sendError('Confirmation required: send confirm=DELETE', 400);
+
+    try {
+        $pdo->beginTransaction();
+
+        // 记下用户所在家庭（删除 users 后 family_members 会被级联清掉，要先查）
+        $stmt = $pdo->prepare('SELECT family_id FROM family_members WHERE user_id = ?');
+        $stmt->execute([$userId]);
+        $familyIds = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+
+        // 核心删除：其余表随外键级联
+        $stmt = $pdo->prepare('DELETE FROM users WHERE id = ?');
+        $stmt->execute([$userId]);
+        if ($stmt->rowCount() === 0) {
+            $pdo->rollBack();
+            sendError('Account not found', 404);
+        }
+
+        // analytics_events 无外键，显式清理（保留历史聚合口径无用户归属的行不受影响）
+        $stmt = $pdo->prepare('DELETE FROM analytics_events WHERE user_id = ?');
+        $stmt->execute([$userId]);
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        sendError('Failed to delete account', 500, $e->getMessage());
+    }
+
+    // push 订阅文件存储：删用户条目（失败不影响主流程）
+    try { wp_subs_delete($userId); } catch (Throwable $e) {}
+
+    // 孤儿家庭回收：没有任何成员的家庭删掉（families 删除会级联其下残余 profiles）
+    try {
+        foreach ($familyIds as $fid) {
+            $stmt = $pdo->prepare('SELECT COUNT(*) FROM family_members WHERE family_id = ?');
+            $stmt->execute([$fid]);
+            if ((int)$stmt->fetchColumn() === 0) {
+                $stmt = $pdo->prepare('DELETE FROM families WHERE id = ?');
+                $stmt->execute([$fid]);
+            }
+        }
+    } catch (Throwable $e) { /* 回收失败不影响账号删除结果 */ }
+
+    sendJson(['success' => true, 'message' => 'Account deleted']);
 }
 
 function handleRefreshToken() {
