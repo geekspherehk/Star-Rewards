@@ -90,7 +90,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   // 5. full wall screenshot
   const wall = await page.$('.ach-v2-wall');
-  if (wall) await wall.screenshot({ path: '/Users/work/code/Star-Rewards/screenshots/badges-v8-grouped.png' });
+  if (wall) await wall.screenshot({ path: '/Users/work/code/Star-Rewards/screenshots/badges-v9-grouped.png' });
   console.log('shot ok');
 
   // 6. hover state for one achieved + one locked
@@ -101,7 +101,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
     if (locked) locked.classList.add('is-preview');
   });
   await sleep(400);
-  if (wall) await wall.screenshot({ path: '/Users/work/code/Star-Rewards/screenshots/badges-v8-hover.png' });
+  if (wall) await wall.screenshot({ path: '/Users/work/code/Star-Rewards/screenshots/badges-v9-hover.png' });
   console.log('hover shot ok');
 
   await page.evaluate(async () => { try { await api.deleteAccount(); } catch (e) {} });

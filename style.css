@@ -4837,12 +4837,24 @@ a:hover { text-decoration: underline; }
 
 /* ── 徽章墙 v9：分组里程碑仪表板·紧凑版（双列网格 + 大徽章 + 收紧间距）── */
 .ach-v2-wall { padding-bottom: 84px; }
-.bdg-progress-line { display: flex; align-items: center; gap: 12px; max-width: 800px; margin: 0 auto 14px; }
+/* 根治：v2-section 本身是白底大卡 → 徽章区成了"卡中卡"（双重边框+窄一圈）。
+   去掉外层卡壳，让 5 张分组卡直接平铺，与日历卡/周报卡同级同宽 */
+.v2-section.ach-v2-wall {
+    width: 100%;
+    background: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+}
+.v2-badge-wall { width: 100%; max-width: none; }
+.bdg-progress-line { display: flex; align-items: center; gap: 12px; margin: 0 auto 14px; }
 .bdg-progress-txt { font-size: var(--fs-sm, 0.85rem); font-weight: 700; color: var(--text-2, #6b6b68); white-space: nowrap; }
 .bdg-progress-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2, #f0f0f6); overflow: hidden; }
 .bdg-progress-fill { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--brand, #6C5CE7), var(--cat-health, #58B368)); transition: width .5s ease; }
 
-.bdg-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 800px; margin: 0 auto; }
+.bdg-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* 注意：勿加 margin:auto —— flex 父级下 auto margin 会禁用 stretch，导致整组收缩 */
 .bdg-group {
     background: var(--surface, #fff);
     border: 1px solid var(--border, #ececf2);
@@ -4871,7 +4883,7 @@ a:hover { text-decoration: underline; }
     font-variant-numeric: tabular-nums;
 }
 .bdg-group-row {
-    display: flex; flex-wrap: wrap; gap: 10px 12px;
+    display: flex; flex-wrap: wrap; gap: 10px 8px;
     justify-content: center;
 }
 .bdg { position: relative; gap: 0; display: flex; align-items: center; justify-content: center; }
