@@ -3561,7 +3561,6 @@ function renderV2All() {
     renderQuickBehaviorCat();
     renderV2Flower();
     renderV2Legend();
-    renderV2Focus();
     renderFocusConfirmBar();
     renderV2Suggestions();
     renderHomeFocusBanner();
@@ -3733,7 +3732,7 @@ function renderV2Flower() {
     const covMap = v2Data.coverage || {};
     v2CoveredCount = 0;
     const N = V2_CATS.length;                 // 8
-    const cx = 115, cy = 115;                 // viewBox 230x230，花心居中
+    const cx = 125, cy = 125;                 // viewBox 250x250，花心居中（标签圈半径 104）
     const LMIN = 30, LMAX = 88;               // 花瓣长度范围（0 分也有小芽，满分接近标签圈）
     const raw = V2_CATS.map(c => v2CatScore(covMap[c.code] || {}));
     const maxRaw = Math.max(8, ...raw);
@@ -3774,15 +3773,14 @@ function renderV2Flower() {
                 pendingMark +
                 focusMark +
             '</g>' +
-            '<g class="petal-label" style="--pc:' + v2CatVar(c.code) + '" transform="rotate(' + ang + ' ' + cx + ' ' + cy + ') translate(' + cx + ' ' + (cy - 100) + ') rotate(' + (-labelRot) + ')">' +
-                '<circle class="petal-label-dot" r="3"/>' +
-                '<text class="petal-label-txt" text-anchor="middle" dy="14">' + escapeHtml(catShort(c.code)) + '</text>' +
+            '<g class="petal-label" style="--pc:' + v2CatVar(c.code) + '" transform="rotate(' + ang + ' ' + cx + ' ' + cy + ') translate(' + cx + ' ' + (cy - 104) + ') rotate(' + (-labelRot) + ')">' +
+                '<text class="petal-label-txt" text-anchor="middle" dy="4">' + escapeHtml(catShort(c.code) + ' · ' + t('v2.badge.' + c.code)) + '</text>' +
             '</g>';
     });
 
     el.innerHTML =
-        '<svg class="v2-flower-svg" viewBox="0 0 230 230" role="img" aria-label="' + escapeHtml(t('v2.flowerTitle')) + '">' +
-            '<circle class="rose-halo" cx="' + cx + '" cy="' + cy + '" r="88"/>' +
+        '<svg class="v2-flower-svg" viewBox="0 0 250 250" role="img" aria-label="' + escapeHtml(t('v2.flowerTitle')) + '">' +
+            '<circle class="rose-halo" cx="' + cx + '" cy="' + cy + '" r="94"/>' +
             '<g class="rose-petals">' + petals + '</g>' +
             '<g class="flower-center">' +
                 '<circle cx="' + cx + '" cy="' + cy + '" r="17"/>' +
@@ -3826,33 +3824,11 @@ function renderV2Legend() {
     ).join('');
 }
 
-// ── 本月主打瓣 ──
-function renderV2Focus() {
-    const el = document.getElementById('v2-focus-chips');
-    if (!el || !v2Data) return;
-    el.innerHTML = V2_CATS.map(c => {
-        const on = v2Data.focus === c.code;
-        return '<button type="button" class="v2-focus-chip ' + (on ? 'is-active' : '') + '" style="--pc:' + v2CatVar(c.code) + '" onclick="v2SetFocus(\'' + c.code + '\')">' +
-            '<span class="fc-dot"></span>' + escapeHtml(t('v2.badge.' + c.code)) +
-        '</button>';
-    }).join('');
-    const hint = document.getElementById('v2-focus-hint');
-    if (hint) {
-        if (v2Data.focus) {
-            hint.style.display = 'flex';
-            hint.textContent = t('v2.focusHintLinked', { name: t('v2.badge.' + v2Data.focus) });
-        } else {
-            hint.style.display = 'none';
-        }
-    }
-}
-
 async function v2SetFocus(code) {
     try {
         await api.setMonthlyFocus(code);
         if (v2Data) v2Data.focus = code;
         pendingFocus = null;
-        renderV2Focus();
         renderV2Flower();
         renderV2Suggestions();
         renderHomeFocusBanner();

@@ -4681,3 +4681,7 @@ a:hover { text-decoration: underline; }
     .v2-flower-wrap { width: 250px; max-width: 250px; margin: 0 auto; }
     .flower-side { width: 100%; }
 }
+
+/* ── 花瓣标签 v3：一行「素养 · 小名」，整行素养色（对应关系直接可见）── */
+.petal-label-txt { font-size: 11.5px; font-weight: 700; fill: var(--pc, #6C63FF); }
+@media (max-width: 720px) { .petal-label-txt { font-size: 10px; } }
