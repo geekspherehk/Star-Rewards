@@ -3732,7 +3732,7 @@ function renderV2Flower() {
     const covMap = v2Data.coverage || {};
     v2CoveredCount = 0;
     const N = V2_CATS.length;                 // 8
-    const cx = 125, cy = 125;                 // viewBox 250x250，花心居中（标签圈半径 104）
+    const cx = 125, cy = 125;                 // viewBox -48..298 横向加宽，左右长标签不裁切
     const LMIN = 30, LMAX = 88;               // 花瓣长度范围（0 分也有小芽，满分接近标签圈）
     const raw = V2_CATS.map(c => v2CatScore(covMap[c.code] || {}));
     const maxRaw = Math.max(8, ...raw);
@@ -3779,7 +3779,7 @@ function renderV2Flower() {
     });
 
     el.innerHTML =
-        '<svg class="v2-flower-svg" viewBox="0 0 250 250" role="img" aria-label="' + escapeHtml(t('v2.flowerTitle')) + '">' +
+        '<svg class="v2-flower-svg" viewBox="-48 0 346 250" role="img" aria-label="' + escapeHtml(t('v2.flowerTitle')) + '">' +
             '<circle class="rose-halo" cx="' + cx + '" cy="' + cy + '" r="94"/>' +
             '<g class="rose-petals">' + petals + '</g>' +
             '<g class="flower-center">' +
