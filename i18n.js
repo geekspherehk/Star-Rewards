@@ -816,6 +816,16 @@ const translations = {
                 health: '活力星',
                 aesthetics: '小艺术家'
             },
+            cat: {
+                self_drive: '自驱',
+                money: '理财',
+                empathy: '共情',
+                relationship: '社交',
+                planning: '规划',
+                resilience: '抗挫',
+                health: '健康',
+                aesthetics: '审美'
+            },
             badgeDesc: {
                 self_drive: '自驱探索，主动成长',
                 money: '会存会花，延迟满足',
@@ -1683,6 +1693,16 @@ const translations = {
                 resilience: 'Little Warrior',
                 health: 'Energy Star',
                 aesthetics: 'Little Artist'
+            },
+            cat: {
+                self_drive: 'Drive',
+                money: 'Money',
+                empathy: 'Empathy',
+                relationship: 'Social',
+                planning: 'Planning',
+                resilience: 'Resilience',
+                health: 'Health',
+                aesthetics: 'Arts'
             },
             badgeDesc: {
                 self_drive: 'Self-driven exploration',

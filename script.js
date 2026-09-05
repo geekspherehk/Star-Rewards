@@ -3485,6 +3485,16 @@ const V2_CATS = [
     { code: 'aesthetics',   short: '审美' }
 ];
 
+// 素养短标签（跟随界面语言）。V2_CATS.short 仅为兜底，展示一律走 i18n（2026-09-05 修复英文模式漏中文）
+function catShort(code) {
+    try {
+        const v = translations[currentLanguage] && translations[currentLanguage].v2 && translations[currentLanguage].v2.cat && translations[currentLanguage].v2.cat[code];
+        if (v) return v;
+    } catch (e) {}
+    const c = V2_CATS.find(x => x.code === code);
+    return c ? c.short : code;
+}
+
 const V2_BADGE_SVGS = {
     self_drive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
     money: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="17"/><path d="M9.5 9.5c0-1 1.1-1.5 2.5-1.5s2.5.5 2.5 1.5-1.1 1.5-2.5 1.5-2.5.5-2.5 1.5 1.1 1.5 2.5 1.5 2.5-.5 2.5-1.5"/></svg>',
@@ -3573,7 +3583,7 @@ function renderQuickBehaviorCat() {
     if (!sel) return;
     if (sel.children.length) return;  // 只渲染一次
     sel.innerHTML = V2_CATS.map(c =>
-        '<option value="' + c.code + '">' + escapeHtml(c.short) + ' · ' + escapeHtml(t('v2.badge.' + c.code)) + '</option>'
+        '<option value="' + c.code + '">' + escapeHtml(catShort(c.code)) + ' · ' + escapeHtml(t('v2.badge.' + c.code)) + '</option>'
     ).join('');
 }
 function qbStep(delta) {
@@ -3596,7 +3606,7 @@ async function quickAddBehavior() {
         await api.addBehavior(desc, pts, { dimension: cat });
         track('quick_add_behavior', { points: pts, category: cat });
         const catObj = V2_CATS.find(x => x.code === cat);
-        showTemporaryMessage(t('home.recordBehaviorSuccess', { points: pts, cat: catObj ? catObj.short : cat }), 'success');
+        showTemporaryMessage(t('home.recordBehaviorSuccess', { points: pts, cat: catObj ? catShort(catObj.code) : cat }), 'success');
         descEl.value = '';
         ptsEl.value = 3;
         // 立即刷新（积分/雷达图/指标）
@@ -3634,7 +3644,7 @@ function renderHomeCheckin() {
                 '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>' +
                 '<span class="tmi-text">' + escapeHtml(t('v2.makeup')) + '</span></button>';
             return '<div class="today-checkin-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
-                '<span class="tci-cat">' + c.short + '</span>' +
+                '<span class="tci-cat">' + escapeHtml(catShort(c.code)) + '</span>' +
                 '<div class="tci-main">' +
                     '<span class="tci-title">' + escapeHtml(w.title || '') + '</span>' +
                     '<span class="tci-streak">' + escapeHtml(t('v2.streak', { n: w.streak || 0 })) + '</span>' +
@@ -3761,7 +3771,7 @@ function renderV2Flower() {
                 focusMark +
             '</g>' +
             '<g class="petal-label" transform="rotate(' + ang + ' ' + cx + ' ' + cy + ') translate(100 4) rotate(' + (-labelRot) + ')">' +
-                '<text class="petal-label-txt" text-anchor="middle">' + c.short + '</text>' +
+                '<text class="petal-label-txt" text-anchor="middle">' + catShort(c.code) + '</text>' +
             '</g>';
     });
 
@@ -3798,7 +3808,7 @@ function renderV2Flower() {
     if (cnt) cnt.textContent = v2CoveredCount + '/8';
 
     // 强弱总结（最强 3 + 最弱 2）
-    const ranked = V2_CATS.map((c, i) => ({ code: c.code, short: c.short, v: vals[i] }))
+    const ranked = V2_CATS.map((c, i) => ({ code: c.code, short: catShort(c.code), v: vals[i] }))
         .sort((a, b) => b.v - a.v);
     const top = ranked.slice(0, 3).filter(x => x.v > 0);
     const bottom = ranked.slice(-2).filter(x => x.v < 100);
@@ -3807,8 +3817,9 @@ function renderV2Flower() {
         if (!top.length) {
             sumEl.textContent = t('v2.flowerEmpty');
         } else {
-            const strongTxt = top.map(x => x.short).join('、');
-            const weakTxt = bottom.length ? bottom.map(x => x.short).join('、') : '';
+            const sep = getLanguage() === 'en' ? ', ' : '、';
+            const strongTxt = top.map(x => x.short).join(sep);
+            const weakTxt = bottom.length ? bottom.map(x => x.short).join(sep) : '';
             sumEl.innerHTML = t('v2.flowerSummary', { strong: strongTxt, weak: weakTxt });
         }
     }
@@ -3821,7 +3832,7 @@ function renderV2Legend() {
     el.innerHTML = V2_CATS.map(c =>
         '<div class="v2-legend-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
             '<span class="v2-legend-dot"></span>' +
-            '<span class="v2-legend-name"><b>' + c.short + '</b> ' + escapeHtml(t('v2.badge.' + c.code)) + '</span>' +
+            '<span class="v2-legend-name"><b>' + escapeHtml(catShort(c.code)) + '</b> ' + escapeHtml(t('v2.badge.' + c.code)) + '</span>' +
             '<span class="v2-legend-desc">' + escapeHtml(t('v2.badgeDesc.' + c.code)) + '</span>' +
         '</div>'
     ).join('');
@@ -3925,7 +3936,7 @@ function renderV2Suggestions() {
                     '<span class="v2-sb-label">' + escapeHtml(t('v2.focusLabel')) + '</span>' +
                     '<span class="v2-sb-name">' + escapeHtml(t('v2.badge.' + c.code)) + '</span>' +
                 '</div>' +
-                '<p class="v2-suggest-focus-desc">' + escapeHtml(t('v2.focusDesc', { name: c.short })) + '</p>' +
+                '<p class="v2-suggest-focus-desc">' + escapeHtml(t('v2.focusDesc', { name: catShort(c.code) })) + '</p>' +
             '</div>';
     } catch (e) {
         console.warn('renderV2Suggestions 渲染失败:', e);
@@ -4050,7 +4061,7 @@ function renderV2Wishes() {
         actions.push('<button type="button" class="v2-del-btn" title="' + escapeHtml(t('common.delete')) + '" onclick="v2DeleteWish(' + w.id + ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>');
         return '<div class="v2-wish-card ' + (achieved ? 'is-achieved' : '') + '" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
             '<div class="v2-wish-top">' +
-                '<div class="v2-wish-cat">' + c.short + '</div>' +
+                '<div class="v2-wish-cat">' + escapeHtml(catShort(c.code)) + '</div>' +
                 '<div class="v2-wish-main">' +
                     '<div class="v2-wish-title">' + escapeHtml(w.title) + '</div>' +
                     (w.description ? '<div class="v2-wish-desc">' + escapeHtml(w.description) + '</div>' : '') +
@@ -4450,10 +4461,12 @@ function closeHelpPanel() {
 function renderEduColumn() {
     const el = document.getElementById('edu-cards');
     if (!el) return;
+    // 文章链接跟随界面语言：英文读者直接看英文版 SEO 页（2026-09-05 修复英文模式打开中文文章）
+    const isEn = getLanguage() === 'en';
     const articles = [
-        { title: t('home.eduArt1Title'), sub: t('home.eduArt1Sub'), url: 'seo-guide-star-chart.html' },
-        { title: t('home.eduArt2Title'), sub: t('home.eduArt2Sub'), url: 'seo-habit-building.html' },
-        { title: t('home.eduArt3Title'), sub: t('home.eduArt3Sub'), url: 'seo-reward-ideas.html' }
+        { title: t('home.eduArt1Title'), sub: t('home.eduArt1Sub'), url: isEn ? 'seo-guide-star-chart-en.html' : 'seo-guide-star-chart.html' },
+        { title: t('home.eduArt2Title'), sub: t('home.eduArt2Sub'), url: isEn ? 'seo-habit-building-en.html' : 'seo-habit-building.html' },
+        { title: t('home.eduArt3Title'), sub: t('home.eduArt3Sub'), url: isEn ? 'seo-reward-ideas-en.html' : 'seo-reward-ideas.html' }
     ];
     let html = articles.map(a =>
         '<a class="edu-card" href="' + a.url + '" target="_blank" rel="noopener">' +
@@ -4595,7 +4608,7 @@ function renderV2Indicators() {
             return '<button type="button" class="v2-ind-level ' + lv[0] + ' ' + (cur === lv[0] ? 'is-on' : '') + '" onclick="v2SetIndicator(\'' + c.code + '\',\'' + lv[0] + '\')">' + escapeHtml(t(lv[1])) + '</button>';
         }).join('');
         return '<div class="v2-ind-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
-            '<div class="v2-ind-cat">' + c.short + '</div>' +
+            '<div class="v2-ind-cat">' + escapeHtml(catShort(c.code)) + '</div>' +
             '<div class="v2-ind-name">' + escapeHtml(t('v2.badge.' + c.code)) + '</div>' +
             '<div class="v2-ind-levels">' + lvls + '</div>' +
         '</div>';
