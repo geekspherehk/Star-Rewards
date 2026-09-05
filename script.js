@@ -3734,7 +3734,7 @@ function renderV2Flower() {
     v2CoveredCount = 0;
     const N = V2_CATS.length;                 // 8
     const cx = 115, cy = 115;                 // viewBox 230x230，花心居中
-    const LMIN = 24, LMAX = 86;               // 花瓣长度范围（0 分也有小芽，满分接近标签圈）
+    const LMIN = 30, LMAX = 88;               // 花瓣长度范围（0 分也有小芽，满分接近标签圈）
     const raw = V2_CATS.map(c => v2CatScore(covMap[c.code] || {}));
     const maxRaw = Math.max(8, ...raw);
     const vals = raw.map(x => Math.round(x / maxRaw * 100));
@@ -3748,7 +3748,7 @@ function renderV2Flower() {
         if (score > 0) v2CoveredCount++;
         const val = vals[i];
         const len = LMIN + (LMAX - LMIN) * val / 100;
-        const w = 9 + 13 * val / 100;
+        const w = 13 + 17 * val / 100;
         const labelRot = ang <= 180 ? ang : ang - 360;   // 标签始终正立
         const isFocus = (v2Data && v2Data.focus === c.code);
         const isPending = (pendingFocus === c.code);
