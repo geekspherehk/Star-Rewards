@@ -4610,14 +4610,18 @@ function renderV2Badges() {
     el.innerHTML =
         '<div class="bdg-progress-line"><span class="bdg-progress-txt">' + escapeHtml(t('v2.badgeWallProgress', { n: unlockedCount, total: list.length })) + '</span>' +
         '<span class="bdg-progress-bar"><span class="bdg-progress-fill" style="width:' + Math.round(unlockedCount / list.length * 100) + '%"></span></span></div>' +
-        '<div class="bdg-grid">' + list.map(b =>
-            '<div class="bdg' + (b.done ? '' : ' is-locked') + '" style="--pc:' + b.pc + ';--pc-soft:' + b.pcSoft + '" title="' + escapeHtml(b.desc) + '">' +
+        '<div class="bdg-grid">' + list.map(b => {
+            const status = b.done ? t('v2.msDone') : b.prog;
+            return '<div class="bdg' + (b.done ? '' : ' is-locked') + '" style="--pc:' + b.pc + ';--pc-soft:' + b.pcSoft + '" tabindex="0" title="' + escapeHtml(b.desc) + '">' +
                 '<div class="bdg-medal">' +
                     '<span class="bdg-ico">' + b.icon + '</span>' +
+                    '<span class="bdg-tip" role="tooltip">' +
+                        '<span class="bdg-tip-name">' + escapeHtml(b.name) + '</span>' +
+                        (status ? '<span class="bdg-tip-status">' + escapeHtml(status) + '</span>' : '') +
+                    '</span>' +
                 '</div>' +
-                '<span class="bdg-name">' + escapeHtml(b.name) + '</span>' +
-            '</div>'
-        ).join('') + '</div>';
+            '</div>';
+        }).join('') + '</div>';
 }
 
 // ── 每周成长指标 + 成长报告 ──

@@ -4835,10 +4835,43 @@ a:hover { text-decoration: underline; }
     .bdg-ico, .bdg-art { width: 52px; height: 52px; }
 }
 
-/* ── 徽章墙 v4：只靠「彩色=已得 / 灰阶=未得」表达状态，去掉 ✓ 角标与进度小字 ── */
+/* ── 徽章墙 v5：去常驻名称，悬浮/聚焦才显名称（tooltip）；彩色=已得，灰阶=未得 ── */
 .bdg-check { display: none !important; }
 .bdg-prog { display: none !important; }
-.bdg { gap: 4px; }
-.bdg.is-locked .bdg-medal { filter: grayscale(1) opacity(0.35); }
-.bdg.is-locked .bdg-name { color: var(--muted, #a8a8b3); font-weight: 600; }
-.bdg-name { letter-spacing: .01em; }
+.bdg { position: relative; gap: 0; }
+.bdg:focus { outline: none; }
+.bdg-medal { cursor: default; }
+.bdg:not(.is-locked) .bdg-medal {
+    filter: drop-shadow(0 4px 7px color-mix(in srgb, var(--pc) 38%, transparent));
+    transform-origin: center;
+}
+.bdg:not(.is-locked):hover .bdg-medal { transform: translateY(-3px) scale(1.08); }
+.bdg.is-locked .bdg-medal { filter: grayscale(1) opacity(0.4); }
+.bdg.is-locked:hover .bdg-medal,
+.bdg.is-locked:focus .bdg-medal,
+.bdg.is-locked:active .bdg-medal { filter: grayscale(1) opacity(0.72); transform: translateY(-1px) scale(1.02); }
+
+/* tooltip：悬浮 / 聚焦（移动端点按）显名称 + 状态 */
+.bdg-tip {
+    position: absolute; top: calc(100% + 9px); left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+    background: rgba(26, 26, 38, .95); color: #fff;
+    padding: 6px 11px; border-radius: 11px; white-space: nowrap;
+    opacity: 0; pointer-events: none; z-index: 30;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .28);
+    transition: opacity .16s ease, transform .16s ease;
+}
+.bdg-tip::before {
+    content: ''; position: absolute; bottom: 100%; left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent; border-bottom-color: rgba(26, 26, 38, .95);
+}
+.bdg-tip-name { font-size: 12.5px; font-weight: 700; line-height: 1.25; }
+.bdg-tip-status { font-size: 11px; font-weight: 600; color: #ffd479; }
+.bdg.is-locked .bdg-tip-status { color: #cfd2e6; }
+.bdg:hover .bdg-tip,
+.bdg:focus .bdg-tip,
+.bdg:active .bdg-tip,
+.bdg.is-preview .bdg-tip { opacity: 1; transform: translateX(-50%) translateY(0); }
+.ach-v2-wall { padding-bottom: 40px; }
