@@ -3887,24 +3887,27 @@ function renderV2Suggestions() {
         const c = focusCode ? V2_CATS.find(x => x.code === focusCode) : null;
         if (!c) {
             el.innerHTML =
-                '<div class="v2-suggest-card v2-suggest-empty">' +
-                    '<div class="v2-suggest-kicker">' + escapeHtml(t('v2.focusLabel')) + '</div>' +
-                    '<p class="v2-suggest-empty-txt">' + escapeHtml(t('v2.focusPickHint')) + '</p>' +
+                '<div class="v2-suggest-card is-compact">' +
+                    '<div class="v2-suggest-banner" style="--pc:' + v2CatVar('planning') + '">' +
+                        '<span class="v2-sb-ico">🎯</span>' +
+                        '<span class="v2-sb-label">' + escapeHtml(t('v2.focusLabel')) + '</span>' +
+                        '<span class="v2-sb-none">' + escapeHtml(t('v2.focusNone')) + '</span>' +
+                    '</div>' +
                 '</div>';
             return;
         }
         el.innerHTML =
-            '<div class="v2-suggest-card has-focus">' +
+            '<div class="v2-suggest-card is-compact has-focus">' +
                 '<div class="v2-suggest-banner" style="--pc:' + v2CatVar(c.code) + '">' +
                     '<span class="v2-sb-ico">🎯</span>' +
                     '<span class="v2-sb-label">' + escapeHtml(t('v2.focusLabel')) + '</span>' +
-                    '<span class="v2-sb-name">' + escapeHtml(t('v2.badge.' + c.code)) + '</span>' +
+                    '<span class="v2-sb-name">' + escapeHtml(catShort(c.code) + ' · ' + t('v2.badge.' + c.code)) + '</span>' +
                 '</div>' +
-                '<p class="v2-suggest-focus-desc">' + escapeHtml(t('v2.focusDesc', { name: catShort(c.code) })) + '</p>' +
+                '<p class="v2-suggest-hint">' + escapeHtml(t('v2.focusChangeHint')) + '</p>' +
             '</div>';
     } catch (e) {
         console.warn('renderV2Suggestions 渲染失败:', e);
-        el.innerHTML = '<div class="v2-suggest-card v2-suggest-empty"><div class="v2-suggest-kicker">' + escapeHtml(t('v2.focusLabel')) + '</div><p class="v2-suggest-empty-txt">—</p></div>';
+        el.innerHTML = '';
     }
 }
 

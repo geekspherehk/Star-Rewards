@@ -4685,3 +4685,9 @@ a:hover { text-decoration: underline; }
 /* ── 花瓣标签 v3：一行「素养 · 小名」，整行素养色（对应关系直接可见）── */
 .petal-label-txt { font-size: 11.5px; font-weight: 700; fill: var(--pc, #6C63FF); }
 @media (max-width: 720px) { .petal-label-txt { font-size: 10px; } }
+
+/* ── 本月主打卡：紧凑自适应宽度（不再横向拉满大片空白）── */
+.v2-suggest-card.is-compact { width: fit-content; max-width: 100%; padding: 12px 18px; }
+.v2-suggest-banner { display: flex; align-items: center; gap: 8px; }
+.v2-sb-none { font-size: 0.9rem; font-weight: 600; color: var(--muted, #999); }
+.v2-suggest-hint { font-size: var(--fs-xs, 0.78rem); color: var(--muted, #999); margin: 6px 0 0 22px; }
