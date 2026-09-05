@@ -3801,12 +3801,14 @@ function renderV2Flower() {
     const sumEl = document.getElementById('v2-flower-summary');
     if (sumEl) {
         if (!top.length) {
-            sumEl.textContent = t('v2.flowerEmpty');
+            sumEl.innerHTML = '<div class="sum-card sum-card--empty">' + escapeHtml(t('v2.flowerEmpty')) + '</div>';
         } else {
-            const sep = getLanguage() === 'en' ? ', ' : '、';
-            const strongTxt = top.map(x => x.short).join(sep);
-            const weakTxt = bottom.length ? bottom.map(x => x.short).join(sep) : '';
-            sumEl.innerHTML = t('v2.flowerSummary', { strong: strongTxt, weak: weakTxt });
+            const nameSpans = list => list.map(x =>
+                '<b class="sum-name" style="color:' + v2CatVar(x.code) + '">' + escapeHtml(x.short) + '</b>'
+            ).join('<span class="sum-sep">' + (getLanguage() === 'en' ? ', ' : '、') + '</span>');
+            sumEl.innerHTML =
+                '<div class="sum-card sum-card--strong"><span class="sum-kicker">' + escapeHtml(t('v2.sumStrong')) + '</span><span class="sum-names">' + nameSpans(top) + '</span></div>' +
+                (bottom.length ? '<div class="sum-card sum-card--weak"><span class="sum-kicker">' + escapeHtml(t('v2.sumWeak')) + '</span><span class="sum-names">' + nameSpans(bottom) + '</span></div>' : '');
         }
     }
 }

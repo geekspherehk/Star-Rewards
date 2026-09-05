@@ -4691,3 +4691,19 @@ a:hover { text-decoration: underline; }
 .v2-suggest-banner { display: flex; align-items: center; gap: 8px; }
 .v2-sb-none { font-size: 0.9rem; font-weight: 600; color: var(--muted, #999); }
 .v2-suggest-hint { font-size: var(--fs-xs, 0.78rem); color: var(--muted, #999); margin: 6px 0 0 22px; }
+
+/* ── 成长总览 v3：花占行宽 ~40%，总结双卡片 ── */
+.v2-flower-wrap { width: 40%; max-width: 420px; }
+.flower-side { display: flex; flex-direction: column; justify-content: center; gap: 14px; }
+.v2-flower-summary { display: flex; flex-direction: column; gap: 10px; }
+.sum-card { display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; border-radius: var(--r-lg, 16px); border: 1px solid var(--border, #e8e8f0); background: var(--surface-2, #f8f8fc); }
+.sum-card--strong { background: color-mix(in srgb, var(--cat-health, #58B368) 9%, var(--surface, #fff)); border-color: color-mix(in srgb, var(--cat-health, #58B368) 30%, transparent); }
+.sum-card--weak { background: color-mix(in srgb, #F5A524 9%, var(--surface, #fff)); border-color: color-mix(in srgb, #F5A524 32%, transparent); }
+.sum-card--empty { color: var(--muted, #999); font-size: var(--fs-sm, 0.85rem); }
+.sum-kicker { font-size: var(--fs-xs, 0.78rem); font-weight: 700; letter-spacing: 0.04em; color: var(--text-2, #6b6b68); }
+.sum-names { font-size: 1.05rem; font-weight: 800; color: var(--text-1, #2c2c2a); }
+.sum-name { font-weight: 800; }
+.sum-sep { font-weight: 400; color: var(--text-2, #6b6b68); }
+@media (max-width: 720px) {
+    .v2-flower-wrap { width: 260px; max-width: 260px; margin: 0 auto; }
+}
