@@ -822,6 +822,11 @@ const translations = {
             msInviteDesc: '邀请家人加入，一起记录成长',
             msDone: '已完成',
             badgeLit: '已点亮',
+            badgeGroupRose: '全人之花',
+            badgeGroupStreak: '坚持阶梯',
+            badgeGroupWish: '愿望阶梯',
+            badgeGroupRedeem: '兑换阶梯',
+            badgeGroupInvite: '邀请家人',
             badgeInviteFriend: '好友之星',
             badgeInviteDesc: '邀请家人加入，一起记录成长',
             badge: {
@@ -1718,6 +1723,11 @@ const translations = {
             msInviteDesc: 'Invite family to record growth together',
             msDone: 'Done',
             badgeLit: 'Lit',
+            badgeGroupRose: 'Whole-Person Rose',
+            badgeGroupStreak: 'Streak Ladder',
+            badgeGroupWish: 'Wish Ladder',
+            badgeGroupRedeem: 'Redeem Ladder',
+            badgeGroupInvite: 'Invite Family',
             badgeInviteFriend: 'Friend Star',
             badgeInviteDesc: 'Invite a family member to record growth together',
             badge: {

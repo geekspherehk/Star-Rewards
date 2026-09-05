@@ -4835,25 +4835,68 @@ a:hover { text-decoration: underline; }
     .bdg-ico, .bdg-art { width: 52px; height: 52px; }
 }
 
-/* ── 徽章墙 v5：去常驻名称，悬浮/聚焦才显名称（tooltip）；彩色=已得，灰阶=未得 ── */
-.bdg-check { display: none !important; }
-.bdg-prog { display: none !important; }
-.bdg { position: relative; gap: 0; }
+/* ── 徽章墙 v8：分组里程碑仪表板（与 ach-stats / weekly-card 横向卡片同风格）── */
+.ach-v2-wall { padding-bottom: 84px; }
+.bdg-progress-line { display: flex; align-items: center; gap: 12px; max-width: 720px; margin: 0 auto 18px; }
+.bdg-progress-txt { font-size: var(--fs-sm, 0.85rem); font-weight: 700; color: var(--text-2, #6b6b68); white-space: nowrap; }
+.bdg-progress-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2, #f0f0f6); overflow: hidden; }
+.bdg-progress-fill { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--brand, #6C5CE7), var(--cat-health, #58B368)); transition: width .5s ease; }
+
+.bdg-groups { display: flex; flex-direction: column; gap: 14px; max-width: 720px; margin: 0 auto; }
+.bdg-group {
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #ececf2);
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 2px rgba(20, 20, 40, .04);
+}
+.bdg-group-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px;
+}
+.bdg-group-label {
+    font-size: var(--fs-sm, 0.88rem);
+    font-weight: 700;
+    color: var(--text-1, #2c2c2a);
+    letter-spacing: .01em;
+}
+.bdg-group-count {
+    font-size: var(--fs-xs, 0.78rem);
+    font-weight: 700;
+    color: var(--brand, #6C5CE7);
+    background: color-mix(in srgb, var(--brand, #6C5CE7) 12%, transparent);
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+}
+.bdg-group-row {
+    display: flex; flex-wrap: wrap; gap: 18px 16px;
+    justify-content: flex-start;
+}
+.bdg { position: relative; gap: 0; display: flex; align-items: center; justify-content: center; }
 .bdg:focus { outline: none; }
-.bdg-medal { cursor: default; }
+.bdg-medal {
+    position: relative; width: 68px; height: 68px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: none; box-shadow: none; color: inherit;
+    transition: transform .22s cubic-bezier(.34, 1.56, .64, 1), filter .2s ease;
+    cursor: default;
+}
 .bdg:not(.is-locked) .bdg-medal {
-    filter: drop-shadow(0 4px 7px color-mix(in srgb, var(--pc) 38%, transparent));
+    filter: drop-shadow(0 4px 7px color-mix(in srgb, var(--pc) 42%, transparent));
     transform-origin: center;
 }
 .bdg:not(.is-locked):hover .bdg-medal { transform: translateY(-3px) scale(1.08); }
 .bdg.is-locked .bdg-medal { filter: grayscale(1) opacity(0.5); }
 .bdg.is-locked:hover .bdg-medal,
 .bdg.is-locked:focus .bdg-medal,
-.bdg.is-locked:active .bdg-medal { filter: grayscale(1) opacity(0.82); transform: translateY(-2px) scale(1.05); }
+.bdg.is-locked:active .bdg-medal { filter: grayscale(1) opacity(0.85); transform: translateY(-2px) scale(1.05); }
+.bdg-ico { width: 64px; height: 64px; z-index: 1; display: inline-flex; }
+.bdg-art { width: 64px; height: 64px; display: block; }
 
 /* tooltip：悬浮 / 聚焦（移动端点按）显名称 + 状态 */
 .bdg-tip {
-    position: absolute; top: calc(100% + 9px); left: 50%;
+    position: absolute; top: calc(100% + 10px); left: 50%;
     transform: translateX(-50%) translateY(4px);
     display: flex; flex-direction: column; align-items: center; gap: 1px;
     background: rgba(26, 26, 38, .95); color: #fff;
@@ -4878,4 +4921,10 @@ a:hover { text-decoration: underline; }
 .bdg:focus .bdg-tip,
 .bdg:active .bdg-tip,
 .bdg.is-preview .bdg-tip { opacity: 1; transform: translateX(-50%) translateY(0); }
-.ach-v2-wall { padding-bottom: 84px; }
+
+@media (max-width: 720px) {
+    .bdg-group { padding: 12px 14px; border-radius: 14px; }
+    .bdg-group-row { gap: 16px 12px; }
+    .bdg-medal { width: 60px; height: 60px; }
+    .bdg-ico, .bdg-art { width: 56px; height: 56px; }
+}

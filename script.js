@@ -4551,77 +4551,111 @@ function renderV2Badges() {
         desc: t('v2.badgeDesc.' + c.code),
         done: !!(badges['rose_' + c.code] && badges['rose_' + c.code].unlocked),
         pc: v2CatVar(c.code), pcSoft: v2CatSoftVar(c.code),
-        prog: ''
+        prog: '',
+        group: 'rose'
     }));
 
     list.push({
         icon: V2_BADGE_SVGS.all_rounder, name: t('v2.badgeAllRounder'), desc: t('v2.allRounderDesc'),
         done: !!ar.unlocked, pc: 'var(--cat-all-rounder)', pcSoft: 'var(--cat-all-rounder-soft)',
-        prog: ar.unlocked ? '' : Math.min(ar.progress || 0, ar.target || 6) + '/' + (ar.target || 6)
+        prog: ar.unlocked ? '' : Math.min(ar.progress || 0, ar.target || 6) + '/' + (ar.target || 6),
+        group: 'rose'
     });
     list.push({
         icon: V2_BADGE_SVGS.streak3, name: t('v2.badgeStreak3'), desc: t('v2.badgeStreak3Desc'),
         done: maxStreak >= 3, pc: v2CatVar('health'), pcSoft: v2CatSoftVar('health'),
-        prog: maxStreak >= 3 ? '' : Math.min(maxStreak, 3) + '/3'
+        prog: maxStreak >= 3 ? '' : Math.min(maxStreak, 3) + '/3',
+        group: 'streak'
     });
     list.push({
         icon: V2_BADGE_SVGS.streak7, name: t('v2.badgeStreak7'), desc: t('v2.badgeStreak7Desc'),
         done: maxStreak >= 7, pc: v2CatVar('money'), pcSoft: v2CatSoftVar('money'),
-        prog: maxStreak >= 7 ? '' : Math.min(maxStreak, 7) + '/7'
+        prog: maxStreak >= 7 ? '' : Math.min(maxStreak, 7) + '/7',
+        group: 'streak'
     });
     list.push({
         icon: V2_BADGE_SVGS.persist_21, name: t('v2.badgePersist21'), desc: t('v2.msPersistDesc'),
         done: !!p21.unlocked, pc: v2CatVar('resilience'), pcSoft: v2CatSoftVar('resilience'),
-        prog: p21.unlocked ? '' : Math.min(Math.max(maxStreak, p21.progress || 0), 21) + '/21'
+        prog: p21.unlocked ? '' : Math.min(Math.max(maxStreak, p21.progress || 0), 21) + '/21',
+        group: 'streak'
     });
     list.push({
         icon: V2_BADGE_SVGS.wish1, name: t('v2.badgeWish1'), desc: t('v2.badgeWish1Desc'),
         done: achieved >= 1, pc: v2CatVar('planning'), pcSoft: v2CatSoftVar('planning'),
-        prog: achieved >= 1 ? '' : '0/1'
+        prog: achieved >= 1 ? '' : '0/1',
+        group: 'wish'
     });
     list.push({
         icon: V2_BADGE_SVGS.wish3, name: t('v2.ms3Wish'), desc: t('v2.ms3WishDesc'),
         done: achieved >= 3, pc: v2CatVar('planning'), pcSoft: v2CatSoftVar('planning'),
-        prog: achieved >= 3 ? '' : Math.min(achieved, 3) + '/3'
+        prog: achieved >= 3 ? '' : Math.min(achieved, 3) + '/3',
+        group: 'wish'
     });
     list.push({
         icon: V2_BADGE_SVGS.wish10, name: t('v2.badgeWish10'), desc: t('v2.badgeWish10Desc'),
         done: achieved >= 10, pc: v2CatVar('self_drive'), pcSoft: v2CatSoftVar('self_drive'),
-        prog: achieved >= 10 ? '' : Math.min(achieved, 10) + '/10'
+        prog: achieved >= 10 ? '' : Math.min(achieved, 10) + '/10',
+        group: 'wish'
     });
     list.push({
         icon: V2_BADGE_SVGS.redeem1, name: t('v2.msRedeem'), desc: t('v2.msRedeemDesc'),
         done: redeemedCount >= 1, pc: v2CatVar('aesthetics'), pcSoft: v2CatSoftVar('aesthetics'),
-        prog: redeemedCount >= 1 ? '' : '0/1'
+        prog: redeemedCount >= 1 ? '' : '0/1',
+        group: 'redeem'
     });
     list.push({
         icon: V2_BADGE_SVGS.redeem5, name: t('v2.badgeRedeem5'), desc: t('v2.badgeRedeem5Desc'),
         done: redeemedCount >= 5, pc: v2CatVar('empathy'), pcSoft: v2CatSoftVar('empathy'),
-        prog: redeemedCount >= 5 ? '' : Math.min(redeemedCount, 5) + '/5'
+        prog: redeemedCount >= 5 ? '' : Math.min(redeemedCount, 5) + '/5',
+        group: 'redeem'
     });
     list.push({
         icon: V2_BADGE_SVGS.invite_friend, name: t('v2.badgeInviteFriend'), desc: t('v2.msInviteDesc'),
         done: !!inv.unlocked, pc: 'var(--brand)', pcSoft: 'var(--brand-soft)',
-        prog: inv.unlocked ? '' : Math.min(Math.max(members, 1), 2) + '/2'
+        prog: inv.unlocked ? '' : Math.min(Math.max(members, 1), 2) + '/2',
+        group: 'invite'
     });
 
     const unlockedCount = list.filter(b => b.done).length;
+    const groupLabels = {
+        rose: t('v2.badgeGroupRose'),
+        streak: t('v2.badgeGroupStreak'),
+        wish: t('v2.badgeGroupWish'),
+        redeem: t('v2.badgeGroupRedeem'),
+        invite: t('v2.badgeGroupInvite')
+    };
+    const groupOrder = ['rose', 'streak', 'wish', 'redeem', 'invite'];
+
+    function badgeHtml(b) {
+        const status = b.done ? t('v2.badgeLit') : b.prog;
+        return '<div class="bdg' + (b.done ? '' : ' is-locked') + '" style="--pc:' + b.pc + ';--pc-soft:' + b.pcSoft + '" tabindex="0" title="' + escapeHtml(b.desc) + '">' +
+            '<div class="bdg-medal">' +
+                '<span class="bdg-ico">' + b.icon + '</span>' +
+                '<span class="bdg-tip" role="tooltip">' +
+                    '<span class="bdg-tip-name">' + escapeHtml(b.name) + '</span>' +
+                    (status ? '<span class="bdg-tip-status">' + escapeHtml(status) + '</span>' : '') +
+                '</span>' +
+            '</div>' +
+        '</div>';
+    }
+
+    const groupsHtml = groupOrder.map(g => {
+        const items = list.filter(b => b.group === g);
+        if (!items.length) return '';
+        const done = items.filter(b => b.done).length;
+        return '<div class="bdg-group">' +
+            '<div class="bdg-group-head">' +
+                '<span class="bdg-group-label">' + escapeHtml(groupLabels[g]) + '</span>' +
+                '<span class="bdg-group-count">' + done + '/' + items.length + '</span>' +
+            '</div>' +
+            '<div class="bdg-group-row">' + items.map(badgeHtml).join('') + '</div>' +
+        '</div>';
+    }).join('');
 
     el.innerHTML =
         '<div class="bdg-progress-line"><span class="bdg-progress-txt">' + escapeHtml(t('v2.badgeWallProgress', { n: unlockedCount, total: list.length })) + '</span>' +
         '<span class="bdg-progress-bar"><span class="bdg-progress-fill" style="width:' + Math.round(unlockedCount / list.length * 100) + '%"></span></span></div>' +
-        '<div class="bdg-grid">' + list.map(b => {
-            const status = b.done ? t('v2.badgeLit') : b.prog;
-            return '<div class="bdg' + (b.done ? '' : ' is-locked') + '" style="--pc:' + b.pc + ';--pc-soft:' + b.pcSoft + '" tabindex="0" title="' + escapeHtml(b.desc) + '">' +
-                '<div class="bdg-medal">' +
-                    '<span class="bdg-ico">' + b.icon + '</span>' +
-                    '<span class="bdg-tip" role="tooltip">' +
-                        '<span class="bdg-tip-name">' + escapeHtml(b.name) + '</span>' +
-                        (status ? '<span class="bdg-tip-status">' + escapeHtml(status) + '</span>' : '') +
-                    '</span>' +
-                '</div>' +
-            '</div>';
-        }).join('') + '</div>';
+        '<div class="bdg-groups">' + groupsHtml + '</div>';
 }
 
 // ── 每周成长指标 + 成长报告 ──
