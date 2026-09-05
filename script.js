@@ -4524,42 +4524,57 @@ function renderV2Badges() {
     }
     v2PrevUnlocked = nowUnlocked;
 
-    el.innerHTML = order.map(code => {
-        const info = badges[code] || { unlocked: false };
-        const cat = code.replace('rose_', '');
-        const isAR = code === 'rose_all_rounder';
-        const isP21 = code === 'rose_persist_21';
-        const isInvite = code === 'invite_friend';
-        const pcVar = isAR ? 'var(--cat-all-rounder)' : (isInvite ? 'var(--brand)' : v2CatVar(cat));
-        const pcSoft = isAR ? 'var(--cat-all-rounder-soft)' : (isInvite ? 'var(--brand-soft)' : v2CatSoftVar(cat));
-        const name = isAR ? t('v2.badgeAllRounder') : (isP21 ? t('v2.badgePersist21') : (isInvite ? t('v2.badgeInviteFriend') : t('v2.badge.' + cat)));
-        const desc = isAR ? t('v2.allRounderDesc') : (isP21 ? '' : (isInvite ? t('v2.badgeInviteDesc') : t('v2.badgeDesc.' + cat)));
-        const icon = isAR ? V2_BADGE_SVGS.all_rounder : (isP21 ? V2_BADGE_SVGS.persist_21 : (isInvite ? V2_BADGE_SVGS.invite_friend : (V2_BADGE_SVGS[cat] || V2_BADGE_SVGS.self_drive)));
-        const isNew = newOnes.indexOf(code) !== -1;
-        // 进度环：未解锁时若后端给了 progress/target，渲染半透 SVG 进度环
-        const progress = typeof info.progress === 'number' ? Math.max(0, info.progress) : 0;
-        const target = typeof info.target === 'number' && info.target > 0 ? info.target : 0;
-        const showRing = !info.unlocked && target > 0;
-        const pct = showRing ? Math.min(1, progress / target) : 0;
-        const RING_R = 22, RING_C = 2 * Math.PI * RING_R;
-        const dash = (pct * RING_C).toFixed(2);
-        const ringHtml = showRing
-            ? '<svg class="v2-badge-ring" viewBox="0 0 52 52" aria-hidden="true">' +
-                '<circle class="v2-badge-ring-bg" cx="26" cy="26" r="' + RING_R + '"></circle>' +
-                '<circle class="v2-badge-ring-fg" cx="26" cy="26" r="' + RING_R + '" ' +
-                    'stroke-dasharray="' + dash + ' ' + RING_C.toFixed(2) + '" ' +
-                    'style="--pc:' + pcVar + '"></circle>' +
-              '</svg>'
-            : '';
-        const progressText = showRing ? progress + '/' + target : '';
-        return '<div class="v2-badge ' + (info.unlocked ? '' : 'is-locked') + ' ' + (isNew ? 'is-new' : '') + '" style="--pc:' + pcVar + ';--pc-soft:' + pcSoft + '">' +
-            '<div class="v2-badge-ico-wrap">' +
-                '<div class="v2-badge-ico">' + icon + '</div>' +
-                ringHtml +
+    // 里程碑 = 有明确进度的成长目标（进度条常显）。全能小星星已在上方总览展示，此处不再重复
+    const wishes = v2Data.wishes || [];
+    const achieved = wishes.filter(w => w.status === 'achieved').length;
+    const maxStreak = wishes.reduce((m, w) => Math.max(m, w.streak || 0), 0);
+    const redeemedCount = (redeemedGifts || []).length;
+    const members = (currentFamily && currentFamily.members) ? currentFamily.members.length : 0;
+
+    const ms = [
+        {
+            icon: V2_BADGE_SVGS.persist_21,
+            name: t('v2.badgePersist21'), desc: t('v2.msPersistDesc'),
+            cur: Math.min(maxStreak, 21), target: 21,
+            done: !!(badges.rose_persist_21 && badges.rose_persist_21.unlocked),
+            pc: v2CatVar('resilience'), pcSoft: v2CatSoftVar('resilience')
+        },
+        {
+            icon: V2_BADGE_SVGS.planning || V2_BADGE_SVGS.self_drive,
+            name: t('v2.ms3Wish'), desc: t('v2.ms3WishDesc'),
+            cur: Math.min(achieved, 3), target: 3,
+            done: achieved >= 3,
+            pc: v2CatVar('planning'), pcSoft: v2CatSoftVar('planning')
+        },
+        {
+            icon: V2_BADGE_SVGS.aesthetics || V2_BADGE_SVGS.self_drive,
+            name: t('v2.msRedeem'), desc: t('v2.msRedeemDesc'),
+            cur: redeemedCount > 0 ? 1 : 0, target: 1,
+            done: redeemedCount > 0,
+            pc: v2CatVar('money'), pcSoft: v2CatSoftVar('money')
+        },
+        {
+            icon: V2_BADGE_SVGS.invite_friend || V2_BADGE_SVGS.relationship || V2_BADGE_SVGS.self_drive,
+            name: t('v2.badgeInviteFriend'), desc: t('v2.msInviteDesc'),
+            cur: Math.min(members, 2), target: 2,
+            done: !!(badges.invite_friend && badges.invite_friend.unlocked),
+            pc: 'var(--brand)', pcSoft: 'var(--brand-soft)'
+        }
+    ];
+
+    el.innerHTML = ms.map(m => {
+        const pct = m.target > 0 ? Math.min(100, Math.round(m.cur / m.target * 100)) : 0;
+        return '<div class="ms-row' + (m.done ? ' is-done' : '') + '" style="--pc:' + m.pc + ';--pc-soft:' + m.pcSoft + '">' +
+            '<div class="ms-ico">' + (m.done
+                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+                : m.icon) +
             '</div>' +
-            '<div class="v2-badge-name">' + escapeHtml(name) + '</div>' +
-            '<div class="v2-badge-desc">' + (desc ? escapeHtml(desc) : '&nbsp;') + '</div>' +
-            (progressText ? '<div class="v2-badge-progress">' + progressText + '</div>' : '') +
+            '<div class="ms-body">' +
+                '<div class="ms-top"><span class="ms-name">' + escapeHtml(m.name) + '</span>' +
+                '<span class="ms-count">' + (m.done ? escapeHtml(t('v2.msDone')) : (m.cur + '/' + m.target)) + '</span></div>' +
+                '<div class="ms-bar"><div class="ms-fill" style="width:' + pct + '%"></div></div>' +
+                '<div class="ms-desc">' + escapeHtml(m.desc) + '</div>' +
+            '</div>' +
         '</div>';
     }).join('');
 }

@@ -4731,3 +4731,35 @@ a:hover { text-decoration: underline; }
     .petal-label-txt { font-size: 10px; }
     .v2-flower-summary { grid-template-columns: 1fr; }
 }
+
+/* ── 里程碑成就：全宽进度卡列表（替代徽章小卡）── */
+.v2-badge-wall { display: flex; flex-direction: column; gap: 12px; max-width: 640px; margin: 0 auto; }
+.ms-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #e8e8f0);
+    border-radius: var(--r-lg, 16px);
+}
+.ms-ico {
+    flex: 0 0 auto; width: 46px; height: 46px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--pc-soft, #EFEDFF); color: var(--pc, #6C63FF);
+}
+.ms-ico svg { width: 24px; height: 24px; }
+.ms-row.is-done .ms-ico { background: var(--pc, #6C63FF); color: #fff; }
+.ms-body { flex: 1; min-width: 0; }
+.ms-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.ms-name { font-size: var(--fs-md, 1rem); font-weight: 700; color: var(--text-1, #2c2c2a); }
+.ms-row.is-done .ms-name { color: var(--pc, #6C63FF); }
+.ms-count { font-size: var(--fs-sm, 0.85rem); font-weight: 700; color: var(--text-2, #6b6b68); white-space: nowrap; }
+.ms-row.is-done .ms-count { color: var(--pc, #6C63FF); }
+.ms-bar { height: 8px; border-radius: 4px; background: var(--pc-soft, #EFEDFF); margin: 7px 0 6px; overflow: hidden; }
+.ms-fill { height: 100%; border-radius: 4px; background: var(--pc, #6C63FF); transition: width .5s ease; }
+.ms-row.is-done .ms-fill { background: var(--pc, #6C63FF); }
+.ms-desc { font-size: var(--fs-xs, 0.78rem); color: var(--muted, #999); line-height: 1.5; }
+@media (max-width: 720px) {
+    .ms-row { padding: 12px 14px; gap: 12px; }
+    .ms-ico { width: 40px; height: 40px; }
+    .ms-ico svg { width: 20px; height: 20px; }
+}
