@@ -4643,7 +4643,8 @@ function renderV2Badges() {
         const items = list.filter(b => b.group === g);
         if (!items.length) return '';
         const done = items.filter(b => b.done).length;
-        return '<div class="bdg-group">' +
+        const wide = (g === 'rose') ? ' bdg-group--wide' : '';
+        return '<div class="bdg-group' + wide + '">' +
             '<div class="bdg-group-head">' +
                 '<span class="bdg-group-label">' + escapeHtml(groupLabels[g]) + '</span>' +
                 '<span class="bdg-group-count">' + done + '/' + items.length + '</span>' +
