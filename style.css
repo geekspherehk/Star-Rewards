@@ -4027,10 +4027,12 @@ a:hover { text-decoration: underline; }
     border: 1px solid var(--border); border-radius: var(--r-lg);
     background: var(--surface); box-shadow: var(--sh-sm);
 }
-.today-checkin-list { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+/* 打卡目标网格：两卡并排一行，一屏看全所有目标；窄屏自动落回单列 */
+.today-checkin-list {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px;
+}
 .today-checkin-row {
     display: flex; flex-direction: column; align-items: stretch; gap: 8px;
-    width: fit-content; max-width: 100%;
     padding: 10px 12px; border-radius: var(--r-md);
     background: var(--pc-soft); border: 1px solid transparent;
 }

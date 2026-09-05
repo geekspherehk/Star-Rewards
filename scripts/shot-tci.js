@@ -31,7 +31,9 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
     if (typeof v2Data === 'object' && v2Data) {
       v2Data.wishes = (v2Data.wishes || []).concat([
         { id: 801, title: '每天自主完成作业并检查一遍', category: 'self_drive', status: 'active', streak: 12, today_checked: false },
-        { id: 802, title: '每周存 10 元零花钱', category: 'money', status: 'active', streak: 4, today_checked: true }
+        { id: 802, title: '每周存 10 元零花钱', category: 'money', status: 'active', streak: 4, today_checked: true },
+        { id: 803, title: '睡前阅读 20 分钟', category: 'health', status: 'active', streak: 7, today_checked: false },
+        { id: 804, title: '对家人说一句感谢的话', category: 'empathy', status: 'active', streak: 2, today_checked: false }
       ]);
       if (typeof renderHomeCheckin === 'function') renderHomeCheckin();
     }
