@@ -4029,24 +4029,26 @@ a:hover { text-decoration: underline; }
 }
 .today-checkin-list { display: flex; flex-direction: column; gap: 8px; }
 .today-checkin-row {
-    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    display: flex; flex-direction: column; align-items: stretch; gap: 8px;
     padding: 10px 12px; border-radius: var(--r-md);
     background: var(--pc-soft); border: 1px solid transparent;
 }
+/* 上行：分类块 + 目标描述（占满一行，不再和按钮对半挤） */
+.tci-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .tci-cat { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--pc); color: #fff; font-weight: 800; font-size: 12px; }
 .tci-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px; }
 .tci-title { flex: 1 1 auto; min-width: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tci-streak { flex: 0 0 auto; font-size: var(--fs-xs); color: var(--text-2); white-space: nowrap; }
-.tci-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-.today-checkin-row .v2-checkin-btn { flex: 0 0 auto; width: auto; max-width: 50%; white-space: nowrap; }
+/* 下行：打卡 / 补卡按钮，跟随信息流左对齐 */
+.tci-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-start; }
+.today-checkin-row .v2-checkin-btn { flex: 0 0 auto; width: auto; white-space: nowrap; }
 .today-checkin-row .v2-makeup-btn { flex: 0 0 auto; padding: 8px 10px; font-size: var(--fs-xs); }
 .today-checkin-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: var(--sp-4); color: var(--text-2); font-size: var(--fs-sm); text-align: center; }
 
-/* 今日打卡行：手机端按钮换行到第二行并压缩（须位于 .tci-actions 基础规则之后） */
+/* 今日打卡行：手机端压缩（两行结构已天然换行，这里只做按钮紧凑化） */
 @media (max-width: 560px) {
-    .today-checkin-row .tci-main { flex: 1 1 0; }
-    .today-checkin-row .tci-actions { flex: 1 1 100%; margin-top: 4px; }
-    .today-checkin-row .v2-checkin-btn { padding: 7px 10px; font-size: var(--fs-xs); max-width: none; }
+    .today-checkin-row { gap: 7px; padding: 9px 11px; }
+    .today-checkin-row .v2-checkin-btn { padding: 7px 12px; font-size: var(--fs-xs); }
     /* 补卡：手机端变成纯图标方按钮，避免文字让按钮过长 */
     .today-checkin-row .tci-makeup { width: 36px; height: 36px; padding: 0; justify-content: center; }
     .today-checkin-row .tci-makeup .tmi-text { display: none; }

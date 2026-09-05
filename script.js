@@ -3654,10 +3654,12 @@ function renderHomeCheckin() {
                 '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>' +
                 '<span class="tmi-text">' + escapeHtml(t('v2.makeup')) + '</span></button>';
             return '<div class="today-checkin-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
-                '<span class="tci-cat">' + escapeHtml(catShort(c.code)) + '</span>' +
-                '<div class="tci-main">' +
-                    '<span class="tci-title">' + escapeHtml(w.title || '') + '</span>' +
-                    '<span class="tci-streak">' + escapeHtml(t('v2.streak', { n: w.streak || 0 })) + '</span>' +
+                '<div class="tci-top">' +
+                    '<span class="tci-cat">' + escapeHtml(catShort(c.code)) + '</span>' +
+                    '<div class="tci-main">' +
+                        '<span class="tci-title">' + escapeHtml(w.title || '') + '</span>' +
+                        '<span class="tci-streak">' + escapeHtml(t('v2.streak', { n: w.streak || 0 })) + '</span>' +
+                    '</div>' +
                 '</div>' +
                 '<div class="tci-actions">' + checkinBtn + makeupBtn + '</div>' +
             '</div>';
