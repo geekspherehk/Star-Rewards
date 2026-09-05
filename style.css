@@ -4808,3 +4808,29 @@ a:hover { text-decoration: underline; }
     .bdg-medal { width: 56px; height: 56px; }
     .bdg-ico, .bdg-ico svg { width: 26px; height: 26px; }
 }
+
+/* ── 徽章墙 v3：徽记本体即徽章（专属形制 + 主题图形 + 渐变），不再套通用圆形底 ── */
+.bdg-medal {
+    position: relative; width: 68px; height: 68px; border-radius: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: none; box-shadow: none; color: inherit;
+    transition: transform .22s cubic-bezier(.34, 1.56, .64, 1), filter .2s ease;
+    filter: drop-shadow(0 3px 5px rgba(20, 20, 40, .18));
+}
+.bdg:hover .bdg-medal { transform: translateY(-3px) scale(1.04); }
+.bdg-medal::after { display: none; }
+.bdg-ico { width: 60px; height: 60px; z-index: 1; display: inline-flex; }
+.bdg-art { width: 60px; height: 60px; display: block; }
+.bdg-check {
+    position: absolute; right: 0; bottom: 2px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--pc); color: #fff; display: inline-flex; align-items: center; justify-content: center;
+    border: 2px solid var(--surface, #fff); z-index: 2;
+    box-shadow: 0 1px 3px rgba(20, 20, 40, .2);
+}
+.bdg-check svg { width: 12px; height: 12px; }
+.bdg.is-locked .bdg-medal { filter: grayscale(1) opacity(0.42); background: none; box-shadow: none; }
+.bdg.is-locked:hover .bdg-medal { transform: translateY(-1px) scale(1.01); }
+@media (max-width: 720px) {
+    .bdg-medal { width: 58px; height: 58px; }
+    .bdg-ico, .bdg-art { width: 52px; height: 52px; }
+}
