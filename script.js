@@ -3720,13 +3720,11 @@ function v2CatLevel(cov) {
 }
 
 // 单瓣水滴形（尖端贴近花心 100,90，向外延伸至 y≈8），径向排列成玫瑰
-function v2PetalPath() {
-    // 尖端(近花心) (100,90)，外端圆润 (100,12)，最宽处 x≈80/120
-    return 'M100 90 C 86 78 80 40 100 12 C 120 40 114 78 100 90 Z';
-}
-// 内瓣（成长/绽放时叠加，营造层叠花瓣感）
-function v2PetalInner() {
-    return 'M100 84 C 90 74 86 46 100 22 C 114 46 110 74 100 84 Z';
+// 参数化花瓣（局部坐标：基部 (0,2)，尖端 (0,-len)）——花瓣长度直接编码该素养的成长量
+function v2PetalPath(len, w) {
+    const b = Math.max(6, w);
+    return 'M 0 2 C ' + (-b) + ' ' + (-len * 0.28).toFixed(1) + ', ' + (-b) + ' ' + (-len * 0.78).toFixed(1) + ', 0 ' + (-len).toFixed(1) +
+           ' C ' + b + ' ' + (-len * 0.78).toFixed(1) + ', ' + b + ' ' + (-len * 0.28).toFixed(1) + ', 0 2 Z';
 }
 
 function renderV2Flower() {
@@ -3734,71 +3732,61 @@ function renderV2Flower() {
     if (!el || !v2Data) return;
     const covMap = v2Data.coverage || {};
     v2CoveredCount = 0;
-    const N = V2_CATS.length;          // 8
-    const cx = 100, cy = 100, R = 72;  // viewBox 200x200
-    const angle = i => (-90 + i * 360 / N) * Math.PI / 180;
-    const pt = (i, r) => [cx + Math.cos(angle(i)) * r, cy + Math.sin(angle(i)) * r];
+    const N = V2_CATS.length;                 // 8
+    const cx = 115, cy = 115;                 // viewBox 230x230，花心居中
+    const LMIN = 24, LMAX = 86;               // 花瓣长度范围（0 分也有小芽，满分接近标签圈）
     const raw = V2_CATS.map(c => v2CatScore(covMap[c.code] || {}));
     const maxRaw = Math.max(8, ...raw);
-    const vals = raw.map(s => Math.round(s / maxRaw * 100));
+    const vals = raw.map(x => Math.round(x / maxRaw * 100));
 
-    // 花瓣：8 瓣完全相同（统一柔色），仅作为花朵外形框架；强弱差异完全由雷达数据表达
+    // 真·玫瑰图：每瓣长度 = 该素养成长量；颜色 = 素养专属色；无雷达网格/轴线/圆点
     let petals = '';
     V2_CATS.forEach((c, i) => {
-        const ang = i * 45;                 // 顶部开始、顺时针 45° 一瓣
+        const ang = i * 45;
         const cov = covMap[c.code] || { behaviors: 0, wishes_achieved: 0 };
         const score = v2CatScore(cov);
         if (score > 0) v2CoveredCount++;
-        const labelRot = ang <= 180 ? ang : ang - 360; // 标签始终正立
+        const val = vals[i];
+        const len = LMIN + (LMAX - LMIN) * val / 100;
+        const w = 9 + 13 * val / 100;
+        const labelRot = ang <= 180 ? ang : ang - 360;   // 标签始终正立
         const isFocus = (v2Data && v2Data.focus === c.code);
         const isPending = (pendingFocus === c.code);
+        const tip = -(len + 7);
         const focusMark = isFocus
-            ? '<circle class="petal-focus-ring" cx="100" cy="22" r="15"/>' +
-              '<path class="petal-focus-star" transform="translate(100 22)" d="M0 -7 L1.76 -2.43 L6.66 -2.16 L2.85 0.93 L4.11 5.66 L0 3 L-4.11 5.66 L-2.85 0.93 L-6.66 -2.16 L-1.76 -2.43 Z"/>'
+            ? '<g class="petal-focus-mark" transform="translate(0 ' + tip.toFixed(1) + ')">' +
+              '<circle r="10" class="petal-focus-ring"/>' +
+              '<path class="petal-focus-star" d="M0 -4.6 L1.16 -1.6 L4.38 -1.42 L1.87 0.6 L2.7 3.72 L0 1.96 L-2.7 3.72 L-1.87 0.6 L-4.38 -1.42 L-1.16 -1.6 Z"/>' +
+              '</g>'
             : '';
         const pendingMark = isPending
-            ? '<circle class="petal-pending-ring" cx="100" cy="22" r="15"/>'
+            ? '<g transform="translate(0 ' + tip.toFixed(1) + ')"><circle r="10" class="petal-pending-ring"/></g>'
             : '';
         petals +=
             '<g class="petal-g' + (isFocus ? ' is-focus' : '') + (isPending ? ' is-pending' : '') + '"' +
-                ((isFocus || isPending) ? ' style="--pc:' + v2CatVar(c.code) + '"' : '') +
+                ' style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '"' +
                 ' data-code="' + c.code + '" onclick="v2SelectPetal(\'' + c.code + '\')"' +
                 ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();v2SelectPetal(\'' + c.code + '\');}"' +
                 ' role="button" tabindex="0"' +
-                ' transform="rotate(' + ang + ' ' + cx + ' ' + cy + ')" title="' + escapeHtml(t('v2.badge.' + c.code)) + (isFocus ? ' · ' + escapeHtml(t('v2.focusLabel')) : '') + '">' +
-                '<path class="petal-bg" d="' + v2PetalPath() + '"/>' +
+                ' transform="translate(' + cx + ' ' + cy + ') rotate(' + ang + ')"' +
+                ' title="' + escapeHtml(catShort(c.code)) + ' · ' + escapeHtml(t('v2.badge.' + c.code)) + (isFocus ? ' · ' + escapeHtml(t('v2.focusLabel')) : '') + '">' +
+                '<path class="petal-bg" d="' + v2PetalPath(len, w) + '"/>' +
                 pendingMark +
                 focusMark +
             '</g>' +
-            '<g class="petal-label" transform="rotate(' + ang + ' ' + cx + ' ' + cy + ') translate(100 4) rotate(' + (-labelRot) + ')">' +
-                '<text class="petal-label-txt" text-anchor="middle">' + catShort(c.code) + '</text>' +
+            '<g class="petal-label" style="--pc:' + v2CatVar(c.code) + '" transform="rotate(' + ang + ' ' + cx + ' ' + cy + ') translate(' + cx + ' ' + (cy - 100) + ') rotate(' + (-labelRot) + ')">' +
+                '<circle class="petal-label-dot" r="3"/>' +
+                '<text class="petal-label-txt" text-anchor="middle" dy="14">' + escapeHtml(catShort(c.code)) + '</text>' +
             '</g>';
     });
 
-    // 雷达参考网格（作为底层背景，最外圈 = 范围边界，清晰可见）+ 轴线
-    let refRings = '';
-    [25, 50, 75, 100].forEach(g => {
-        const pts = V2_CATS.map((_, i) => pt(i, R * g / 100).map(n => n.toFixed(1)).join(',')).join(' ');
-        refRings += '<polygon class="radar-ring' + (g === 100 ? ' outer' : '') + '" points="' + pts + '"/>';
-    });
-    let axes = '';
-    V2_CATS.forEach((c, i) => {
-        const [x, y] = pt(i, R);
-        axes += '<line class="radar-axis" x1="' + cx + '" y1="' + cy + '" x2="' + x.toFixed(1) + '" y2="' + y.toFixed(1) + '"/>';
-    });
-    const dpts = V2_CATS.map((_, i) => pt(i, R * vals[i] / 100).map(n => n.toFixed(1)).join(',')).join(' ');
-    const dots = V2_CATS.map((_, i) => {
-        const [x, y] = pt(i, R * vals[i] / 100);
-        return '<circle class="radar-dot" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4"/>';
-    }).join('');
-
     el.innerHTML =
-        '<svg class="v2-flower-svg" viewBox="0 0 200 200" role="img" aria-label="' + escapeHtml(t('v2.flowerTitle')) + '">' +
-            '<circle class="rose-halo" cx="' + cx + '" cy="' + cy + '" r="96"/>' +
-            '<g class="radar-backdrop">' + refRings + axes + '</g>' +
+        '<svg class="v2-flower-svg" viewBox="0 0 230 230" role="img" aria-label="' + escapeHtml(t('v2.flowerTitle')) + '">' +
+            '<circle class="rose-halo" cx="' + cx + '" cy="' + cy + '" r="88"/>' +
             '<g class="rose-petals">' + petals + '</g>' +
-            '<g class="radar-overlay">' +
-                '<polygon class="radar-area" points="' + dpts + '"/>' + dots +
+            '<g class="flower-center">' +
+                '<circle cx="' + cx + '" cy="' + cy + '" r="17"/>' +
+                '<text x="' + cx + '" y="' + cy + '" text-anchor="middle" dy="4">' + v2CoveredCount + '/8</text>' +
             '</g>' +
         '</svg>';
 

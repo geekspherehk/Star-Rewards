@@ -4654,3 +4654,18 @@ a:hover { text-decoration: underline; }
 .um-item--danger:hover { background: var(--danger-soft); }
 .um-item--danger { border-top: 1px solid var(--border); border-radius: 0 0 var(--r-md) var(--r-md); }
 .user-menu .um-item--logout { border-radius: 0; border-top: 1px solid var(--border); }
+
+/* ── 成长之花 v2：真·玫瑰图（花瓣长度=成长量，素养专属色，无雷达网格）── */
+.petal-bg { fill: var(--pc-soft, #EFEDFF); stroke: var(--pc, #6C63FF); stroke-width: 1.5; stroke-linejoin: round; }
+.petal-g { cursor: pointer; outline: none; }
+.petal-g:hover .petal-bg { filter: brightness(0.97) saturate(1.1); }
+.petal-g:focus-visible .petal-bg { stroke-width: 2.5; }
+.petal-g.is-focus .petal-bg { stroke-width: 2.5; filter: saturate(1.2); }
+.petal-focus-ring { fill: var(--pc, #6C63FF); opacity: 0.16; }
+.petal-focus-star { fill: var(--pc, #6C63FF); }
+.petal-pending-ring { fill: none; stroke: var(--pc, #6C63FF); stroke-width: 1.6; stroke-dasharray: 3 3; }
+.petal-label-dot { fill: var(--pc, #6C63FF); }
+.petal-label-txt { font-size: 11px; font-weight: 700; fill: var(--text-2, #6b6b68); }
+.flower-center circle { fill: var(--surface, #fff); stroke: var(--border, #e8e8f0); stroke-width: 1; }
+.flower-center text { font-size: 10px; font-weight: 800; fill: var(--text-1, #2c2c2a); }
+.rose-halo { fill: color-mix(in srgb, var(--brand, #6C5CE7) 5%, transparent); }
