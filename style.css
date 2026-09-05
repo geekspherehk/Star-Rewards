@@ -4834,3 +4834,11 @@ a:hover { text-decoration: underline; }
     .bdg-medal { width: 58px; height: 58px; }
     .bdg-ico, .bdg-art { width: 52px; height: 52px; }
 }
+
+/* ── 徽章墙 v4：只靠「彩色=已得 / 灰阶=未得」表达状态，去掉 ✓ 角标与进度小字 ── */
+.bdg-check { display: none !important; }
+.bdg-prog { display: none !important; }
+.bdg { gap: 4px; }
+.bdg.is-locked .bdg-medal { filter: grayscale(1) opacity(0.35); }
+.bdg.is-locked .bdg-name { color: var(--muted, #a8a8b3); font-weight: 600; }
+.bdg-name { letter-spacing: .01em; }

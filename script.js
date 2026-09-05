@@ -4614,10 +4614,8 @@ function renderV2Badges() {
             '<div class="bdg' + (b.done ? '' : ' is-locked') + '" style="--pc:' + b.pc + ';--pc-soft:' + b.pcSoft + '" title="' + escapeHtml(b.desc) + '">' +
                 '<div class="bdg-medal">' +
                     '<span class="bdg-ico">' + b.icon + '</span>' +
-                    (b.done ? '<span class="bdg-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>' : '') +
                 '</div>' +
                 '<span class="bdg-name">' + escapeHtml(b.name) + '</span>' +
-                (b.prog ? '<span class="bdg-prog">' + escapeHtml(b.prog) + '</span>' : (b.done ? '<span class="bdg-prog is-done">' + escapeHtml(t('v2.msDone')) + '</span>' : '')) +
             '</div>'
         ).join('') + '</div>';
 }
