@@ -3506,7 +3506,15 @@ const V2_BADGE_SVGS = {
     aesthetics: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="11" cy="11" r="2"/></svg>',
     all_rounder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.8 2.4 4.6 3.6 7.5 3.5-0.4 3-1.6 5.7-4 7.5 2.4 1.8 3.6 4.5 4 7.5-2.9-.1-5.7 1.1-7.5 3.5-1.8-2.4-4.6-3.6-7.5-3.5 0.4-3 1.6-5.7 4-7.5-2.4-1.8-3.6-4.5-4-7.5 2.9.1 5.7-1.1 7.5-3.5z"/><circle cx="12" cy="12" r="2.6"/></svg>',
     persist_21: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="9 16 11 18 15 14"/></svg>',
-    invite_friend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+    invite_friend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    streak3: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-3-2-5-3-6 .3 1.5-.5 2.5-1.5 3.2-1-3-3-4.2-3-7-3 2.5-5 5.5-5 10a7 7 0 0 0 5.5 6.8z"/></svg>',
+    streak7: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 4 14 11 14 10 22 20 9 13 9 13 2"/></svg>',
+    wish1: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V4s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+    wish3: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5"/><path d="M9.5 13.5 7 21l5-3 5 3-2.5-7.5"/></svg>',
+    wish10: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H2v6a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5V9h-4"/><path d="M6 4h12v5H6z"/><path d="M2 13h4v6H5a3 3 0 0 1-3-3z"/></svg>',
+    redeem1: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>',
+    redeem5: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>',
+
 };
 
 let v2Data = null;          // get_v2_overview 缓存
@@ -4524,59 +4532,91 @@ function renderV2Badges() {
     }
     v2PrevUnlocked = nowUnlocked;
 
-    // 里程碑 = 有明确进度的成长目标（进度条常显）。全能小星星已在上方总览展示，此处不再重复
+    // ── 徽章墙：8 素养 + 全能 + 坚持阶梯 + 愿望阶梯 + 兑换阶梯 + 好友（共 18 枚）──
     const wishes = v2Data.wishes || [];
     const achieved = wishes.filter(w => w.status === 'achieved').length;
     const maxStreak = wishes.reduce((m, w) => Math.max(m, w.streak || 0), 0);
     const redeemedCount = (redeemedGifts || []).length;
     const members = (currentFamily && currentFamily.members) ? currentFamily.members.length : 0;
+    const ar = badges.rose_all_rounder || {};
+    const p21 = badges.rose_persist_21 || {};
+    const inv = badges.invite_friend || {};
 
-    const ms = [
-        {
-            icon: V2_BADGE_SVGS.persist_21,
-            name: t('v2.badgePersist21'), desc: t('v2.msPersistDesc'),
-            cur: Math.min(maxStreak, 21), target: 21,
-            done: !!(badges.rose_persist_21 && badges.rose_persist_21.unlocked),
-            pc: v2CatVar('resilience'), pcSoft: v2CatSoftVar('resilience')
-        },
-        {
-            icon: V2_BADGE_SVGS.planning || V2_BADGE_SVGS.self_drive,
-            name: t('v2.ms3Wish'), desc: t('v2.ms3WishDesc'),
-            cur: Math.min(achieved, 3), target: 3,
-            done: achieved >= 3,
-            pc: v2CatVar('planning'), pcSoft: v2CatSoftVar('planning')
-        },
-        {
-            icon: V2_BADGE_SVGS.aesthetics || V2_BADGE_SVGS.self_drive,
-            name: t('v2.msRedeem'), desc: t('v2.msRedeemDesc'),
-            cur: redeemedCount > 0 ? 1 : 0, target: 1,
-            done: redeemedCount > 0,
-            pc: v2CatVar('money'), pcSoft: v2CatSoftVar('money')
-        },
-        {
-            icon: V2_BADGE_SVGS.invite_friend || V2_BADGE_SVGS.relationship || V2_BADGE_SVGS.self_drive,
-            name: t('v2.badgeInviteFriend'), desc: t('v2.msInviteDesc'),
-            cur: Math.min(members, 2), target: 2,
-            done: !!(badges.invite_friend && badges.invite_friend.unlocked),
-            pc: 'var(--brand)', pcSoft: 'var(--brand-soft)'
-        }
-    ];
+    const list = V2_CATS.map(c => ({
+        icon: V2_BADGE_SVGS[c.code] || V2_BADGE_SVGS.self_drive,
+        name: t('v2.badge.' + c.code),
+        desc: t('v2.badgeDesc.' + c.code),
+        done: !!(badges['rose_' + c.code] && badges['rose_' + c.code].unlocked),
+        pc: v2CatVar(c.code), pcSoft: v2CatSoftVar(c.code),
+        prog: ''
+    }));
 
-    el.innerHTML = ms.map(m => {
-        const pct = m.target > 0 ? Math.min(100, Math.round(m.cur / m.target * 100)) : 0;
-        return '<div class="ms-row' + (m.done ? ' is-done' : '') + '" style="--pc:' + m.pc + ';--pc-soft:' + m.pcSoft + '">' +
-            '<div class="ms-ico">' + (m.done
-                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
-                : m.icon) +
-            '</div>' +
-            '<div class="ms-body">' +
-                '<div class="ms-top"><span class="ms-name">' + escapeHtml(m.name) + '</span>' +
-                '<span class="ms-count">' + (m.done ? escapeHtml(t('v2.msDone')) : (m.cur + '/' + m.target)) + '</span></div>' +
-                '<div class="ms-bar"><div class="ms-fill" style="width:' + pct + '%"></div></div>' +
-                '<div class="ms-desc">' + escapeHtml(m.desc) + '</div>' +
-            '</div>' +
-        '</div>';
-    }).join('');
+    list.push({
+        icon: V2_BADGE_SVGS.all_rounder, name: t('v2.badgeAllRounder'), desc: t('v2.allRounderDesc'),
+        done: !!ar.unlocked, pc: 'var(--cat-all-rounder)', pcSoft: 'var(--cat-all-rounder-soft)',
+        prog: ar.unlocked ? '' : Math.min(ar.progress || 0, ar.target || 6) + '/' + (ar.target || 6)
+    });
+    list.push({
+        icon: V2_BADGE_SVGS.streak3, name: t('v2.badgeStreak3'), desc: t('v2.badgeStreak3Desc'),
+        done: maxStreak >= 3, pc: v2CatVar('health'), pcSoft: v2CatSoftVar('health'),
+        prog: maxStreak >= 3 ? '' : Math.min(maxStreak, 3) + '/3'
+    });
+    list.push({
+        icon: V2_BADGE_SVGS.streak7, name: t('v2.badgeStreak7'), desc: t('v2.badgeStreak7Desc'),
+        done: maxStreak >= 7, pc: v2CatVar('money'), pcSoft: v2CatSoftVar('money'),
+        prog: maxStreak >= 7 ? '' : Math.min(maxStreak, 7) + '/7'
+    });
+    list.push({
+        icon: V2_BADGE_SVGS.persist_21, name: t('v2.badgePersist21'), desc: t('v2.msPersistDesc'),
+        done: !!p21.unlocked, pc: v2CatVar('resilience'), pcSoft: v2CatSoftVar('resilience'),
+        prog: p21.unlocked ? '' : Math.min(Math.max(maxStreak, p21.progress || 0), 21) + '/21'
+    });
+    list.push({
+        icon: V2_BADGE_SVGS.wish1, name: t('v2.badgeWish1'), desc: t('v2.badgeWish1Desc'),
+        done: achieved >= 1, pc: v2CatVar('planning'), pcSoft: v2CatSoftVar('planning'),
+        prog: achieved >= 1 ? '' : '0/1'
+    });
+    list.push({
+        icon: V2_BADGE_SVGS.wish3, name: t('v2.ms3Wish'), desc: t('v2.ms3WishDesc'),
+        done: achieved >= 3, pc: v2CatVar('planning'), pcSoft: v2CatSoftVar('planning'),
+        prog: achieved >= 3 ? '' : Math.min(achieved, 3) + '/3'
+    });
+    list.push({
+        icon: V2_BADGE_SVGS.wish10, name: t('v2.badgeWish10'), desc: t('v2.badgeWish10Desc'),
+        done: achieved >= 10, pc: v2CatVar('self_drive'), pcSoft: v2CatSoftVar('self_drive'),
+        prog: achieved >= 10 ? '' : Math.min(achieved, 10) + '/10'
+    });
+    list.push({
+        icon: V2_BADGE_SVGS.redeem1, name: t('v2.msRedeem'), desc: t('v2.msRedeemDesc'),
+        done: redeemedCount >= 1, pc: v2CatVar('aesthetics'), pcSoft: v2CatSoftVar('aesthetics'),
+        prog: redeemedCount >= 1 ? '' : '0/1'
+    });
+    list.push({
+        icon: V2_BADGE_SVGS.redeem5, name: t('v2.badgeRedeem5'), desc: t('v2.badgeRedeem5Desc'),
+        done: redeemedCount >= 5, pc: v2CatVar('empathy'), pcSoft: v2CatSoftVar('empathy'),
+        prog: redeemedCount >= 5 ? '' : Math.min(redeemedCount, 5) + '/5'
+    });
+    list.push({
+        icon: V2_BADGE_SVGS.invite_friend, name: t('v2.badgeInviteFriend'), desc: t('v2.msInviteDesc'),
+        done: !!inv.unlocked, pc: 'var(--brand)', pcSoft: 'var(--brand-soft)',
+        prog: inv.unlocked ? '' : Math.min(Math.max(members, 1), 2) + '/2'
+    });
+
+    const unlockedCount = list.filter(b => b.done).length;
+
+    el.innerHTML =
+        '<div class="bdg-progress-line"><span class="bdg-progress-txt">' + escapeHtml(t('v2.badgeWallProgress', { n: unlockedCount, total: list.length })) + '</span>' +
+        '<span class="bdg-progress-bar"><span class="bdg-progress-fill" style="width:' + Math.round(unlockedCount / list.length * 100) + '%"></span></span></div>' +
+        '<div class="bdg-grid">' + list.map(b =>
+            '<div class="bdg' + (b.done ? '' : ' is-locked') + '" style="--pc:' + b.pc + ';--pc-soft:' + b.pcSoft + '" title="' + escapeHtml(b.desc) + '">' +
+                '<div class="bdg-medal">' +
+                    '<span class="bdg-ico">' + b.icon + '</span>' +
+                    (b.done ? '<span class="bdg-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>' : '') +
+                '</div>' +
+                '<span class="bdg-name">' + escapeHtml(b.name) + '</span>' +
+                (b.prog ? '<span class="bdg-prog">' + escapeHtml(b.prog) + '</span>' : '<span class="bdg-prog is-done">' + escapeHtml(t('v2.msDone')) + '</span>') +
+            '</div>'
+        ).join('') + '</div>';
 }
 
 // ── 每周成长指标 + 成长报告 ──

@@ -4763,3 +4763,48 @@ a:hover { text-decoration: underline; }
     .ms-ico { width: 40px; height: 40px; }
     .ms-ico svg { width: 20px; height: 20px; }
 }
+
+/* ── 徽章墙 v2：18 枚勋章式徽章（收集感 + 进度）── */
+.bdg-progress-line { display: flex; align-items: center; gap: 12px; max-width: 640px; margin: 0 auto 16px; }
+.bdg-progress-txt { font-size: var(--fs-sm, 0.85rem); font-weight: 700; color: var(--text-2, #6b6b68); white-space: nowrap; }
+.bdg-progress-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2, #f0f0f6); overflow: hidden; }
+.bdg-progress-fill { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--brand, #6C5CE7), var(--cat-health, #58B368)); transition: width .5s ease; }
+.bdg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 16px 12px; max-width: 640px; margin: 0 auto; }
+.bdg { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.bdg-medal {
+    position: relative; width: 64px; height: 64px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 32% 26%, #fff 0%, var(--pc-soft) 52%, color-mix(in srgb, var(--pc) 28%, transparent) 130%);
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--pc) 22%, transparent), inset 0 0 0 2px rgba(255, 255, 255, .75);
+    color: var(--pc);
+    transition: transform .2s ease;
+}
+.bdg:hover .bdg-medal { transform: translateY(-2px); }
+.bdg-medal::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+    background: linear-gradient(120deg, rgba(255, 255, 255, .5) 0%, rgba(255, 255, 255, 0) 45%);
+}
+.bdg-ico { display: inline-flex; width: 30px; height: 30px; z-index: 1; }
+.bdg-ico svg { width: 30px; height: 30px; }
+.bdg-check {
+    position: absolute; right: -2px; bottom: -2px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--pc); color: #fff; display: inline-flex; align-items: center; justify-content: center;
+    border: 2px solid var(--surface, #fff); z-index: 2;
+}
+.bdg-check svg { width: 12px; height: 12px; }
+.bdg-name { font-size: var(--fs-xs, 0.78rem); font-weight: 700; color: var(--text-1, #2c2c2a); line-height: 1.2; }
+.bdg-prog { font-size: 0.7rem; font-weight: 600; color: var(--muted, #999); }
+.bdg-prog.is-done { color: var(--pc, #6C63FF); }
+.bdg.is-locked .bdg-medal {
+    background: var(--surface-2, #f2f2f7);
+    box-shadow: inset 0 0 0 2px var(--border, #e8e8f0);
+    color: var(--muted, #a8a8b3);
+}
+.bdg.is-locked .bdg-medal::after { display: none; }
+.bdg.is-locked .bdg-name { color: var(--text-2, #6b6b68); }
+.bdg.is-locked .bdg-ico { opacity: .85; }
+@media (max-width: 720px) {
+    .bdg-grid { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 14px 8px; }
+    .bdg-medal { width: 56px; height: 56px; }
+    .bdg-ico, .bdg-ico svg { width: 26px; height: 26px; }
+}
