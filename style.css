@@ -4849,7 +4849,7 @@ a:hover { text-decoration: underline; }
 .bdg.is-locked .bdg-medal { filter: grayscale(1) opacity(0.5); }
 .bdg.is-locked:hover .bdg-medal,
 .bdg.is-locked:focus .bdg-medal,
-.bdg.is-locked:active .bdg-medal { filter: grayscale(1) opacity(0.82); transform: translateY(-1px) scale(1.02); }
+.bdg.is-locked:active .bdg-medal { filter: grayscale(1) opacity(0.82); transform: translateY(-2px) scale(1.05); }
 
 /* tooltip：悬浮 / 聚焦（移动端点按）显名称 + 状态 */
 .bdg-tip {
@@ -4860,8 +4860,12 @@ a:hover { text-decoration: underline; }
     padding: 6px 11px; border-radius: 11px; white-space: nowrap;
     opacity: 0; pointer-events: none; z-index: 30;
     box-shadow: 0 8px 20px rgba(0, 0, 0, .28);
-    transition: opacity .16s ease, transform .16s ease;
+    transition: opacity .18s ease .05s, transform .18s ease .05s;
 }
+.bdg:hover .bdg-tip,
+.bdg:focus .bdg-tip,
+.bdg:active .bdg-tip,
+.bdg.is-preview .bdg-tip { transition-delay: 0s, 0s; }
 .bdg-tip::before {
     content: ''; position: absolute; bottom: 100%; left: 50%;
     transform: translateX(-50%);
@@ -4874,4 +4878,4 @@ a:hover { text-decoration: underline; }
 .bdg:focus .bdg-tip,
 .bdg:active .bdg-tip,
 .bdg.is-preview .bdg-tip { opacity: 1; transform: translateX(-50%) translateY(0); }
-.ach-v2-wall { padding-bottom: 64px; }
+.ach-v2-wall { padding-bottom: 84px; }
