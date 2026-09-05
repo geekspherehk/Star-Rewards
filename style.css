@@ -4669,3 +4669,15 @@ a:hover { text-decoration: underline; }
 .flower-center circle { fill: var(--surface, #fff); stroke: var(--border, #e8e8f0); stroke-width: 1; }
 .flower-center text { font-size: 10px; font-weight: 800; fill: var(--text-1, #2c2c2a); }
 .rose-halo { fill: color-mix(in srgb, var(--brand, #6C5CE7) 5%, transparent); }
+
+/* ── 成长总览布局再平衡：花放大、右侧「主打+总结+说明」垂直填满（2026-09-05）── */
+.v2-flower-wrap { width: 300px; max-width: 300px; }
+.flower-side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-3, 16px); }
+.flower-side .v2-suggest { width: 100%; }
+.flower-side .v2-flower-summary,
+.flower-side .v2-flower-note { margin: 0; max-width: none; text-align: left; }
+.v2-flower-summary { font-size: var(--fs-md, 1rem); color: var(--text-1, #2c2c2a); }
+@media (max-width: 720px) {
+    .v2-flower-wrap { width: 250px; max-width: 250px; margin: 0 auto; }
+    .flower-side { width: 100%; }
+}

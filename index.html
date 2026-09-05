@@ -30,7 +30,7 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=63">
+    <link rel="stylesheet" href="style.css?v=64">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=27"></script>
@@ -398,10 +398,12 @@
                         <div class="v2-flower-wrap">
                             <div id="v2-flower" class="v2-flower"></div>
                             <div id="focus-confirm-bar" class="focus-confirm-bar" style="display:none;"></div>
-                            <p class="v2-flower-summary" id="v2-flower-summary"></p>
-                            <p class="v2-flower-note" data-i18n="v2.flowerNote">花瓣是统一的花形框架（对应 8 大素养），彩色圆点标出各维度强弱——离中心越远越强，偏向一侧就是要加强的方向。</p>
                         </div>
-                        <div class="v2-suggest" id="v2-suggest"></div>
+                        <div class="flower-side">
+                            <div class="v2-suggest" id="v2-suggest"></div>
+                            <p class="v2-flower-summary" id="v2-flower-summary"></p>
+                            <p class="v2-flower-note" data-i18n="v2.flowerNote">每一瓣对应一个素养方向：花瓣越长，代表这个方向练习得越多、成长越快。点一下花瓣，就能把它设为本月主打。</p>
+                        </div>
                     </div>
                     <div class="v2-allrounder">
                         <span class="v2-ar-label"><span data-i18n="v2.allRounder">全能小星星</span> · <span data-i18n="v2.allRounderDesc">点亮 6 瓣即可解锁</span></span>
