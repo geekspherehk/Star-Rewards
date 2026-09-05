@@ -821,6 +821,7 @@ const translations = {
             msRedeemDesc: '用攒下的积分，兑换第一份礼物',
             msInviteDesc: '邀请家人加入，一起记录成长',
             msDone: '已完成',
+            badgeLit: '已点亮',
             badgeInviteFriend: '好友之星',
             badgeInviteDesc: '邀请家人加入，一起记录成长',
             badge: {
@@ -1716,6 +1717,7 @@ const translations = {
             msRedeemDesc: 'Redeem your first gift with saved-up points',
             msInviteDesc: 'Invite family to record growth together',
             msDone: 'Done',
+            badgeLit: 'Lit',
             badgeInviteFriend: 'Friend Star',
             badgeInviteDesc: 'Invite a family member to record growth together',
             badge: {

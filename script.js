@@ -4611,7 +4611,7 @@ function renderV2Badges() {
         '<div class="bdg-progress-line"><span class="bdg-progress-txt">' + escapeHtml(t('v2.badgeWallProgress', { n: unlockedCount, total: list.length })) + '</span>' +
         '<span class="bdg-progress-bar"><span class="bdg-progress-fill" style="width:' + Math.round(unlockedCount / list.length * 100) + '%"></span></span></div>' +
         '<div class="bdg-grid">' + list.map(b => {
-            const status = b.done ? t('v2.msDone') : b.prog;
+            const status = b.done ? t('v2.badgeLit') : b.prog;
             return '<div class="bdg' + (b.done ? '' : ' is-locked') + '" style="--pc:' + b.pc + ';--pc-soft:' + b.pcSoft + '" tabindex="0" title="' + escapeHtml(b.desc) + '">' +
                 '<div class="bdg-medal">' +
                     '<span class="bdg-ico">' + b.icon + '</span>' +
