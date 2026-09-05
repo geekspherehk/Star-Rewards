@@ -4707,3 +4707,27 @@ a:hover { text-decoration: underline; }
 @media (max-width: 720px) {
     .v2-flower-wrap { width: 260px; max-width: 260px; margin: 0 auto; }
 }
+
+/* ── 成长总览 v4：花再放大 + 标签加大 + 移动端适配 ── */
+.v2-flower-wrap { width: 44%; max-width: 480px; }
+.petal-label-txt { font-size: 13px; }
+@media (max-width: 1024px) {
+    .v2-flower-wrap { width: 42%; }
+    .petal-label-txt { font-size: 12px; }
+}
+@media (max-width: 720px) {
+    .growth-flower-row { gap: var(--sp-3, 16px); }
+    .v2-flower-wrap { width: 270px; max-width: 270px; margin: 0 auto; }
+    .petal-label-txt { font-size: 11px; }
+    .flower-side { width: 100%; }
+    .v2-flower-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .sum-card { padding: 10px 14px; }
+    .sum-names { font-size: 0.95rem; }
+    .v2-suggest-card.is-compact { width: 100%; }
+    .v2-flower-note { font-size: var(--fs-xs, 0.78rem); }
+}
+@media (max-width: 400px) {
+    .v2-flower-wrap { width: 230px; max-width: 230px; }
+    .petal-label-txt { font-size: 10px; }
+    .v2-flower-summary { grid-template-columns: 1fr; }
+}
