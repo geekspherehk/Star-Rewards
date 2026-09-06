@@ -4446,9 +4446,9 @@ function renderEduColumn() {
     // 文章链接跟随界面语言：英文读者直接看英文版 SEO 页（2026-09-05 修复英文模式打开中文文章）
     const isEn = getLanguage() === 'en';
     const articles = [
-        { title: t('home.eduArt1Title'), sub: t('home.eduArt1Sub'), url: isEn ? 'seo-guide-star-chart-en.html' : 'seo-guide-star-chart.html' },
-        { title: t('home.eduArt2Title'), sub: t('home.eduArt2Sub'), url: isEn ? 'seo-habit-building-en.html' : 'seo-habit-building.html' },
-        { title: t('home.eduArt3Title'), sub: t('home.eduArt3Sub'), url: isEn ? 'seo-reward-ideas-en.html' : 'seo-reward-ideas.html' }
+        { title: t('home.eduArt1Title'), sub: t('home.eduArt1Sub'), url: isEn ? 'star-chart-guide-en.html' : 'star-chart-guide.html' },
+        { title: t('home.eduArt2Title'), sub: t('home.eduArt2Sub'), url: isEn ? 'habit-building-guide-en.html' : 'habit-building-guide.html' },
+        { title: t('home.eduArt3Title'), sub: t('home.eduArt3Sub'), url: isEn ? 'reward-ideas-en.html' : 'reward-ideas.html' }
     ];
     let html = articles.map(a =>
         '<a class="edu-card" href="' + a.url + '" target="_blank" rel="noopener">' +

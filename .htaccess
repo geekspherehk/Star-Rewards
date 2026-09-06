@@ -1,1 +1,12 @@
 ErrorDocument 404 /404.html
+
+# SEO pages renamed 2026-09-06: 301 to preserve indexed URLs
+RewriteEngine On
+Redirect 301 /seo-guide-star-chart.html https://stellar.gaocaihk.com/star-chart-guide.html
+Redirect 301 /seo-guide-star-chart-en.html https://stellar.gaocaihk.com/star-chart-guide-en.html
+Redirect 301 /seo-habit-building.html https://stellar.gaocaihk.com/habit-building-guide.html
+Redirect 301 /seo-habit-building-en.html https://stellar.gaocaihk.com/habit-building-guide-en.html
+Redirect 301 /seo-reward-ideas.html https://stellar.gaocaihk.com/reward-ideas.html
+Redirect 301 /seo-reward-ideas-en.html https://stellar.gaocaihk.com/reward-ideas-en.html
+Redirect 301 /seo-chore-chart-en.html https://stellar.gaocaihk.com/chore-chart-guide-en.html
+Redirect 301 /seo-kids-points-chart-en.html https://stellar.gaocaihk.com/kids-points-chart-guide-en.html
