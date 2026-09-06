@@ -91,9 +91,9 @@ async function signOut() {
         console.log('登出流程完成');
         showTemporaryMessage(t('common.logoutSuccess'), 'success');
 
-        // 2秒后跳转到登录页面
+        // 2秒后跳转到产品介绍页（访客可在此重新「免费登录」回流）
         setTimeout(() => {
-            window.location.href = 'login.html';
+            window.location.href = 'landing.html';
         }, 2000);
 
     } catch (error) {
@@ -117,7 +117,7 @@ async function deleteMyAccount() {
         localStorage.removeItem('user_email');
         currentUser = null;
         showTemporaryMessage(t('home.deleteAccountDone'), 'success');
-        setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+        setTimeout(() => { window.location.href = 'landing.html'; }, 1500);
     } catch (e) {
         showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
     }
