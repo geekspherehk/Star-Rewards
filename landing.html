@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Rewards · 儿童积分奖励与习惯养成工具（完全免费）</title>
+    <meta name="description" content="打卡挣积分，攒分换愿望，8 大素养全面成长。家长共同记录，孩子主动成长。完全免费、无广告、无内购。">
+    <link rel="canonical" href="https://stellar.gaocaihk.com/landing.html">
+    <meta property="og:title" content="Star Rewards · 让孩子的好习惯，看得见、摸得着">
+    <meta property="og:description" content="打卡挣积分，攒分换愿望。完全免费、无广告的儿童习惯养成工具。">
+    <meta property="og:image" content="https://stellar.gaocaihk.com/og-image.png">
+    <meta property="og:url" content="https://stellar.gaocaihk.com/landing.html">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css?v=89">
+    <style>
+        .lp-wrap { max-width: 860px; margin: 0 auto; padding: 0 16px; }
+        .lp-nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
+        .lp-nav-links { display: flex; align-items: center; gap: 18px; font-size: 14px; }
+        .lp-nav-links a { color: var(--text-2, #6b6b68); text-decoration: none; }
+        .lp-nav-links a:hover { color: var(--brand, #6C5CE7); }
+        .lp-cta-pill { background: var(--brand, #6C5CE7); color: #fff; padding: 7px 16px; border-radius: 999px; font-weight: 700; text-decoration: none; font-size: 14px; }
+        .lp-cta-pill:hover { filter: brightness(1.06); }
+        .lp-hero { display: flex; gap: 28px; align-items: center; padding: 40px 0 34px; }
+        .lp-hero h1 { font-size: clamp(24px, 4vw, 34px); font-weight: 800; line-height: 1.25; margin: 0 0 12px; color: var(--text, #2c2c2a); }
+        .lp-hero p { font-size: 15px; color: var(--text-2, #6b6b68); line-height: 1.7; margin: 0 0 18px; }
+        .lp-hero-img { flex: 1; min-width: 0; border-radius: var(--r-lg, 16px); border: 1px solid var(--border, #ececf2); box-shadow: var(--sh-sm, 0 2px 8px rgba(20,20,40,.06)); width: 100%; display: block; }
+        .lp-btn { display: inline-flex; align-items: center; gap: 6px; padding: 11px 22px; border-radius: var(--r-md, 12px); font-weight: 700; font-size: 15px; text-decoration: none; }
+        .lp-btn--primary { background: var(--brand, #6C5CE7); color: #fff; }
+        .lp-btn--primary:hover { filter: brightness(1.06); }
+        .lp-btn--ghost { border: 1.5px solid var(--border, #e0e0ea); color: var(--text, #2c2c2a); }
+        .lp-btn--ghost:hover { border-color: var(--brand, #6C5CE7); color: var(--brand, #6C5CE7); }
+        .lp-btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .lp-section { padding: 30px 0 8px; }
+        .lp-section-title { font-size: 21px; font-weight: 800; margin: 0 0 16px; color: var(--text, #2c2c2a); }
+        .lp-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+        .lp-step { background: var(--surface-2, #f5f5fa); border-radius: var(--r-lg, 16px); padding: 16px; }
+        .lp-step b { font-size: 15px; color: var(--text, #2c2c2a); display: block; margin-bottom: 5px; }
+        .lp-step span { font-size: 13px; color: var(--text-2, #6b6b68); line-height: 1.6; }
+        .lp-feats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+        .lp-feat { background: var(--surface, #fff); border: 1px solid var(--border, #ececf2); border-radius: var(--r-lg, 16px); padding: 16px; }
+        .lp-feat b { font-size: 14px; color: var(--text, #2c2c2a); display: block; margin-bottom: 5px; }
+        .lp-feat span { font-size: 12.5px; color: var(--text-2, #6b6b68); line-height: 1.6; }
+        .lp-free { margin: 30px 0; background: var(--brand, #6C5CE7); border-radius: var(--r-lg, 16px); padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .lp-free p { margin: 0; color: #fff; font-weight: 700; font-size: 15px; }
+        .lp-free a { color: #fff; font-weight: 800; text-decoration: none; font-size: 15px; white-space: nowrap; }
+        .lp-faq { display: flex; flex-direction: column; gap: 8px; }
+        .lp-faq details { background: var(--surface, #fff); border: 1px solid var(--border, #ececf2); border-radius: var(--r-md, 12px); padding: 12px 16px; }
+        .lp-faq summary { font-weight: 700; font-size: 14px; color: var(--text, #2c2c2a); cursor: pointer; }
+        .lp-faq p { margin: 8px 0 0; font-size: 13px; color: var(--text-2, #6b6b68); line-height: 1.7; }
+        .lp-footer { margin-top: 34px; padding: 22px 0 30px; border-top: 1px solid var(--border, #ececf2); }
+        .lp-footer-links { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; margin-bottom: 10px; }
+        .lp-footer-links a { color: var(--brand, #6C5CE7); text-decoration: none; }
+        .lp-footer p { font-size: 12.5px; color: var(--text-2, #6b6b68); margin: 0; }
+        @media (max-width: 720px) {
+            .lp-hero { flex-direction: column; padding: 26px 0 22px; text-align: center; }
+            .lp-btn-row { justify-content: center; }
+            .lp-nav-links a.lp-hide-m { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-topbar">
+        <div class="lp-wrap lp-nav" style="padding-top:0;padding-bottom:0;">
+            <div class="brand">
+                <img src="logo.svg" alt="Star Rewards" class="brand-logo">
+                <span class="brand-name">Star Rewards</span>
+            </div>
+            <div class="lp-nav-links">
+                <a href="#features" class="lp-hide-m" data-i18n="land.navFeatures">功能</a>
+                <a href="#faq" class="lp-hide-m" data-i18n="land.navFaq">常见问题</a>
+                <select id="language-selector" class="lang-select" onchange="setLanguage(this.value)">
+                    <option value="zh">中文</option>
+                    <option value="en">EN</option>
+                </select>
+                <a class="lp-cta-pill" href="login.html?mode=register" data-i18n="land.navLogin">免费登录</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="lp-wrap">
+        <section class="lp-hero">
+            <div style="flex:1.15; min-width:0;">
+                <h1 data-i18n="land.heroTitle">让孩子的好习惯，看得见、摸得着</h1>
+                <p data-i18n="land.heroSub">打卡挣积分，攒分换愿望，8 大素养全面成长。家长共同记录，孩子主动成长。</p>
+                <div class="lp-btn-row">
+                    <a class="lp-btn lp-btn--primary" href="login.html?mode=register" data-i18n="land.ctaStart">免费创建家庭</a>
+                    <a class="lp-btn lp-btn--ghost" href="#features" data-i18n="land.ctaHow">看看怎么玩</a>
+                </div>
+            </div>
+            <div style="flex:1; min-width:0;">
+                <img class="lp-hero-img" src="og-image.png" alt="Star Rewards 产品预览">
+            </div>
+        </section>
+
+        <section class="lp-section" id="how">
+            <h2 class="lp-section-title" data-i18n="land.howTitle">三步上手</h2>
+            <div class="lp-steps">
+                <div class="lp-step"><b data-i18n="land.step1T">① 定目标</b><span data-i18n="land.step1D">70+ 目标模板，1 分钟设定</span></div>
+                <div class="lp-step"><b data-i18n="land.step2T">② 每日打卡</b><span data-i18n="land.step2D">坚持挣积分，点亮成长之花</span></div>
+                <div class="lp-step"><b data-i18n="land.step3T">③ 兑换愿望</b><span data-i18n="land.step3D">积分换心愿，动力看得见</span></div>
+            </div>
+        </section>
+
+        <section class="lp-section" id="features">
+            <h2 class="lp-section-title" data-i18n="land.featTitle">为什么家长喜欢它</h2>
+            <div class="lp-feats">
+                <div class="lp-feat"><b data-i18n="land.feat1T">成长之花</b><span data-i18n="land.feat1D">8 大素养玫瑰图，成长一眼可见</span></div>
+                <div class="lp-feat"><b data-i18n="land.feat2T">18 枚徽章</b><span data-i18n="land.feat2D">收集式成就感，越攒越想坚持</span></div>
+                <div class="lp-feat"><b data-i18n="land.feat3T">打卡日历</b><span data-i18n="land.feat3D">坚持轨迹可视化，月度回顾</span></div>
+                <div class="lp-feat"><b data-i18n="land.feat4T">家庭共享</b><span data-i18n="land.feat4D">爸妈老人共同记录，实时同步</span></div>
+            </div>
+        </section>
+
+        <div class="lp-free">
+            <p data-i18n="land.freeBanner">现在完全免费 —— 无广告、无内购、孩子界面零干扰</p>
+            <a href="login.html?mode=register" data-i18n="land.freeCta">免费开始 →</a>
+        </div>
+
+        <section class="lp-section" id="faq">
+            <h2 class="lp-section-title" data-i18n="land.faqTitle">常见问题</h2>
+            <div class="lp-faq">
+                <details open><summary data-i18n="land.faq1Q">需要付费吗？</summary><p data-i18n="land.faq1A">完全免费，无需信用卡，无广告、无内购。</p></details>
+                <details><summary data-i18n="land.faq2Q">数据安全吗？</summary><p data-i18n="land.faq2A">成长记录仅家人可见，随时可导出或删除账号数据。</p></details>
+                <details><summary data-i18n="land.faq3Q">支持几个孩子？</summary><p data-i18n="land.faq3A">支持多孩档案，每个孩子独立积分与成长记录。</p></details>
+                <details><summary data-i18n="land.faq4Q">需要安装 App 吗？</summary><p data-i18n="land.faq4A">不用下载，手机浏览器打开即可，也可添加到主屏幕像 App 一样用。</p></details>
+                <details><summary data-i18n="land.faq5Q">支持其他语言吗？</summary><p data-i18n="land.faq5A">支持中文和 English，一键切换。</p></details>
+            </div>
+        </section>
+
+        <footer class="lp-footer">
+            <div class="lp-footer-links">
+                <a href="seo-guide-star-chart.html" data-i18n="land.guidesTitle">相关指南</a>
+                <a href="seo-habit-building.html">积分制培养好习惯</a>
+                <a href="seo-reward-ideas.html">奖励创意</a>
+                <a href="behavior-templates.html">行为模板</a>
+                <a href="login.html">登录</a>
+            </div>
+            <p data-i18n="land.footerNote">孩子的好习惯，从每天一次打卡开始</p>
+        </footer>
+    </main>
+
+    <script src="api/api-client.js?v=18"></script>
+    <script src="i18n.js?v=75"></script>
+    <script>
+        (function () {
+            var sel = document.getElementById('language-selector');
+            if (sel) sel.value = getLanguage();
+            updateLanguageUI();
+            try {
+                if (localStorage.getItem('auth_token')) {
+                    var _api = new ApiClient();
+                    _api.track('view_landing', { page: 'landing.html' });
+                }
+            } catch (e) {}
+        })();
+    </script>
+</body>
+</html>
