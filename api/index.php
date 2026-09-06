@@ -325,6 +325,12 @@ switch ($action) {
     case 'login':
         handleLogin($pdo, $data);
         break;
+    case 'forgot_password':
+        handleForgotPassword($pdo, $data);
+        break;
+    case 'reset_password':
+        handleResetPassword($pdo, $data);
+        break;
     case 'logout':
         handleLogout();
         break;
@@ -621,6 +627,75 @@ function handleLogin($pdo, $data) {
 function handleLogout() {
     getUserId();
     sendJson(['success' => true, 'message' => 'Logged out']);
+}
+
+// ── 找回密码：签发一次性重置令牌并发邮件 ──
+// 防枚举：无论邮箱是否存在都返回同样的成功响应，攻击者无法借此探测注册名单
+function handleForgotPassword($pdo, $data) {
+    rateLimit('forgot_password', 3, 600); // 每 IP 10 分钟最多 3 次
+    $email = validateEmail($data['email'] ?? '');
+    if (!$email) sendError('Invalid email format', 400);
+
+    try {
+        $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+        if ($user) {
+            $token = bin2hex(random_bytes(32));          // 64 位十六进制一次性令牌
+            $hash = hash('sha256', $token);              // 库里只存哈希，拖库也无法直接用
+            // 过期时间由 MySQL 生成（DATE_ADD(NOW())），与下方 NOW() 比较同一时钟，
+            // 避免 PHP(Asia/Hong_Kong) 与 MySQL(UTC) 时区差导致令牌多有效 8 小时
+            $stmt = $pdo->prepare('UPDATE users SET reset_token_hash = ?, reset_expires = DATE_ADD(NOW(), INTERVAL 30 MINUTE) WHERE id = ?');
+            $stmt->execute([$hash, (int)$user['id']]);
+            sendResetEmail($email, $token);
+        }
+        sendJson(['ok' => true, 'message' => 'If that email exists, a reset link has been sent.']);
+    } catch (Exception $e) {
+        sendError('Request failed', 500, $e->getMessage());
+    }
+}
+
+function sendResetEmail($email, $token) {
+    $link = SITE_BASE_URL . '/login.html?reset=' . $token;
+    $subject = 'Star Rewards 密码重置 / Password Reset';
+    $body = "你好 / Hello,\r\n\r\n"
+        . "我们收到了你的密码重置请求。点击下面的链接设置新密码（30 分钟内有效）：\r\n"
+        . "We received a request to reset your password. Open the link below to set a new one (valid for 30 minutes):\r\n\r\n"
+        . $link . "\r\n\r\n"
+        . "如果不是你本人操作，请忽略这封邮件，密码不会被更改。\r\n"
+        . "If you didn't request this, just ignore this email — your password won't change.\r\n\r\n"
+        . "— Star Rewards\r\n";
+    $from = defined('MAIL_FROM') ? MAIL_FROM : 'noreply@gaocaihk.com';
+    $headers = 'MIME-Version: 1.0' . "\r\n"
+        . 'Content-Type: text/plain; charset=UTF-8' . "\r\n"
+        . 'From: Star Rewards <' . $from . '>' . "\r\n";
+    if (!@mail($email, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, $headers)) {
+        error_log('[StarRewards] reset email send failed: ' . $email);
+    }
+}
+
+// ── 重置密码：凭一次性令牌设置新密码 ──
+function handleResetPassword($pdo, $data) {
+    rateLimit('reset_password', 10, 600);
+    $token = trim((string)($data['token'] ?? ''));
+    $password = (string)($data['password'] ?? '');
+    if (!preg_match('/^[0-9a-f]{64}$/', $token)) sendError('Invalid reset token', 400);
+    if (!validatePassword($password)) sendError('Password must be 6-255 characters', 400);
+
+    try {
+        $hash = hash('sha256', $token);
+        $stmt = $pdo->prepare('SELECT id FROM users WHERE reset_token_hash = ? AND reset_expires > NOW() LIMIT 1');
+        $stmt->execute([$hash]);
+        $user = $stmt->fetch();
+        if (!$user) sendError('Reset link is invalid or expired', 400);
+
+        $newHash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+        $stmt = $pdo->prepare('UPDATE users SET password_hash = ?, reset_token_hash = NULL, reset_expires = NULL WHERE id = ?');
+        $stmt->execute([$newHash, (int)$user['id']]);
+        sendJson(['ok' => true, 'message' => 'Password updated. Please log in.']);
+    } catch (Exception $e) {
+        sendError('Reset failed', 500, $e->getMessage());
+    }
 }
 
 // 账号删除（被遗忘权）：级联清理用户全部数据，并回收无成员的孤儿家庭

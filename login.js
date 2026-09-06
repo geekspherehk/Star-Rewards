@@ -33,14 +33,60 @@ async function signIn(email, password) {
 }
 
 function toggleAuthForm(formType) {
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
-    if (formType === 'register') {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
-    } else {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
+    const forms = ['login-form', 'register-form', 'forgot-form', 'reset-form'];
+    const target = formType + '-form';
+    forms.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = (id === target) ? 'block' : 'none';
+    });
+}
+
+// ── 忘记密码：请求发送重置邮件 ──
+async function handleForgotPassword() {
+    const email = document.getElementById('forgot-email').value.trim();
+    if (!email) {
+        showTemporaryMessage(t('common.enterEmailAndPassword'), 'error');
+        return;
+    }
+    try {
+        await api.forgotPassword(email);
+        // 防枚举：无论邮箱是否存在，后端都返回成功 → 提示统一措辞
+        showTemporaryMessage(t('login.forgotSent'), 'success');
+        toggleAuthForm('login');
+        document.getElementById('forgot-email').value = '';
+    } catch (error) {
+        showTemporaryMessage(t('login.forgotFailed') + ': ' + escapeHtml(String(error.message || error)), 'error');
+    }
+}
+
+// ── 重置密码：凭邮件链接里的 token 设置新密码 ──
+async function handleResetPassword() {
+    const p1 = document.getElementById('reset-password').value;
+    const p2 = document.getElementById('reset-password2').value;
+    if (!p1 || p1.length < 6) {
+        showTemporaryMessage(t('common.passwordMinLength'), 'error');
+        return;
+    }
+    if (p1 !== p2) {
+        showTemporaryMessage(t('login.resetMismatch'), 'error');
+        return;
+    }
+    const token = (new URLSearchParams(window.location.search).get('reset') || '').trim();
+    if (!token) {
+        showTemporaryMessage(t('login.resetInvalid'), 'error');
+        return;
+    }
+    try {
+        await api.resetPassword(token, p1);
+        showTemporaryMessage(t('login.resetDone'), 'success');
+        // 清掉 URL 上的 token，避免刷新/分享泄漏；回到登录表单
+        window.history.replaceState({}, '', 'login.html');
+        document.getElementById('reset-password').value = '';
+        document.getElementById('reset-password2').value = '';
+        setTimeout(() => toggleAuthForm('login'), 1200);
+    } catch (error) {
+        const msg = String(error.message || error);
+        showTemporaryMessage(/invalid or expired/i.test(msg) ? t('login.resetInvalid') : t('common.loginFailed') + ': ' + escapeHtml(msg), 'error');
     }
 }
 
@@ -144,5 +190,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const pending = sessionStorage.getItem('pending_invite') || '';
     const inviteInput = document.getElementById('register-invite');
     if (inviteInput && pending) inviteInput.value = pending;
+    // 邮件重置链接 ?reset=TOKEN → 直接展示"设置新密码"表单
+    const resetToken = (new URLSearchParams(window.location.search).get('reset') || '').trim();
+    if (resetToken) {
+        toggleAuthForm('reset');
+    }
     initAuth();
 });

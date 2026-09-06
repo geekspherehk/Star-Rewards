@@ -66,6 +66,10 @@ define('STATS_OWNER_EMAILS', getenv('STATS_OWNER_EMAILS') ?: ($env['STATS_OWNER_
 // 末尾不带 /
 define('SITE_BASE_URL', getenv('SITE_BASE_URL') ?: ($env['SITE_BASE_URL'] ?? 'https://stellar.gaocaihk.com'));
 
+// 找回密码发信邮箱（From 头）。建议在 hPanel 创建对应邮箱账号（如 noreply@gaocaihk.com），
+// 否则外域投递可能被判垃圾邮件/拒收。
+define('MAIL_FROM', getenv('MAIL_FROM') ?: ($env['MAIL_FROM'] ?? 'noreply@gaocaihk.com'));
+
 if (empty(DB_HOST) || empty(DB_NAME) || empty(DB_USER) || empty(DB_PASS)) {
     http_response_code(500);
     header('Content-Type: application/json');

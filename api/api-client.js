@@ -169,6 +169,16 @@ class ApiClient {
         return result;
     }
 
+    // 忘记密码：请求发送重置邮件（后端防枚举，邮箱不存在也返回成功）
+    async forgotPassword(email) {
+        return await this.request('forgot_password', { email });
+    }
+
+    // 重置密码：凭邮件链接里的一次性 token 设置新密码
+    async resetPassword(token, password) {
+        return await this.request('reset_password', { token, password });
+    }
+
     async logout() {
         try {
             if (this.token) {
