@@ -2317,10 +2317,11 @@ async function initializeApp() {
         const token = api.getToken();
         const inviteParam = (new URLSearchParams(window.location.search).get('invite') || '').trim().toUpperCase();
         if (!token) {
-            console.log('Script.js: 用户未登录');
+            console.log('Script.js: 用户未登录 → 游客访问根域名直接进产品页');
             // 未登录访客点开邀请链接 → 记住邀请码，跳转登录/注册页后用于预填注册表单
             if (inviteParam) sessionStorage.setItem('pending_invite', inviteParam);
-            showNotLoggedInState();
+            // 访客（直接敲域名/分享链接进入）→ 落地产品介绍页，CTA 再回流 login
+            window.location.replace('landing.html');
             return;
         }
         
