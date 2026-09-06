@@ -666,6 +666,36 @@ function sendResetEmail($email, $token) {
         . "If you didn't request this, just ignore this email — your password won't change.\r\n\r\n"
         . "— Star Rewards\r\n";
     $from = defined('MAIL_FROM') ? MAIL_FROM : 'noreply@gaocaihk.com';
+
+    // 首选：SMTP 认证发信（走 Hostinger 邮件集群，SPF/DKIM 对齐，大幅降低进垃圾箱概率）
+    if (defined('SMTP_PASSWORD') && SMTP_PASSWORD !== '') {
+        try {
+            require_once __DIR__ . '/phpmailer/Exception.php';
+            require_once __DIR__ . '/phpmailer/PHPMailer.php';
+            require_once __DIR__ . '/phpmailer/SMTP.php';
+            $mailer = new PHPMailer\PHPMailer\PHPMailer(true);
+            $mailer->isSMTP();
+            $mailer->Host = SMTP_HOST;
+            $mailer->Port = SMTP_PORT;
+            $mailer->SMTPAuth = true;
+            $mailer->Username = SMTP_USER;
+            $mailer->Password = SMTP_PASSWORD;
+            $mailer->SMTPSecure = (SMTP_PORT === 465) ? PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS : PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mailer->CharSet = 'UTF-8';
+            $mailer->SMTPDebug = 0;
+            $mailer->setFrom($from, 'Star Rewards');
+            $mailer->addAddress($email);
+            $mailer->Subject = $subject;
+            $mailer->Body = $body;
+            $mailer->send();
+            return;
+        } catch (Exception $e) {
+            error_log('[StarRewards] SMTP send failed (' . $email . '): ' . $e->getMessage() . ' — falling back to mail()');
+            // SMTP 失败不阻断，落到下方 mail() 兜底
+        }
+    }
+
+    // 兜底：裸 mail()（共享主机直投，投递率一般）
     $headers = 'MIME-Version: 1.0' . "\r\n"
         . 'Content-Type: text/plain; charset=UTF-8' . "\r\n"
         . 'From: Star Rewards <' . $from . '>' . "\r\n";

@@ -70,6 +70,14 @@ define('SITE_BASE_URL', getenv('SITE_BASE_URL') ?: ($env['SITE_BASE_URL'] ?? 'ht
 // 否则外域投递可能被判垃圾邮件/拒收。
 define('MAIL_FROM', getenv('MAIL_FROM') ?: ($env['MAIL_FROM'] ?? 'noreply@gaocaihk.com'));
 
+// ── SMTP 认证发信（找回密码等系统邮件的正规通道）──
+// 配置了 SMTP_PASSWORD 即走 smtp.hostinger.com 认证发信（SPF/DKIM 对齐，进垃圾箱概率大降）；
+// 未配置则回退裸 mail()。密码在 api/.env.php（gitignored）。
+define('SMTP_HOST', getenv('SMTP_HOST') ?: ($env['SMTP_HOST'] ?? 'smtp.hostinger.com'));
+define('SMTP_PORT', (int)(getenv('SMTP_PORT') ?: ($env['SMTP_PORT'] ?? 465)));
+define('SMTP_USER', getenv('SMTP_USER') ?: ($env['SMTP_USER'] ?? 'noreply@gaocaihk.com'));
+define('SMTP_PASSWORD', getenv('SMTP_PASSWORD') ?: ($env['SMTP_PASSWORD'] ?? ''));
+
 if (empty(DB_HOST) || empty(DB_NAME) || empty(DB_USER) || empty(DB_PASS)) {
     http_response_code(500);
     header('Content-Type: application/json');
