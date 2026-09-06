@@ -12,11 +12,11 @@
    - **HTML 标记**：复制它给的 `<meta name="google-site-verification" content="...">` 发给我，我加进 index.html
 4. 验证通过后，左侧「站点地图」→ 输入 `sitemap.xml` → 提交
 5. 左侧「网址检查」→ 逐个粘贴以下 5 个英文页网址 → 点「请求编入索引」：
-   - `https://stellar.gaocaihk.com/seo-guide-star-chart-en.html`
-   - `https://stellar.gaocaihk.com/seo-chore-chart-en.html`
-   - `https://stellar.gaocaihk.com/seo-kids-points-chart-en.html`
-   - `https://stellar.gaocaihk.com/seo-habit-building-en.html`
-   - `https://stellar.gaocaihk.com/seo-reward-ideas-en.html`
+   - `https://stellar.gaocaihk.com/star-chart-guide-en.html`
+   - `https://stellar.gaocaihk.com/chore-chart-guide-en.html`
+   - `https://stellar.gaocaihk.com/kids-points-chart-guide-en.html`
+   - `https://stellar.gaocaihk.com/habit-building-guide-en.html`
+   - `https://stellar.gaocaihk.com/reward-ideas-en.html`
 
 ## 二、Bing Webmaster Tools（约 3 分钟，吃必应 + Yahoo + 部分 ChatGPT 搜索）
 
@@ -28,11 +28,11 @@
 
 | Pin 图 | 配文建议（发布时粘贴） | 目标链接 |
 |---|---|---|
-| pins/star-chart-en-pin.png | How to make a star chart that actually works — 6 steps by age | https://stellar.gaocaihk.com/seo-guide-star-chart-en.html |
-| pins/chore-chart-en-pin.png | Chore chart for kids by age (with points) | https://stellar.gaocaihk.com/seo-chore-chart-en.html |
-| pins/kids-points-en-pin.png | Kids points chart starter guide — turn behavior into motivation | https://stellar.gaocaihk.com/seo-kids-points-chart-en.html |
-| pins/habit-building-en-pin.png | Build good habits with a points system — the science + 6 steps | https://stellar.gaocaihk.com/seo-habit-building-en.html |
-| pins/reward-ideas-en-pin.png | 30+ reward ideas for kids by age group | https://stellar.gaocaihk.com/seo-reward-ideas-en.html |
+| pins/star-chart-en-pin.png | How to make a star chart that actually works — 6 steps by age | https://stellar.gaocaihk.com/star-chart-guide-en.html |
+| pins/chore-chart-en-pin.png | Chore chart for kids by age (with points) | https://stellar.gaocaihk.com/chore-chart-guide-en.html |
+| pins/kids-points-en-pin.png | Kids points chart starter guide — turn behavior into motivation | https://stellar.gaocaihk.com/kids-points-chart-guide-en.html |
+| pins/habit-building-en-pin.png | Build good habits with a points system — the science + 6 steps | https://stellar.gaocaihk.com/habit-building-guide-en.html |
+| pins/reward-ideas-en-pin.png | 30+ reward ideas for kids by age group | https://stellar.gaocaihk.com/reward-ideas-en.html |
 
 操作：Pinterest 商业账号（免费）→ 创建 5 个 Pin，每张传对应图 + 粘贴配文 + 填目标链接 → 建一个画板叫 "Kids Reward Charts & Positive Parenting"。
 
