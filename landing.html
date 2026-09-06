@@ -15,46 +15,69 @@
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css?v=89">
     <style>
-        .lp-wrap { max-width: 860px; margin: 0 auto; padding: 0 16px; }
-        .lp-nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
-        .lp-nav-links { display: flex; align-items: center; gap: 18px; font-size: 14px; }
-        .lp-nav-links a { color: var(--text-2, #6b6b68); text-decoration: none; }
-        .lp-nav-links a:hover { color: var(--brand, #6C5CE7); }
-        .lp-cta-pill { background: var(--brand, #6C5CE7); color: #fff; padding: 7px 16px; border-radius: 999px; font-weight: 700; text-decoration: none; font-size: 14px; }
-        .lp-cta-pill:hover { filter: brightness(1.06); }
-        .lp-hero { display: flex; gap: 28px; align-items: center; padding: 40px 0 34px; }
-        .lp-hero h1 { font-size: clamp(24px, 4vw, 34px); font-weight: 800; line-height: 1.25; margin: 0 0 12px; color: var(--text, #2c2c2a); }
-        .lp-hero p { font-size: 15px; color: var(--text-2, #6b6b68); line-height: 1.7; margin: 0 0 18px; }
-        .lp-hero-img { flex: 1; min-width: 0; border-radius: var(--r-lg, 16px); border: 1px solid var(--border, #ececf2); box-shadow: var(--sh-sm, 0 2px 8px rgba(20,20,40,.06)); width: 100%; display: block; }
-        .lp-btn { display: inline-flex; align-items: center; gap: 6px; padding: 11px 22px; border-radius: var(--r-md, 12px); font-weight: 700; font-size: 15px; text-decoration: none; }
-        .lp-btn--primary { background: var(--brand, #6C5CE7); color: #fff; }
-        .lp-btn--primary:hover { filter: brightness(1.06); }
-        .lp-btn--ghost { border: 1.5px solid var(--border, #e0e0ea); color: var(--text, #2c2c2a); }
-        .lp-btn--ghost:hover { border-color: var(--brand, #6C5CE7); color: var(--brand, #6C5CE7); }
-        .lp-btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
-        .lp-section { padding: 30px 0 8px; }
-        .lp-section-title { font-size: 21px; font-weight: 800; margin: 0 0 16px; color: var(--text, #2c2c2a); }
-        .lp-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
-        .lp-step { background: var(--surface-2, #f5f5fa); border-radius: var(--r-lg, 16px); padding: 16px; }
-        .lp-step b { font-size: 15px; color: var(--text, #2c2c2a); display: block; margin-bottom: 5px; }
-        .lp-step span { font-size: 13px; color: var(--text-2, #6b6b68); line-height: 1.6; }
-        .lp-feats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-        .lp-feat { background: var(--surface, #fff); border: 1px solid var(--border, #ececf2); border-radius: var(--r-lg, 16px); padding: 16px; }
-        .lp-feat b { font-size: 14px; color: var(--text, #2c2c2a); display: block; margin-bottom: 5px; }
-        .lp-feat span { font-size: 12.5px; color: var(--text-2, #6b6b68); line-height: 1.6; }
-        .lp-free { margin: 30px 0; background: var(--brand, #6C5CE7); border-radius: var(--r-lg, 16px); padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-        .lp-free p { margin: 0; color: #fff; font-weight: 700; font-size: 15px; }
-        .lp-free a { color: #fff; font-weight: 800; text-decoration: none; font-size: 15px; white-space: nowrap; }
-        .lp-faq { display: flex; flex-direction: column; gap: 8px; }
-        .lp-faq details { background: var(--surface, #fff); border: 1px solid var(--border, #ececf2); border-radius: var(--r-md, 12px); padding: 12px 16px; }
-        .lp-faq summary { font-weight: 700; font-size: 14px; color: var(--text, #2c2c2a); cursor: pointer; }
-        .lp-faq p { margin: 8px 0 0; font-size: 13px; color: var(--text-2, #6b6b68); line-height: 1.7; }
-        .lp-footer { margin-top: 34px; padding: 22px 0 30px; border-top: 1px solid var(--border, #ececf2); }
-        .lp-footer-links { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; margin-bottom: 10px; }
-        .lp-footer-links a { color: var(--brand, #6C5CE7); text-decoration: none; }
-        .lp-footer p { font-size: 12.5px; color: var(--text-2, #6b6b68); margin: 0; }
+        :root {
+            --lp-on-brand: #ffffff;
+            --lp-free-underline: rgba(255, 255, 255, .4);
+            --lp-hero-bg: var(--brand-soft, #EEEAFF);
+            --fs-body: var(--fs-base, 0.9375rem);
+            --color-text: var(--text, #1F2430);
+            --ff-body: inherit;
+        }
+        .lp-wrap { max-width: 880px; margin: 0 auto; padding: 0 var(--sp-4); }
+        .lp-nav { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-3) 0; }
+        .lp-nav-links { display: flex; align-items: center; gap: var(--sp-4); font-size: var(--fs-base); }
+        .lp-nav-links a { color: var(--text-2); text-decoration: none; transition: color .15s ease; }
+        .lp-nav-links a:hover { color: var(--brand); }
+        .lp-cta-pill { background: var(--brand); color: var(--lp-on-brand); padding: var(--sp-2) var(--sp-4); border-radius: var(--r-pill); font-weight: 700; text-decoration: none; font-size: var(--fs-base); transition: transform .15s ease, filter .15s ease; }
+        .lp-cta-pill:hover { filter: brightness(1.06); transform: translateY(-1px); }
+
+        .lp-hero { display: flex; gap: var(--sp-7); align-items: center; padding: var(--sp-8) 0 var(--sp-7); }
+        .lp-eyebrow { display: inline-flex; align-items: center; gap: 6px; background: var(--brand-soft); color: var(--brand); font-size: var(--fs-sm); font-weight: 700; padding: var(--sp-1) var(--sp-3); border-radius: var(--r-pill); margin-bottom: var(--sp-3); }
+        .lp-hero h1 { font-size: var(--fs-2xl); font-weight: 800; line-height: 1.3; margin: 0 0 var(--sp-3); color: var(--text); letter-spacing: -.01em; }
+        .lp-hero-sub { font-size: var(--fs-md); color: var(--text-2); line-height: 1.75; margin: 0 0 var(--sp-5); }
+        .lp-hero-img { flex: 1; min-width: 0; border-radius: var(--r-xl); border: 1px solid var(--border); box-shadow: var(--sh-sm); width: 100%; display: block; }
+        .lp-btn { display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-3) var(--sp-6); border-radius: var(--r-md); font-weight: 700; font-size: var(--fs-base); text-decoration: none; transition: transform .15s ease, filter .15s ease, border-color .15s ease, color .15s ease; }
+        .lp-btn--primary { background: var(--brand); color: var(--lp-on-brand); box-shadow: var(--sh-sm); }
+        .lp-btn--primary:hover { filter: brightness(1.06); transform: translateY(-2px); }
+        .lp-btn--ghost { border: 1.5px solid var(--border); color: var(--text); }
+        .lp-btn--ghost:hover { border-color: var(--brand); color: var(--brand); }
+        .lp-btn-row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+
+        .lp-section { padding: var(--sp-7) 0 var(--sp-2); }
+        .lp-section-title { font-size: var(--fs-xl); font-weight: 800; margin: 0 0 var(--sp-2); color: var(--text); }
+        .lp-section-intro { font-size: var(--fs-base); color: var(--text-2); line-height: 1.7; margin: 0 0 var(--sp-5); }
+        .lp-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--sp-3); }
+        .lp-step { background: var(--surface-2); border-radius: var(--r-lg); padding: var(--sp-4); }
+        .lp-step-num { width: var(--sp-6); height: var(--sp-6); border-radius: var(--r-pill); background: var(--brand); color: var(--lp-on-brand); font-size: var(--fs-sm); font-weight: 800; display: inline-flex; align-items: center; justify-content: center; margin-bottom: var(--sp-2); }
+        .lp-step b { font-size: var(--fs-md); color: var(--text); display: block; margin-bottom: var(--sp-1); }
+        .lp-step span { font-size: var(--fs-sm); color: var(--text-2); line-height: 1.65; }
+
+        .lp-feats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--sp-3); }
+        .lp-feat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--sp-4); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+        .lp-feat:hover { transform: translateY(-3px); box-shadow: var(--sh-sm); border-color: var(--brand-soft); }
+        .lp-feat-ico { width: var(--sp-7); height: var(--sp-7); border-radius: var(--r-md); display: inline-flex; align-items: center; justify-content: center; background: var(--pc, var(--brand-soft)); color: var(--pc-ink, var(--brand)); margin-bottom: var(--sp-2); }
+        .lp-feat-ico svg { width: var(--fs-lg); height: var(--fs-lg); }
+        .lp-feat b { font-size: var(--fs-base); color: var(--text); display: block; margin-bottom: var(--sp-1); }
+        .lp-feat span { font-size: var(--fs-sm); color: var(--text-2); line-height: 1.65; }
+
+        .lp-free { margin: var(--sp-7) 0; background: var(--brand); border-radius: var(--r-xl); padding: var(--sp-5) var(--sp-6); display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); flex-wrap: wrap; box-shadow: var(--sh-sm); }
+        .lp-free p { margin: 0; color: var(--lp-on-brand); font-weight: 700; font-size: var(--fs-md); }
+        .lp-free a { color: var(--lp-on-brand); font-weight: 800; text-decoration: none; font-size: var(--fs-md); white-space: nowrap; border-bottom: 2px solid var(--lp-free-underline); padding-bottom: var(--sp-1); }
+        .lp-free a:hover { border-bottom-color: var(--lp-on-brand); }
+
+        .lp-faq { display: flex; flex-direction: column; gap: var(--sp-2); }
+        .lp-faq details { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); transition: border-color .15s ease; }
+        .lp-faq details:hover, .lp-faq details[open] { border-color: var(--brand-soft); }
+        .lp-faq summary { font-weight: 700; font-size: var(--fs-base); color: var(--text); cursor: pointer; }
+        .lp-faq p { margin: var(--sp-2) 0 0; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.75; }
+
+        .lp-footer { margin-top: var(--sp-8); padding: var(--sp-5) 0 var(--sp-7); border-top: 1px solid var(--border); }
+        .lp-footer-links { display: flex; flex-wrap: wrap; gap: var(--sp-4); font-size: var(--fs-sm); margin-bottom: var(--sp-2); }
+        .lp-footer-links a { color: var(--brand); text-decoration: none; }
+        .lp-footer-links a:hover { text-decoration: underline; }
+        .lp-footer p { font-size: var(--fs-sm); color: var(--text-2); margin: 0; }
         @media (max-width: 720px) {
-            .lp-hero { flex-direction: column; padding: 26px 0 22px; text-align: center; }
+            .lp-hero { flex-direction: column; padding: var(--sp-6) 0 var(--sp-5); text-align: center; }
             .lp-btn-row { justify-content: center; }
             .lp-nav-links a.lp-hide-m { display: none; }
         }
@@ -82,8 +105,9 @@
     <main class="lp-wrap">
         <section class="lp-hero">
             <div style="flex:1.15; min-width:0;">
+                <span class="lp-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.26L21.5 9.3l-4.75 4.4 1.15 6.8L12 17.3l-5.9 3.2 1.15-6.8L2.5 9.3l6.6-1.04z"/></svg><span data-i18n="land.heroEyebrow">完全免费 · 无需安装</span></span>
                 <h1 data-i18n="land.heroTitle">让孩子的好习惯，看得见、摸得着</h1>
-                <p data-i18n="land.heroSub">打卡挣积分，攒分换愿望，8 大素养全面成长。家长共同记录，孩子主动成长。</p>
+                <p class="lp-hero-sub" data-i18n="land.heroSub">打卡挣积分，攒分换愿望，8 大素养全面成长。家长共同记录，孩子主动成长。</p>
                 <div class="lp-btn-row">
                     <a class="lp-btn lp-btn--primary" href="login.html?mode=register" data-i18n="land.ctaStart">免费创建家庭</a>
                     <a class="lp-btn lp-btn--ghost" href="#features" data-i18n="land.ctaHow">看看怎么玩</a>
@@ -96,20 +120,34 @@
 
         <section class="lp-section" id="how">
             <h2 class="lp-section-title" data-i18n="land.howTitle">三步上手</h2>
+            <p class="lp-section-intro" data-i18n="land.howIntro">不用看说明书：定好目标，每天点一下打卡，攒够了就去换心愿。</p>
             <div class="lp-steps">
-                <div class="lp-step"><b data-i18n="land.step1T">① 定目标</b><span data-i18n="land.step1D">70+ 目标模板，1 分钟设定</span></div>
-                <div class="lp-step"><b data-i18n="land.step2T">② 每日打卡</b><span data-i18n="land.step2D">坚持挣积分，点亮成长之花</span></div>
-                <div class="lp-step"><b data-i18n="land.step3T">③ 兑换愿望</b><span data-i18n="land.step3D">积分换心愿，动力看得见</span></div>
+                <div class="lp-step"><span class="lp-step-num">1</span><b data-i18n="land.step1T">定目标</b><span data-i18n="land.step1D">70+ 目标模板，1 分钟设定</span></div>
+                <div class="lp-step"><span class="lp-step-num">2</span><b data-i18n="land.step2T">每日打卡</b><span data-i18n="land.step2D">坚持挣积分，点亮成长之花</span></div>
+                <div class="lp-step"><span class="lp-step-num">3</span><b data-i18n="land.step3T">兑换愿望</b><span data-i18n="land.step3D">积分换心愿，动力看得见</span></div>
             </div>
         </section>
 
         <section class="lp-section" id="features">
             <h2 class="lp-section-title" data-i18n="land.featTitle">为什么家长喜欢它</h2>
+            <p class="lp-section-intro" data-i18n="land.featIntro">不只是积分表：成长之花让孩子看见自己的模样。</p>
             <div class="lp-feats">
-                <div class="lp-feat"><b data-i18n="land.feat1T">成长之花</b><span data-i18n="land.feat1D">8 大素养玫瑰图，成长一眼可见</span></div>
-                <div class="lp-feat"><b data-i18n="land.feat2T">18 枚徽章</b><span data-i18n="land.feat2D">收集式成就感，越攒越想坚持</span></div>
-                <div class="lp-feat"><b data-i18n="land.feat3T">打卡日历</b><span data-i18n="land.feat3D">坚持轨迹可视化，月度回顾</span></div>
-                <div class="lp-feat"><b data-i18n="land.feat4T">家庭共享</b><span data-i18n="land.feat4D">爸妈老人共同记录，实时同步</span></div>
+                <div class="lp-feat" style="--pc: var(--cat-self-drive-soft); --pc-ink: var(--cat-self-drive);">
+                    <span class="lp-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg></span>
+                    <b data-i18n="land.feat1T">成长之花</b><span data-i18n="land.feat1D">8 大素养玫瑰图，成长一眼可见</span>
+                </div>
+                <div class="lp-feat" style="--pc: var(--cat-money-soft); --pc-ink: var(--cat-money);">
+                    <span class="lp-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="6"/><path d="M8.2 13.9L7 22l5-3 5 3-1.2-8.1"/></svg></span>
+                    <b data-i18n="land.feat2T">18 枚徽章</b><span data-i18n="land.feat2D">收集式成就感，越攒越想坚持</span>
+                </div>
+                <div class="lp-feat" style="--pc: var(--cat-planning-soft); --pc-ink: var(--cat-planning);">
+                    <span class="lp-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg></span>
+                    <b data-i18n="land.feat3T">打卡日历</b><span data-i18n="land.feat3D">坚持轨迹可视化，月度回顾</span>
+                </div>
+                <div class="lp-feat" style="--pc: var(--cat-empathy-soft); --pc-ink: var(--cat-empathy);">
+                    <span class="lp-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 8.6a5.5 5.5 0 0 0-9.8-3.4 5.5 5.5 0 0 0-9.8 3.4c0 6 9.8 11.4 9.8 11.4s9.8-5.4 9.8-11.4z" transform="translate(1 1) scale(.92)"/></svg></span>
+                    <b data-i18n="land.feat4T">家庭共享</b><span data-i18n="land.feat4D">爸妈老人共同记录，实时同步</span>
+                </div>
             </div>
         </section>
 
@@ -120,6 +158,7 @@
 
         <section class="lp-section" id="faq">
             <h2 class="lp-section-title" data-i18n="land.faqTitle">常见问题</h2>
+            <p class="lp-section-intro" data-i18n="land.faqIntro">家长最常问的五个问题，都在这里。</p>
             <div class="lp-faq">
                 <details open><summary data-i18n="land.faq1Q">需要付费吗？</summary><p data-i18n="land.faq1A">完全免费，无需信用卡，无广告、无内购。</p></details>
                 <details><summary data-i18n="land.faq2Q">数据安全吗？</summary><p data-i18n="land.faq2A">成长记录仅家人可见，随时可导出或删除账号数据。</p></details>
@@ -142,7 +181,7 @@
     </main>
 
     <script src="api/api-client.js?v=18"></script>
-    <script src="i18n.js?v=75"></script>
+    <script src="i18n.js?v=76"></script>
     <script>
         (function () {
             var sel = document.getElementById('language-selector');
