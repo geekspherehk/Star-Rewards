@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=89">
+    <link rel="stylesheet" href="style.css?v=90">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=27"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=76"></script>
+    <script defer src="i18n.js?v=77"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -138,6 +138,16 @@
 
                 <!-- 首页「本月主打」小条：focus 在首页也可见，与成长总览呼应 -->
                 <div id="home-focus-banner" class="home-focus-banner" style="display:none;"></div>
+
+                <!-- 激活进度条：首页 sticky 任务栏，未完成时跟随滚动，完成后消失（与下方清单联动） -->
+                <div id="activation-progress-bar" class="activation-progress-bar" style="display:none;" onclick="scrollToActivationChecklist()">
+                    <div class="apb-text">
+                        <span class="apb-eyebrow" data-i18n="home.actProgressEyebrow">你的成长之旅</span>
+                        <span class="apb-status"><b id="apb-done">0</b><span class="apb-sep">/</span><span class="apb-total">4</span><span class="apb-suffix" data-i18n="home.actProgressDoneSuffix">步已完成</span></span>
+                    </div>
+                    <div class="apb-track"><div class="apb-fill" id="apb-fill" style="width:0%"></div></div>
+                    <button type="button" class="apb-go" id="apb-go" data-i18n="home.actGoContinue">继续 →</button>
+                </div>
 
                 <!-- 激活清单：新用户首启引导，4 步点亮成长之旅 -->
                 <div id="activation-checklist" class="activation-checklist" style="display:none;"></div>
@@ -513,7 +523,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=105"></script>
+    <script defer src="script.js?v=106"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
@@ -724,7 +734,7 @@
     <div id="onboarding-modal" class="modal-overlay onboarding-modal" style="display:none;">
         <div class="modal-content onboarding-content">
             <div class="onboarding-hero">
-                <span class="onboarding-badge">Star Rewards</span>
+                <span class="onboarding-badge" data-i18n="home.onboardingHeroTag">2 分钟开启成长之旅</span>
                 <h2 class="onboarding-title" data-i18n="home.onboardingTitle">欢迎使用 Star Rewards 全人成长体系</h2>
                 <p class="onboarding-lead" data-i18n="home.onboardingLead">用积分记录孩子 8 大素养的点滴进步，让成长看得见。</p>
             </div>
@@ -733,6 +743,10 @@
                 <li><span class="ob-num">2</span><span class="ob-text" data-i18n="home.onboardingStep2">每天打卡：完成目标打卡 1 次 +5 分，坚持越久成长之花越绽放</span></li>
                 <li><span class="ob-num">3</span><span class="ob-text" data-i18n="home.onboardingStep3">积分兑换：攒够积分兑换孩子心仪的礼物，达成愿望再 +星数×20 分</span></li>
             </ol>
+            <div class="onboarding-reward" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ob-reward-ico"><path d="M12 2l2.4 5 5.5.8-4 3.9 1 5.5L12 14.8 7.1 17.2l1-5.5-4-3.9 5.5-.8z"/></svg>
+                <span data-i18n="home.onboardingRewardLabel">完成 4 步，解锁 🌱 成长新手徽章</span>
+            </div>
             <div class="onboarding-name">
                 <label class="onboarding-name-label" for="onboard-child-name" data-i18n="home.onboardNameLabel">先给孩子起个名字吧</label>
                 <input type="text" id="onboard-child-name" class="onboarding-name-input" maxlength="20" data-i18n-placeholder="home.onboardNamePlaceholder" placeholder="例如：小明">

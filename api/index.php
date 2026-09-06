@@ -1767,6 +1767,27 @@ function v2ComputeBadges($pdo, $familyId, $profileId, $userId) {
     $stmt->execute([$familyId, $profileId, 'invite_member']);
     $badges['invite_member'] = ['unlocked' => (bool)$stmt->fetch(PDO::FETCH_COLUMN), 'unlocked_at' => null];
 
+    // 首启成长徽章：完成激活清单 4 步（命名/目标/打卡/兑换），实时检测
+    // 命名：profile.name 非默认；目标：至少 1 个愿望；打卡：至少 1 次 checkin 或 wish.today_checked；兑换：至少 1 次 redeemed_gifts
+    $stmt = $pdo->prepare('SELECT name FROM profiles WHERE id = ? LIMIT 1');
+    $stmt->execute([$profileId]);
+    $profileNameRow = $stmt->fetch(PDO::FETCH_ASSOC);
+    $isNamed = $profileNameRow && !empty($profileNameRow['name']) && $profileNameRow['name'] !== '孩子';
+    $hasWish = false;
+    foreach ($counts as $cat => $c) { if ($c > 0 || (isset($achieved[$cat]) && $achieved[$cat] > 0)) { $hasWish = true; break; } }
+    if (!$hasWish) {
+        // 检查 wishes 表中是否有任何非空目标（counts/achieved 只统计有 dimension/category 的，可能漏掉纯未分类愿望）
+        $stmt = $pdo->prepare('SELECT 1 FROM wishes WHERE family_id = ? AND profile_id = ? LIMIT 1');
+        $stmt->execute([$familyId, $profileId]);
+        $hasWish = (bool)$stmt->fetch(PDO::FETCH_COLUMN);
+    }
+    $hasCheckin = $distinctCheckinWishes > 0;
+    $stmt = $pdo->prepare('SELECT 1 FROM redeemed_gifts WHERE family_id = ? AND profile_id = ? LIMIT 1');
+    $stmt->execute([$familyId, $profileId]);
+    $hasRedeem = (bool)$stmt->fetch(PDO::FETCH_COLUMN);
+    $firstStepCount = (int)$isNamed + (int)$hasWish + (int)$hasCheckin + (int)$hasRedeem;
+    $badges['first_step'] = ['unlocked' => $firstStepCount >= 4, 'unlocked_at' => null, 'progress' => $firstStepCount, 'target' => 4];
+
     // 持久化已解锁徽章
     $stmt = $pdo->prepare('INSERT IGNORE INTO user_badges (family_id, profile_id, user_id, badge_code) VALUES (?, ?, ?, ?)');
     $unlockedAt = date('Y-m-d H:i:s');

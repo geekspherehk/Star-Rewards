@@ -3516,6 +3516,7 @@ const V2_BADGE_SVGS = {
     redeem1: '<svg class="bdg-art" viewBox="0 0 48 48" role="img"><defs><linearGradient id="bg_redeem1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FF9FB2"/><stop offset="100%" stop-color="#E64C6B"/></linearGradient></defs><rect x="4" y="14" width="40" height="28" rx="4" fill="url(#bg_redeem1)"/><rect x="4" y="10" width="40" height="8" rx="4" fill="url(#bg_redeem1)" opacity="0.85"/><g fill="none" stroke="rgba(255,255,255,.95)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M24 14v20M14 22h20"/><path d="M24 14c-4-4-9-1-6 3M24 14c4-4 9-1 6 3"/></g></svg>',
     redeem5: '<svg class="bdg-art" viewBox="0 0 48 48" role="img"><defs><linearGradient id="bg_redeem5" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#B79BF7"/><stop offset="100%" stop-color="#7A4FE0"/></linearGradient></defs><path fill="url(#bg_redeem5)" d="M10 14h28l3 30H7z"/><g fill="none" stroke="rgba(255,255,255,.95)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 22c0-4 3-6 7-6s7 2 7 6"/><path d="M13 30h22"/></g></svg>',
     invite_friend: '<svg class="bdg-art" viewBox="0 0 48 48" role="img"><defs><linearGradient id="bg_invite_friend" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7CD992"/><stop offset="100%" stop-color="#2FA35A"/></linearGradient></defs><path fill="url(#bg_invite_friend)" d="M24 2l19 6v14c0 12-8.5 20-19 24C13.5 42 5 34 5 22V8z"/><g fill="none" stroke="rgba(255,255,255,.95)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="19" cy="20" r="4"/><path d="M13 30c2-3 4-4 6-4s4 1 6 4"/><path d="M31 18v8M27 22h8"/></g></svg>',
+    first_step: '<svg class="bdg-art" viewBox="0 0 48 48" role="img"><defs><linearGradient id="bg_first_step" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#A78BFA"/><stop offset="100%" stop-color="#5B46E5"/></linearGradient></defs><circle cx="24" cy="24" r="22" fill="url(#bg_first_step)"/><g fill="none" stroke="rgba(255,255,255,.95)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 12c-3 4-7 6-7 11a7 7 0 0 0 14 0c0-3-2-5-4-6"/><path d="M24 30v6M21 39h6"/></g></svg>',
 };
 
 
@@ -4298,13 +4299,24 @@ function renderActivationChecklist() {
         { go: 'checkin', done: checkedIn, label: t('home.actCheckin') },
         { go: 'redeem', done: redeemed, label: t('home.actRedeem') }
     ];
+    const doneCount = steps.filter(s => s.done).length;
+    // 驱动顶部 sticky 进度条
+    renderActivationProgressBar(doneCount, steps);
+
     if (steps.every(s => s.done)) {
         try { localStorage.setItem('sr_activation_done', '1'); } catch (e) {}
+        // 首次完成时一次性庆祝（防止刷新后重复触发）
+        const wasDone = el.dataset.celebrated === '1';
         el.style.display = 'none';
         el.innerHTML = '';
+        if (!wasDone) {
+            el.dataset.celebrated = '1';
+            celebrateActivationComplete();
+        }
         return;
     }
-    const doneCount = steps.filter(s => s.done).length;
+    // 未完成时清掉庆祝标记，允许后续"漏档"再次触发
+    el.dataset.celebrated = '';
     const items = steps.map((s, i) => {
         const circle = s.done
             ? '<span class="act-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>'
@@ -4323,6 +4335,52 @@ function renderActivationChecklist() {
         '</div>' +
         '<div class="act-list">' + items + '</div>';
     el.style.display = 'block';
+}
+
+// ── 激活进度条（sticky 任务栏）──
+function renderActivationProgressBar(doneCount, steps) {
+    const bar = document.getElementById('activation-progress-bar');
+    if (!bar) return;
+    if (doneCount >= 4) {
+        bar.style.display = 'none';
+        return;
+    }
+    bar.style.display = '';
+    const doneEl = document.getElementById('apb-done');
+    const fillEl = document.getElementById('apb-fill');
+    const goBtn = document.getElementById('apb-go');
+    if (doneEl) doneEl.textContent = String(doneCount);
+    if (fillEl) fillEl.style.width = (doneCount / 4 * 100) + '%';
+    // 找到第一个未完成步骤，绑定为「继续」按钮跳转目标
+    const next = steps.find(s => !s.done);
+    if (goBtn && next) {
+        goBtn.onclick = (e) => { e.stopPropagation(); actGo(next.go); };
+    }
+}
+// 进度条点击 → 滚到激活清单（看全 4 步）
+function scrollToActivationChecklist() {
+    const el = document.getElementById('activation-checklist');
+    if (!el) return;
+    if (el.style.display === 'none') return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ── 激活完成 celebration：触发 toast + 服务端发奖 + 重新加载 v2 让徽章墙反映 ──
+function celebrateActivationComplete() {
+    track('first_step');
+    // 用 v2 概览刷新一次，让徽章墙渲染 first_step，并触发既有 +20 分 toast
+    api.getV2Overview().then((d) => {
+        v2PrevUnlocked = null;
+        if (v2Data) {
+            // 只更新 badges 字段，最小重渲染
+            v2Data.badges = d.badges;
+        } else {
+            v2Data = d;
+        }
+        renderV2Badges();
+        // 已确认激活完成的，不重复展示首页清单与进度条
+        try { localStorage.setItem('sr_activation_done', '1'); } catch (e) {}
+    }).catch(() => {});
 }
 function actGo(step) {
     if (step === 'name') { openProfileModal(selectedProfileId); return; }
@@ -4514,7 +4572,7 @@ function renderV2Badges() {
     // 8 枚素养徽章已在玫瑰图（成长总览）呈现，此处徽章墙仅展示里程碑 + 好友之星
     const order = ['rose_all_rounder', 'rose_persist_21', 'invite_friend'];
     // 新解锁检测仍需覆盖全部徽章，保证解锁 +20 分提示照常弹出
-    const allCodes = V2_CATS.map(c => 'rose_' + c.code).concat(['rose_all_rounder', 'rose_persist_21', 'invite_friend']);
+    const allCodes = V2_CATS.map(c => 'rose_' + c.code).concat(['rose_all_rounder', 'rose_persist_21', 'invite_friend', 'first_step']);
 
     // 新解锁检测（首次渲染不算「新」）
     const nowUnlocked = {};
@@ -4523,7 +4581,7 @@ function renderV2Badges() {
     if (newOnes.length) {
         const names = newOnes.map(code => {
             const cat = code.replace('rose_', '');
-            return code === 'rose_all_rounder' ? t('v2.badgeAllRounder') : (code === 'rose_persist_21' ? t('v2.badgePersist21') : (code === 'invite_friend' ? t('v2.badgeInviteFriend') : t('v2.badge.' + cat)));
+            return code === 'rose_all_rounder' ? t('v2.badgeAllRounder') : (code === 'rose_persist_21' ? t('v2.badgePersist21') : (code === 'invite_friend' ? t('v2.badgeInviteFriend') : (code === 'first_step' ? t('v2.badgeFirstStep') : t('v2.badge.' + cat))));
         });
         showTemporaryMessage(t('v2.badgeNew') + ': ' + names.join('、') + ' · +' + (newOnes.length * 20) + V2_PTS_UNIT(), 'success');
         // 徽章解锁奖励已由服务端入账，刷新积分显示
@@ -4615,6 +4673,14 @@ function renderV2Badges() {
         icon: V2_BADGE_SVGS.invite_friend, name: t('v2.badgeInviteFriend'), desc: t('v2.msInviteDesc'),
         done: !!inv.unlocked, pc: 'var(--brand)', pcSoft: 'var(--brand-soft)',
         prog: inv.unlocked ? '' : Math.min(Math.max(members, 1), 2) + '/2',
+        group: 'invite'
+    });
+    // 首启成长徽章：完成激活清单 4 步（命名/目标/打卡/兑换）后由 addFirstStepBadge 后端发放
+    const firstStep = badges.first_step || {};
+    list.push({
+        icon: V2_BADGE_SVGS.first_step, name: t('v2.badgeFirstStep'), desc: t('v2.msFirstStepDesc'),
+        done: !!firstStep.unlocked, pc: 'var(--brand)', pcSoft: 'var(--brand-soft)',
+        prog: firstStep.unlocked ? '' : Math.min(firstStep.progress || 0, 4) + '/4',
         group: 'invite'
     });
 
