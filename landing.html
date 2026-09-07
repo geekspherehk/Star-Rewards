@@ -245,7 +245,7 @@
                     </ul>
                 </div>
                 <div class="lp-hero-visual">
-                    <img class="lp-hero-shot" src="assets/hero-illustration.png" alt="家长和孩子一起欣赏成长之花插画">
+                    <img class="lp-hero-shot" src="assets/hero-illustration.jpg" alt="家长和孩子一起欣赏成长之花插画" fetchpriority="high">
                     <span class="lp-chip lp-chip--flower"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c2.5 0 4 1.8 4 4 0 .7-.15 1.3-.4 1.9.6-.25 1.2-.4 1.9-.4 2.2 0 4 1.5 4 4s-1.8 4-4 4c-.7 0-1.3-.15-1.9-.4.25.6.4 1.2.4 1.9 0 2.2-1.5 4-4 4s-4-1.8-4-4c0-.7.15-1.3.4-1.9-.6.25-1.2.4-1.9.4-2.2 0-4-1.5-4-4s1.8-4 4-4c.7 0 1.3.15 1.9.4-.25-.6-.4-1.2-.4-1.9 0-2.2 1.5-4 4-4z"/><circle cx="12" cy="12" r="2.4"/></svg>8/8</span>
                     <span class="lp-chip lp-chip--points"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.26L21.5 9.3l-4.75 4.4 1.15 6.8L12 17.3l-5.9 3.2 1.15-6.8L2.5 9.3l6.6-1.04z"/></svg><span data-i18n="land.chipPoints">+5 积分</span></span>
                 </div>
@@ -253,7 +253,7 @@
             <div class="lp-stats">
                 <div class="lp-stat"><b>70<em>+</em></b><span data-i18n="land.statTemplates">个目标模板</span></div>
                 <div class="lp-stat"><b>8</b><span data-i18n="land.statDims">大素养维度</span></div>
-                <div class="lp-stat"><b>18</b><span data-i18n="land.statBadges">枚成长徽章</span></div>
+                <div class="lp-stat"><b>19</b><span data-i18n="land.statBadges">枚成长徽章</span></div>
                 <div class="lp-stat"><b><em data-i18n="land.statFreeN">¥0</em></b><span data-i18n="land.statFree">永久免费</span></div>
             </div>
         </section>
@@ -267,7 +267,7 @@
                     <p data-i18n="land.flowerLead">8 大素养对应 8 片花瓣，孩子在哪个方向努力，哪片花瓣就会生长。</p>
                 </div>
                 <div class="lp-reveal">
-                    <img class="lp-flower-shot" src="assets/flower-closeup.png" alt="成长之花：8 大素养花瓣全开" loading="lazy">
+                    <img class="lp-flower-shot" src="assets/flower-closeup.png" data-img-zh="assets/flower-closeup.png" data-img-en="assets/flower-closeup-en.png" alt="成长之花：8 大素养花瓣全开" loading="lazy">
                 </div>
             </div>
         </section>
@@ -299,11 +299,11 @@
             </div>
             <div class="lp-feats">
                 <div class="lp-shot-card lp-reveal">
-                    <img src="assets/flower-card.png" alt="成长之花：8 大素养花瓣图" loading="lazy">
+                    <img src="assets/flower-card.png" data-img-zh="assets/flower-card.png" data-img-en="assets/flower-card-en.png" alt="成长之花：8 大素养花瓣图" loading="lazy">
                     <div class="lp-shot-body"><b data-i18n="land.feat1T">成长之花</b><span data-i18n="land.feat1D">8 大素养玫瑰图，成长一眼可见</span></div>
                 </div>
                 <div class="lp-shot-card lp-reveal">
-                    <img src="assets/shot-calendar.png" alt="打卡日历：每日坚持轨迹" loading="lazy">
+                    <img src="assets/shot-calendar.png" data-img-zh="assets/shot-calendar.png" data-img-en="assets/shot-calendar-en.png" alt="打卡日历：每日坚持轨迹" loading="lazy">
                     <div class="lp-shot-body"><b data-i18n="land.feat3T">打卡日历</b><span data-i18n="land.feat3D">坚持轨迹可视化，月度回顾</span></div>
                 </div>
             </div>
@@ -355,6 +355,26 @@
             var sel = document.getElementById('language-selector');
             if (sel) sel.value = getLanguage();
             updateLanguageUI();
+
+            // 产品截图按语言切换（中英各一套素材；hero 插画无文字，不分语言）
+            function swapLangImgs(lang) {
+                var en = lang === 'en';
+                document.querySelectorAll('img[data-img-zh]').forEach(function (img) {
+                    var next = en ? img.dataset.imgEn : img.dataset.imgZh;
+                    if (next && img.getAttribute('src') !== next) img.src = next;
+                });
+            }
+            swapLangImgs(getLanguage());
+            if (typeof setLanguage === 'function') {
+                var _setLang = setLanguage;
+                window.setLanguage = function (lang) {
+                    var r = _setLang.apply(this, arguments);
+                    swapLangImgs(lang);
+                    if (sel) sel.value = lang;
+                    return r;
+                };
+            }
+
             try {
                 if (localStorage.getItem('auth_token')) {
                     var _api = new ApiClient();
