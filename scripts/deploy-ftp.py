@@ -127,12 +127,26 @@ def connect(creds):
 
 
 def ensure_dir(ftp, remote_dir):
-    for p in [x for x in remote_dir.split('/') if x]:
-        cur = '/' + p
-        try:
-            ftp.mkd(cur)
-        except ftplib.error_perm:
-            pass  # 已存在
+    """逐级建目录。remote_dir 以 / 开头 → 绝对路径；否则相对登录目录（web 根）。
+    ⚠️ 本服务器 MKD/STOR 相对路径都解析到登录目录（web 根），绝对 / 是 FTP chroot 根（≠ web 根）。
+    新建相对目录必须用相对 MKD，否则目录会建到 chroot 根下、STOR 报 550 No such file。"""
+    parts = [x for x in remote_dir.split('/') if x]
+    if remote_dir.startswith('/'):
+        cur = ''
+        for p in parts:
+            cur += '/' + p
+            try:
+                ftp.mkd(cur)
+            except ftplib.error_perm:
+                pass  # 已存在
+    else:
+        cur = ''
+        for p in parts:
+            cur = p if not cur else cur + '/' + p
+            try:
+                ftp.mkd(cur)
+            except ftplib.error_perm:
+                pass  # 已存在
 
 
 def resolve_remote_root(ftp, remote_root):
