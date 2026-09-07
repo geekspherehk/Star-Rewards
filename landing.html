@@ -15,72 +15,194 @@
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css?v=90">
     <style>
+        /* ── Landing v2：温暖人文 × 编辑式极简。全部走主站 token，无裸色值（暗部渐变除外） ── */
         :root {
             --lp-on-brand: #ffffff;
-            --lp-free-underline: rgba(255, 255, 255, .4);
-            --lp-hero-bg: var(--brand-soft, #EEEAFF);
-            --fs-body: var(--fs-base, 0.9375rem);
-            --color-text: var(--text, #1F2430);
-            --ff-body: inherit;
+            --lp-wrap: 1120px;
+            --lp-hero-1: clamp(2.5rem, 5.6vw, 4rem);
+            --lp-h2: clamp(1.75rem, 3.6vw, 2.75rem);
+            --lp-body-lg: clamp(1.0625rem, 1.6vw, 1.25rem);
         }
-        .lp-wrap { max-width: 880px; margin: 0 auto; padding: 0 var(--sp-4); }
+        body { background: var(--surface); }
+        .lp-wrap { max-width: var(--lp-wrap); margin: 0 auto; padding: 0 clamp(16px, 4vw, 32px); }
+
+        /* ── 顶栏 ── */
         .lp-nav { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-3) 0; }
         .lp-nav-links { display: flex; align-items: center; gap: var(--sp-4); font-size: var(--fs-base); }
         .lp-nav-links a { color: var(--text-2); text-decoration: none; transition: color .15s ease; }
-        .lp-nav-links a.lp-cta-pill { color: var(--lp-on-brand); }
-        .lp-nav-links a.lp-cta-pill:hover { color: var(--lp-on-brand); text-decoration: none; }
         .lp-nav-links a:hover { color: var(--brand); }
+        .lp-nav-links a.lp-cta-pill,
+        .lp-nav-links a.lp-cta-pill:hover { color: var(--lp-on-brand); text-decoration: none; }
         .lp-cta-pill { background: var(--brand); color: var(--lp-on-brand); padding: var(--sp-2) var(--sp-4); border-radius: var(--r-pill); font-weight: 700; text-decoration: none; font-size: var(--fs-base); transition: transform .15s ease, filter .15s ease; }
         .lp-cta-pill:hover { filter: brightness(1.06); transform: translateY(-1px); }
 
-        .lp-hero { display: flex; gap: var(--sp-7); align-items: center; padding: var(--sp-8) 0 var(--sp-7); }
-        .lp-eyebrow { display: inline-flex; align-items: center; gap: 6px; background: var(--brand-soft); color: var(--brand); font-size: var(--fs-sm); font-weight: 700; padding: var(--sp-1) var(--sp-3); border-radius: var(--r-pill); margin-bottom: var(--sp-3); }
-        .lp-hero h1 { font-size: var(--fs-2xl); font-weight: 800; line-height: 1.3; margin: 0 0 var(--sp-3); color: var(--text); letter-spacing: -.01em; }
-        .lp-hero-sub { font-size: var(--fs-md); color: var(--text-2); line-height: 1.75; margin: 0 0 var(--sp-5); }
-        .lp-hero-img { flex: 1; min-width: 0; border-radius: var(--r-xl); border: 1px solid var(--border); box-shadow: var(--sh-sm); width: 100%; display: block; }
-        .lp-btn { display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-3) var(--sp-6); border-radius: var(--r-md); font-weight: 700; font-size: var(--fs-base); text-decoration: none; transition: transform .15s ease, filter .15s ease, border-color .15s ease, color .15s ease; }
-        .lp-btn--primary { background: var(--brand); color: var(--lp-on-brand); box-shadow: var(--sh-sm); }
-        .lp-btn--primary:hover { filter: brightness(1.06); transform: translateY(-2px); }
-        .lp-btn--ghost { border: 1.5px solid var(--border); color: var(--text); }
-        .lp-btn--ghost:hover { border-color: var(--brand); color: var(--brand); }
+        /* ── Hero：白底 + 品牌色呼吸光晕，超大字阶 ── */
+        .lp-hero {
+            position: relative;
+            padding: clamp(var(--sp-7), 8vw, var(--sp-8)) 0 var(--sp-7);
+        }
+        .lp-hero::before {
+            content: '';
+            position: absolute; inset: -140px -30% auto;
+            height: 560px;
+            background:
+                radial-gradient(560px 320px at 22% 20%, rgba(108, 92, 231, .10), transparent 68%),
+                radial-gradient(520px 300px at 82% 12%, rgba(245, 165, 36, .12), transparent 70%);
+            background:
+                radial-gradient(560px 320px at 22% 20%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 68%),
+                radial-gradient(520px 300px at 82% 12%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%);
+            pointer-events: none;
+        }
+        .lp-hero-grid { position: relative; display: grid; gap: var(--sp-7); align-items: center; }
+        .lp-eyebrow { display: inline-flex; align-items: center; gap: 6px; background: var(--brand-soft); background: color-mix(in srgb, var(--brand) 9%, var(--surface)); color: var(--brand); font-size: var(--fs-sm); font-weight: 700; padding: 6px var(--sp-3); border-radius: var(--r-pill); margin-bottom: var(--sp-4); border: 1px solid var(--brand-soft); border-color: color-mix(in srgb, var(--brand) 16%, transparent); }
+        .lp-hero h1 { font-size: var(--lp-hero-1); font-weight: 800; line-height: 1.14; letter-spacing: -.022em; margin: 0 0 var(--sp-4); color: var(--text); text-wrap: balance; }
+        .lp-hero h1 em { font-style: normal; color: var(--brand); }
+        .lp-hero-sub { font-size: var(--lp-body-lg); color: var(--text-2); line-height: 1.75; margin: 0 0 var(--sp-5); max-width: 34em; text-wrap: pretty; }
+        .lp-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); padding: 14px var(--sp-6); border-radius: var(--r-pill); font-weight: 700; font-size: var(--fs-md); text-decoration: none; transition: transform .16s ease, filter .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease; }
+        .lp-btn--primary { background: var(--brand); color: var(--lp-on-brand); box-shadow: var(--sh-md); box-shadow: 0 8px 24px color-mix(in srgb, var(--brand) 32%, transparent); }
+        .lp-btn--primary:hover { filter: brightness(1.07); transform: translateY(-2px); box-shadow: var(--sh-lg); box-shadow: 0 12px 30px color-mix(in srgb, var(--brand) 38%, transparent); }
+        .lp-btn--primary:active { transform: translateY(0); }
+        .lp-btn--ghost { border: 1.5px solid var(--border); color: var(--text); background: var(--surface); }
+        .lp-btn--ghost:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-2px); }
         .lp-btn-row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
 
-        .lp-section { padding: var(--sp-7) 0 var(--sp-2); }
-        .lp-section-title { font-size: var(--fs-xl); font-weight: 800; margin: 0 0 var(--sp-2); color: var(--text); }
-        .lp-section-intro { font-size: var(--fs-base); color: var(--text-2); line-height: 1.7; margin: 0 0 var(--sp-5); }
-        .lp-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--sp-3); }
-        .lp-step { background: var(--surface-2); border-radius: var(--r-lg); padding: var(--sp-4); }
-        .lp-step-num { width: var(--sp-6); height: var(--sp-6); border-radius: var(--r-pill); background: var(--brand); color: var(--lp-on-brand); font-size: var(--fs-sm); font-weight: 800; display: inline-flex; align-items: center; justify-content: center; margin-bottom: var(--sp-2); }
-        .lp-step b { font-size: var(--fs-md); color: var(--text); display: block; margin-bottom: var(--sp-1); }
-        .lp-step span { font-size: var(--fs-sm); color: var(--text-2); line-height: 1.65; }
+        /* 免费承诺三条（勾选式）—— li 需显式重置主站全局 li 卡片样式 */
+        .lp-free-list { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); margin: var(--sp-4) 0 0; padding: 0; list-style: none; }
+        .lp-free-list li { display: inline-flex; align-items: center; justify-content: flex-start; gap: 7px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); background: transparent; border: 0; box-shadow: none; padding: 0; margin: 0; }
+        .lp-free-list svg { width: 15px; height: 15px; color: var(--brand); flex: 0 0 auto; }
 
-        .lp-feats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--sp-3); }
-        .lp-feat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--sp-4); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
-        .lp-feat:hover { transform: translateY(-3px); box-shadow: var(--sh-sm); border-color: var(--brand-soft); }
-        .lp-feat-ico { width: var(--sp-7); height: var(--sp-7); border-radius: var(--r-md); display: inline-flex; align-items: center; justify-content: center; background: var(--pc, var(--brand-soft)); color: var(--pc-ink, var(--brand)); margin-bottom: var(--sp-2); }
-        .lp-feat-ico svg { width: var(--fs-lg); height: var(--fs-lg); }
-        .lp-feat b { font-size: var(--fs-base); color: var(--text); display: block; margin-bottom: var(--sp-1); }
-        .lp-feat span { font-size: var(--fs-sm); color: var(--text-2); line-height: 1.65; }
+        /* Hero 视觉：真实产品图 + 浮动数据片 */
+        .lp-hero-visual { position: relative; }
+        .lp-hero-visual::before {
+            content: '';
+            position: absolute; inset: 8% -4% -6%;
+            background: radial-gradient(closest-side, color-mix(in srgb, var(--brand) 14%, transparent), transparent);
+            filter: blur(8px);
+        }
+        .lp-hero-shot {
+            position: relative;
+            border-radius: var(--r-xl);
+            border: 1px solid var(--border);
+            box-shadow: var(--sh-xl);
+            width: 100%; display: block;
+            background: var(--surface);
+        }
+        .lp-chip {
+            position: absolute;
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--surface); color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: var(--r-pill);
+            padding: 8px 14px;
+            font-size: var(--fs-sm); font-weight: 700;
+            box-shadow: var(--sh-md);
+            animation: lp-float 5.2s ease-in-out infinite;
+        }
+        .lp-chip svg { width: 16px; height: 16px; }
+        .lp-chip--flower { top: -16px; right: 6%; color: var(--brand); }
+        .lp-chip--points { bottom: -14px; left: 4%; color: var(--accent); animation-delay: -2.6s; }
+        @keyframes lp-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 
-        .lp-free { margin: var(--sp-7) 0; background: var(--brand); border-radius: var(--r-xl); padding: var(--sp-5) var(--sp-6); display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); flex-wrap: wrap; box-shadow: var(--sh-sm); }
-        .lp-free p { margin: 0; color: var(--lp-on-brand); font-weight: 700; font-size: var(--fs-md); }
-        .lp-free a { color: var(--lp-on-brand); font-weight: 800; text-decoration: none; font-size: var(--fs-md); white-space: nowrap; border-bottom: 2px solid var(--lp-free-underline); padding-bottom: var(--sp-1); }
-        .lp-free a:hover { border-bottom-color: var(--lp-on-brand); }
+        /* 数据条：真实数字 */
+        .lp-stats {
+            position: relative;
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: var(--sp-3);
+            margin: var(--sp-7) 0 0;
+            padding: var(--sp-4) 0;
+            border-top: 1px solid var(--border);
+        }
+        .lp-stat { text-align: center; }
+        .lp-stat b { display: block; font-size: clamp(1.5rem, 2.6vw, 2rem); font-weight: 800; color: var(--text); letter-spacing: -.02em; }
+        .lp-stat b em { font-style: normal; color: var(--brand); }
+        .lp-stat span { font-size: var(--fs-sm); color: var(--text-2); }
 
-        .lp-faq { display: flex; flex-direction: column; gap: var(--sp-2); }
+        /* ── 成长之花：暖米色浅段（与 hero 插画同族底色），大图主证 ── */
+        .lp-flower {
+            margin-top: var(--sp-8);
+            background: #FBF6EC;
+            padding: clamp(var(--sp-8), 9vw, 96px) 0;
+        }
+        .lp-flower-grid { display: grid; gap: var(--sp-6); align-items: center; }
+        .lp-flower h2 { font-size: var(--lp-h2); font-weight: 800; line-height: 1.2; letter-spacing: -.02em; margin: 0 0 var(--sp-3); color: var(--text); text-wrap: balance; }
+        .lp-flower p { font-size: var(--lp-body-lg); line-height: 1.8; color: var(--text-2); margin: 0; max-width: 30em; text-wrap: pretty; }
+        .lp-flower-shot {
+            border-radius: var(--r-lg);
+            border: 1px solid var(--border);
+            box-shadow: var(--sh-lg);
+            width: 100%; display: block;
+            background: var(--surface);
+        }
+
+        /* ── 通用 section 节奏 ── */
+        .lp-section { padding: clamp(var(--sp-8), 9vw, 96px) 0 0; }
+        .lp-head { max-width: 620px; margin-bottom: var(--sp-6); }
+        .lp-head h2 { font-size: var(--lp-h2); font-weight: 800; letter-spacing: -.02em; line-height: 1.2; margin: 0 0 var(--sp-3); color: var(--text); text-wrap: balance; }
+        .lp-head p { font-size: var(--lp-body-lg); color: var(--text-2); line-height: 1.7; margin: 0; text-wrap: pretty; }
+
+        /* 三步：排版时间线（超大品牌色序号，桌面端贯穿线） */
+        .lp-steps { display: grid; gap: var(--sp-6); counter-reset: step; position: relative; }
+        .lp-step { position: relative; counter-increment: step; }
+        .lp-step::before {
+            content: '0' counter(step);
+            display: block;
+            font-size: clamp(2.4rem, 3.4vw, 3rem);
+            font-weight: 800;
+            letter-spacing: -.03em;
+            line-height: 1;
+            color: var(--brand);
+            margin-bottom: var(--sp-3);
+        }
+        .lp-step-body b { display: block; font-size: var(--fs-lg); color: var(--text); margin: 0 0 6px; }
+        .lp-step-body span { font-size: var(--fs-base); color: var(--text-2); line-height: 1.7; }
+
+        /* 功能：真实产品截图 bento 卡（无图标） */
+        .lp-feats { display: grid; gap: var(--sp-4); }
+        .lp-shot-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; transition: transform .18s ease, box-shadow .18s ease; }
+        .lp-shot-card:hover { transform: translateY(-3px); box-shadow: var(--sh-md); }
+        .lp-shot-card img { width: 100%; display: block; aspect-ratio: 16 / 9; object-fit: cover; object-position: center top; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+        .lp-shot-body { padding: var(--sp-5); }
+        .lp-shot-body b { font-size: var(--fs-md); color: var(--text); display: block; margin-bottom: 6px; }
+        .lp-shot-body span { font-size: var(--fs-sm); color: var(--text-2); line-height: 1.7; }
+        .lp-feat-more { margin: var(--sp-4) 0 0; font-size: var(--fs-sm); color: var(--text-2); }
+
+        /* FAQ */
+        .lp-faq { display: flex; flex-direction: column; gap: var(--sp-2); max-width: 760px; }
         .lp-faq details { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); transition: border-color .15s ease; }
-        .lp-faq details:hover, .lp-faq details[open] { border-color: var(--brand-soft); }
+        .lp-faq details:hover, .lp-faq details[open] { border-color: color-mix(in srgb, var(--brand) 35%, var(--border)); }
         .lp-faq summary { font-weight: 700; font-size: var(--fs-base); color: var(--text); cursor: pointer; }
         .lp-faq p { margin: var(--sp-2) 0 0; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.75; }
+
+        /* CTA 收尾条 */
+        .lp-final { margin: clamp(var(--sp-8), 9vw, 96px) 0 0; text-align: center; padding: clamp(var(--sp-7), 7vw, 72px) var(--sp-5); background: var(--surface-2); border-radius: var(--r-xl); }
+        .lp-final h2 { font-size: var(--lp-h2); font-weight: 800; letter-spacing: -.02em; margin: 0 0 var(--sp-3); color: var(--text); }
+        .lp-final p { font-size: var(--fs-md); color: var(--text-2); margin: 0 0 var(--sp-5); }
 
         .lp-footer { margin-top: var(--sp-8); padding: var(--sp-5) 0 var(--sp-7); border-top: 1px solid var(--border); }
         .lp-footer-links { display: flex; flex-wrap: wrap; gap: var(--sp-4); font-size: var(--fs-sm); margin-bottom: var(--sp-2); }
         .lp-footer-links a { color: var(--brand); text-decoration: none; }
         .lp-footer-links a:hover { text-decoration: underline; }
         .lp-footer p { font-size: var(--fs-sm); color: var(--text-2); margin: 0; }
-        @media (max-width: 720px) {
-            .lp-hero { flex-direction: column; padding: var(--sp-6) 0 var(--sp-5); text-align: center; }
-            .lp-btn-row { justify-content: center; }
+
+        /* 入场动效：渐显上移（尊重 reduced-motion） */
+        .lp-reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; }
+        .lp-reveal.is-in { opacity: 1; transform: none; }
+        @media (prefers-reduced-motion: reduce) {
+            .lp-reveal { opacity: 1; transform: none; transition: none; }
+            .lp-chip { animation: none; }
+        }
+
+        /* ── 平板及以上 ── */
+        @media (min-width: 760px) {
+            .lp-hero-grid { grid-template-columns: 1.08fr .92fr; gap: var(--sp-7); }
+            .lp-steps { grid-template-columns: repeat(3, 1fr); gap: var(--sp-5); }
+            .lp-steps::before { content: ''; position: absolute; top: 24px; left: 0; right: 0; height: 2px; background: var(--border); }
+            .lp-step::before { display: inline-block; position: relative; z-index: 1; background: var(--surface); padding: 0 var(--sp-4) 0 0; font-size: 2.6rem; }
+            .lp-feats { grid-template-columns: repeat(2, 1fr); }
+            .lp-flower-grid { grid-template-columns: 1.05fr .95fr; gap: var(--sp-8); }
+        }
+        @media (max-width: 759px) {
+            .lp-stats { grid-template-columns: repeat(2, 1fr); row-gap: var(--sp-4); }
             .lp-nav-links a.lp-hide-m { display: none; }
         }
     </style>
@@ -93,7 +215,7 @@
                 <span class="brand-name">Star Rewards</span>
             </div>
             <div class="lp-nav-links">
-                <a href="#features" class="lp-hide-m" data-i18n="land.navFeatures">功能</a>
+                <a href="#how" class="lp-hide-m" data-i18n="land.navFeatures">功能</a>
                 <a href="#faq" class="lp-hide-m" data-i18n="land.navFaq">常见问题</a>
                 <select id="language-selector" class="lang-select" onchange="setLanguage(this.value)">
                     <option value="zh">中文</option>
@@ -104,64 +226,97 @@
         </div>
     </header>
 
-    <main class="lp-wrap">
-        <section class="lp-hero">
-            <div style="flex:1.15; min-width:0;">
-                <span class="lp-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.26L21.5 9.3l-4.75 4.4 1.15 6.8L12 17.3l-5.9 3.2 1.15-6.8L2.5 9.3l6.6-1.04z"/></svg><span data-i18n="land.heroEyebrow">完全免费 · 无需安装</span></span>
-                <h1 data-i18n="land.heroTitle">让孩子的好习惯，看得见、摸得着</h1>
-                <p class="lp-hero-sub" data-i18n="land.heroSub">打卡挣积分，攒分换愿望，8 大素养全面成长。家长共同记录，孩子主动成长。</p>
-                <div class="lp-btn-row">
-                    <a class="lp-btn lp-btn--primary" href="login.html?mode=register" data-i18n="land.ctaStart">免费创建家庭</a>
-                    <a class="lp-btn lp-btn--ghost" href="#features" data-i18n="land.ctaHow">看看怎么玩</a>
+    <main>
+        <!-- ── Hero ── -->
+        <section class="lp-hero lp-wrap">
+            <div class="lp-hero-grid">
+                <div>
+                    <span class="lp-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.26L21.5 9.3l-4.75 4.4 1.15 6.8L12 17.3l-5.9 3.2 1.15-6.8L2.5 9.3l6.6-1.04z"/></svg><span data-i18n="land.heroEyebrow">完全免费 · 无需安装</span></span>
+                    <h1 data-i18n="land.heroTitle">让孩子的好习惯，<em>看得见</em>、摸得着</h1>
+                    <p class="lp-hero-sub" data-i18n="land.heroSub">打卡挣积分，攒分换愿望，8 大素养全面成长。家长共同记录，孩子主动成长。</p>
+                    <div class="lp-btn-row">
+                        <a class="lp-btn lp-btn--primary" href="login.html?mode=register" data-i18n="land.ctaStart">免费创建家庭</a>
+                        <a class="lp-btn lp-btn--ghost" href="#how" data-i18n="land.ctaHow">看看怎么玩</a>
+                    </div>
+                    <ul class="lp-free-list">
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="land.heroFree1">完全免费 · 无广告无内购</span></li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="land.heroFree2">家长共同记录</span></li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="land.heroFree3">浏览器直接用，无需安装</span></li>
+                    </ul>
+                </div>
+                <div class="lp-hero-visual">
+                    <img class="lp-hero-shot" src="assets/hero-illustration.png" alt="家长和孩子一起欣赏成长之花插画">
+                    <span class="lp-chip lp-chip--flower"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c2.5 0 4 1.8 4 4 0 .7-.15 1.3-.4 1.9.6-.25 1.2-.4 1.9-.4 2.2 0 4 1.5 4 4s-1.8 4-4 4c-.7 0-1.3-.15-1.9-.4.25.6.4 1.2.4 1.9 0 2.2-1.5 4-4 4s-4-1.8-4-4c0-.7.15-1.3.4-1.9-.6.25-1.2.4-1.9.4-2.2 0-4-1.5-4-4s1.8-4 4-4c.7 0 1.3.15 1.9.4-.25-.6-.4-1.2-.4-1.9 0-2.2 1.5-4 4-4z"/><circle cx="12" cy="12" r="2.4"/></svg>8/8</span>
+                    <span class="lp-chip lp-chip--points"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.26L21.5 9.3l-4.75 4.4 1.15 6.8L12 17.3l-5.9 3.2 1.15-6.8L2.5 9.3l6.6-1.04z"/></svg><span data-i18n="land.chipPoints">+5 积分</span></span>
                 </div>
             </div>
-            <div style="flex:1; min-width:0;">
-                <img class="lp-hero-img" src="og-image.png" alt="Star Rewards 产品预览">
+            <div class="lp-stats">
+                <div class="lp-stat"><b>70<em>+</em></b><span data-i18n="land.statTemplates">个目标模板</span></div>
+                <div class="lp-stat"><b>8</b><span data-i18n="land.statDims">大素养维度</span></div>
+                <div class="lp-stat"><b>18</b><span data-i18n="land.statBadges">枚成长徽章</span></div>
+                <div class="lp-stat"><b><em data-i18n="land.statFreeN">¥0</em></b><span data-i18n="land.statFree">永久免费</span></div>
             </div>
         </section>
 
-        <section class="lp-section" id="how">
-            <h2 class="lp-section-title" data-i18n="land.howTitle">三步上手</h2>
-            <p class="lp-section-intro" data-i18n="land.howIntro">不用看说明书：定好目标，每天点一下打卡，攒够了就去换心愿。</p>
+        <!-- ── 成长之花：浅色产品实证段 ── -->
+        <section class="lp-flower">
+            <div class="lp-wrap lp-flower-grid">
+                <div class="lp-reveal">
+                    <span class="lp-eyebrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3c2.5 0 4 1.8 4 4 0 .7-.15 1.3-.4 1.9.6-.25 1.2-.4 1.9-.4 2.2 0 4 1.5 4 4s-1.8 4-4 4c-.7 0-1.3-.15-1.9-.4.25.6.4 1.2.4 1.9 0 2.2-1.5 4-4 4s-4-1.8-4-4c0-.7.15-1.3.4-1.9-.6.25-1.2.4-1.9.4-2.2 0-4-1.5-4-4s1.8-4 4-4c.7 0 1.3.15 1.9.4-.25-.6-.4-1.2-.4-1.9 0-2.2 1.5-4 4-4z"/><circle cx="12" cy="12" r="2.4"/></svg><span data-i18n="land.flowerEyebrow">成长之花</span></span>
+                    <h2 data-i18n="land.flowerTitle">每一次打卡，都让花多开一瓣</h2>
+                    <p data-i18n="land.flowerLead">8 大素养对应 8 片花瓣，孩子在哪个方向努力，哪片花瓣就会生长。</p>
+                </div>
+                <div class="lp-reveal">
+                    <img class="lp-flower-shot" src="assets/flower-closeup.png" alt="成长之花：8 大素养花瓣全开" loading="lazy">
+                </div>
+            </div>
+        </section>
+
+        <!-- ── 三步上手 ── -->
+        <section class="lp-section lp-wrap" id="how">
+            <div class="lp-head lp-reveal">
+                <h2 data-i18n="land.howTitle">三步上手</h2>
+                <p data-i18n="land.howIntro">不用看说明书：定好目标，每天点一下打卡，攒够了就去换心愿。</p>
+            </div>
             <div class="lp-steps">
-                <div class="lp-step"><span class="lp-step-num">1</span><b data-i18n="land.step1T">定目标</b><span data-i18n="land.step1D">70+ 目标模板，1 分钟设定</span></div>
-                <div class="lp-step"><span class="lp-step-num">2</span><b data-i18n="land.step2T">每日打卡</b><span data-i18n="land.step2D">坚持挣积分，点亮成长之花</span></div>
-                <div class="lp-step"><span class="lp-step-num">3</span><b data-i18n="land.step3T">兑换愿望</b><span data-i18n="land.step3D">积分换心愿，动力看得见</span></div>
+                <div class="lp-step lp-reveal">
+                    <div class="lp-step-body"><b data-i18n="land.step1T">定目标</b><span data-i18n="land.step1D">70+ 目标模板，1 分钟设定</span></div>
+                </div>
+                <div class="lp-step lp-reveal">
+                    <div class="lp-step-body"><b data-i18n="land.step2T">每日打卡</b><span data-i18n="land.step2D">坚持挣积分，点亮成长之花</span></div>
+                </div>
+                <div class="lp-step lp-reveal">
+                    <div class="lp-step-body"><b data-i18n="land.step3T">兑换愿望</b><span data-i18n="land.step3D">积分换心愿，动力看得见</span></div>
+                </div>
             </div>
         </section>
 
-        <section class="lp-section" id="features">
-            <h2 class="lp-section-title" data-i18n="land.featTitle">为什么家长喜欢它</h2>
-            <p class="lp-section-intro" data-i18n="land.featIntro">不只是积分表：成长之花让孩子看见自己的模样。</p>
+        <!-- ── 功能 ── -->
+        <section class="lp-section lp-wrap" id="features">
+            <div class="lp-head lp-reveal">
+                <h2 data-i18n="land.featTitle">为什么家长喜欢它</h2>
+                <p data-i18n="land.featIntro">不只是积分表：成长之花让孩子看见自己的模样。</p>
+            </div>
             <div class="lp-feats">
-                <div class="lp-feat" style="--pc: var(--cat-self-drive-soft); --pc-ink: var(--cat-self-drive);">
-                    <span class="lp-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg></span>
-                    <b data-i18n="land.feat1T">成长之花</b><span data-i18n="land.feat1D">8 大素养玫瑰图，成长一眼可见</span>
+                <div class="lp-shot-card lp-reveal">
+                    <img src="assets/flower-card.png" alt="成长之花：8 大素养花瓣图" loading="lazy">
+                    <div class="lp-shot-body"><b data-i18n="land.feat1T">成长之花</b><span data-i18n="land.feat1D">8 大素养玫瑰图，成长一眼可见</span></div>
                 </div>
-                <div class="lp-feat" style="--pc: var(--cat-money-soft); --pc-ink: var(--cat-money);">
-                    <span class="lp-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="6"/><path d="M8.2 13.9L7 22l5-3 5 3-1.2-8.1"/></svg></span>
-                    <b data-i18n="land.feat2T">18 枚徽章</b><span data-i18n="land.feat2D">收集式成就感，越攒越想坚持</span>
-                </div>
-                <div class="lp-feat" style="--pc: var(--cat-planning-soft); --pc-ink: var(--cat-planning);">
-                    <span class="lp-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg></span>
-                    <b data-i18n="land.feat3T">打卡日历</b><span data-i18n="land.feat3D">坚持轨迹可视化，月度回顾</span>
-                </div>
-                <div class="lp-feat" style="--pc: var(--cat-empathy-soft); --pc-ink: var(--cat-empathy);">
-                    <span class="lp-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 8.6a5.5 5.5 0 0 0-9.8-3.4 5.5 5.5 0 0 0-9.8 3.4c0 6 9.8 11.4 9.8 11.4s9.8-5.4 9.8-11.4z" transform="translate(1 1) scale(.92)"/></svg></span>
-                    <b data-i18n="land.feat4T">家庭共享</b><span data-i18n="land.feat4D">爸妈老人共同记录，实时同步</span>
+                <div class="lp-shot-card lp-reveal">
+                    <img src="assets/shot-calendar.png" alt="打卡日历：每日坚持轨迹" loading="lazy">
+                    <div class="lp-shot-body"><b data-i18n="land.feat3T">打卡日历</b><span data-i18n="land.feat3D">坚持轨迹可视化，月度回顾</span></div>
                 </div>
             </div>
+            <p class="lp-feat-more lp-reveal" data-i18n="land.featMore">另有 18 枚成长徽章、全家共同记录，等你和孩子一起解锁。</p>
         </section>
 
-        <div class="lp-free">
-            <p data-i18n="land.freeBanner">现在完全免费 —— 无广告、无内购、孩子界面零干扰</p>
-            <a href="login.html?mode=register" data-i18n="land.freeCta">免费开始 →</a>
-        </div>
-
-        <section class="lp-section" id="faq">
-            <h2 class="lp-section-title" data-i18n="land.faqTitle">常见问题</h2>
-            <p class="lp-section-intro" data-i18n="land.faqIntro">家长最常问的五个问题，都在这里。</p>
-            <div class="lp-faq">
+        <!-- ── FAQ ── -->
+        <section class="lp-section lp-wrap" id="faq">
+            <div class="lp-head lp-reveal">
+                <h2 data-i18n="land.faqTitle">常见问题</h2>
+                <p data-i18n="land.faqIntro">家长最常问的五个问题，都在这里。</p>
+            </div>
+            <div class="lp-faq lp-reveal">
                 <details open><summary data-i18n="land.faq1Q">需要付费吗？</summary><p data-i18n="land.faq1A">完全免费，无需信用卡，无广告、无内购。</p></details>
                 <details><summary data-i18n="land.faq2Q">数据安全吗？</summary><p data-i18n="land.faq2A">成长记录仅家人可见，随时可导出或删除账号数据。</p></details>
                 <details><summary data-i18n="land.faq3Q">支持几个孩子？</summary><p data-i18n="land.faq3A">支持多孩档案，每个孩子独立积分与成长记录。</p></details>
@@ -170,20 +325,31 @@
             </div>
         </section>
 
-        <footer class="lp-footer">
-            <div class="lp-footer-links">
-                <a href="star-chart-guide.html" data-i18n="land.guidesTitle">相关指南</a>
-                <a href="habit-building-guide.html">积分制培养好习惯</a>
-                <a href="reward-ideas.html">奖励创意</a>
-                <a href="behavior-templates.html">行为模板</a>
-                <a href="login.html">登录</a>
+        <!-- ── CTA 收尾 ── -->
+        <section class="lp-wrap">
+            <div class="lp-final lp-reveal">
+                <h2 data-i18n="land.footerNote">孩子的好习惯，从每天一次打卡开始</h2>
+                <p data-i18n="land.freeBanner">现在完全免费 —— 无广告、无内购、孩子界面零干扰</p>
+                <a class="lp-btn lp-btn--primary" href="login.html?mode=register" data-i18n="land.freeCta">免费开始 →</a>
             </div>
-            <p data-i18n="land.footerNote">孩子的好习惯，从每天一次打卡开始</p>
+        </section>
+
+        <footer class="lp-footer">
+            <div class="lp-wrap">
+                <div class="lp-footer-links">
+                    <a href="star-chart-guide.html" data-i18n="land.guidesTitle">相关指南</a>
+                    <a href="habit-building-guide.html">积分制培养好习惯</a>
+                    <a href="reward-ideas.html">奖励创意</a>
+                    <a href="behavior-templates.html">行为模板</a>
+                    <a href="login.html">登录</a>
+                </div>
+                <p>Star Rewards · stellar.gaocaihk.com</p>
+            </div>
         </footer>
     </main>
 
     <script src="api/api-client.js?v=18"></script>
-    <script src="i18n.js?v=78"></script>
+    <script src="i18n.js?v=79"></script>
     <script>
         (function () {
             var sel = document.getElementById('language-selector');
@@ -195,6 +361,17 @@
                     _api.track('view_landing', { page: 'landing.html' });
                 }
             } catch (e) {}
+            // 入场渐显（reduced-motion 由 CSS 兜底）
+            if ('IntersectionObserver' in window) {
+                var io = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (en) {
+                        if (en.isIntersecting) { en.target.classList.add('is-in'); io.unobserve(en.target); }
+                    });
+                }, { threshold: .12 });
+                document.querySelectorAll('.lp-reveal').forEach(function (el) { io.observe(el); });
+            } else {
+                document.querySelectorAll('.lp-reveal').forEach(function (el) { el.classList.add('is-in'); });
+            }
         })();
     </script>
 </body>

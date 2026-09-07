@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-一次性生产库迁移执行器（仅用于本次 v2 上线）。
+生产库迁移执行器。
 - 从 api/.env.php 解析数据库凭据（不写死、不打印密码）
-- 运行 database/v2_migration.sql（增量、幂等）
+- 默认运行 database/v2_migration.sql；可传其他 SQL 路径作 argv[1]
 - 打印迁移前后的表清单作为审计
 """
 import os
@@ -13,7 +13,7 @@ import pymysql
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV = os.path.join(REPO, 'api', '.env.php')
-SQL = os.path.join(REPO, 'database', 'v2_migration.sql')
+SQL = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.path.join(REPO, 'database', 'v2_migration.sql')
 
 
 def parse_env(path):
