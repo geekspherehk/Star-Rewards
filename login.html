@@ -20,7 +20,7 @@
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=28"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=79"></script>
+    <script defer src="i18n.js?v=80"></script>
     <script defer src="utils.js?v=1"></script>
     <script>
         // 页面加载日志
@@ -30,6 +30,13 @@
             initLanguage();
         });
     </script>
+    <style>
+        .auth-tabs{display:flex;gap:10px;max-width:340px;margin:0 auto 18px;}
+        .auth-tab{flex:1;padding:11px 0;border:1.5px solid var(--brand,#6C5CE7);background:transparent;color:var(--brand,#6C5CE7);border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;transition:.15s;}
+        .auth-tab.active{background:var(--brand,#6C5CE7);color:#fff;}
+        .auth-hint{font-size:13px;color:var(--text-2,#8a8a92);margin:12px 0 0;text-align:center;}
+        .auth-hint a{color:var(--brand,#6C5CE7);font-weight:600;text-decoration:none;}
+    </style>
 </head>
 <body>
     <header class="app-topbar">
@@ -53,15 +60,30 @@
 
         <!-- 用户认证区域 -->
         <div id="auth-section">
+            <div class="auth-tabs" id="auth-tabs">
+                <button type="button" class="auth-tab active" data-form="register" onclick="switchAuthTab('register')" data-i18n="common.registerTab">注册</button>
+                <button type="button" class="auth-tab" data-form="login" onclick="switchAuthTab('login')" data-i18n="common.loginTab">登录</button>
+            </div>
             <div id="auth-forms">
+                <!-- 注册表单（默认显示） -->
+                <div id="register-form" class="auth-form">
+                    <h3><span data-i18n="login.registerButton">用户注册</span></h3>
+                    <input type="email" id="register-email" data-i18n-placeholder="login.emailPlaceholder" placeholder="邮箱地址">
+                    <input type="password" id="register-password" data-i18n-placeholder="login.passwordPlaceholder" placeholder="密码（至少6位）">
+                    <input type="text" id="register-invite" maxlength="6" style="text-transform:uppercase" data-i18n-placeholder="login.invitePlaceholder" placeholder="邀请码（可选）">
+                    <button onclick="handleSignUp()" data-i18n="login.registerButton">注册</button>
+                    <p><span data-i18n="common.hasAccount">已有账户？</span><a href="#" onclick="switchAuthTab('login')" data-i18n="common.loginNow">立即登录</a></p>
+                </div>
+
                 <!-- 登录表单 -->
-                <div id="login-form" class="auth-form">
+                <div id="login-form" class="auth-form" style="display:none;">
                     <h3><span data-i18n="login.title">用户登录</span></h3>
                     <input type="email" id="login-email" data-i18n-placeholder="login.emailPlaceholder" placeholder="邮箱地址">
                     <input type="password" id="login-password" data-i18n-placeholder="login.passwordPlaceholder" placeholder="密码">
                     <p style="text-align:right; margin:-4px 0 10px; font-size:13px;"><a href="#" onclick="toggleAuthForm('forgot')" style="color:var(--brand,#6C5CE7); text-decoration:none;" data-i18n="login.forgotLink">忘记密码？</a></p>
                     <button onclick="handleSignIn()" data-i18n="login.loginButton">登录</button>
-                    <p><span data-i18n="common.noAccount">还没有账户？</span><a href="#" onclick="toggleAuthForm('register')" data-i18n="common.registerNow">立即注册</a></p>
+                    <p id="login-hint" class="auth-hint" style="display:none;"><span data-i18n="common.authNoAccountHint">该邮箱尚未注册？</span> <a href="#" onclick="switchAuthTab('register');return false;" data-i18n="common.registerNow">立即注册</a></p>
+                    <p><span data-i18n="common.noAccount">还没有账户？</span><a href="#" onclick="switchAuthTab('register')" data-i18n="common.registerNow">立即注册</a></p>
                 </div>
 
                 <!-- 忘记密码表单：输入邮箱 → 发重置链接 -->
@@ -80,21 +102,11 @@
                     <input type="password" id="reset-password2" data-i18n-placeholder="login.confirmPasswordPlaceholder" placeholder="再输入一次新密码">
                     <button onclick="handleResetPassword()" data-i18n="login.resetSubmit">重置密码</button>
                 </div>
-                
-                <!-- 注册表单 -->
-                <div id="register-form" class="auth-form" style="display: none;">
-                    <h3><span data-i18n="login.registerButton">用户注册</span></h3>
-                    <input type="email" id="register-email" data-i18n-placeholder="login.emailPlaceholder" placeholder="邮箱地址">
-                    <input type="password" id="register-password" data-i18n-placeholder="login.passwordPlaceholder" placeholder="密码（至少6位）">
-                    <input type="text" id="register-invite" maxlength="6" style="text-transform:uppercase" data-i18n-placeholder="login.invitePlaceholder" placeholder="邀请码（可选）">
-                    <button onclick="handleSignUp()" data-i18n="login.registerButton">注册</button>
-                    <p><span data-i18n="common.hasAccount">已有账户？</span><a href="#" onclick="toggleAuthForm('login')" data-i18n="common.loginNow">立即登录</a></p>
-                </div>
             </div>
         </div>
     </div>
     
-    <script defer src="login.js?v=11"></script>
+    <script defer src="login.js?v=12"></script>
     <script defer src="pwa-manager.js?v=1"></script>
 </body>
 </html>

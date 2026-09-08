@@ -39,6 +39,19 @@ function toggleAuthForm(formType) {
         const el = document.getElementById(id);
         if (el) el.style.display = (id === target) ? 'block' : 'none';
     });
+    // 登录/注册是顶部主标签，切换表单时同步标签高亮（forgot/reset 不属标签，不动）
+    if (formType === 'login' || formType === 'register') {
+        document.querySelectorAll('.auth-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.form === formType);
+        });
+    }
+}
+
+// 顶部标签切换：同步表单显示 + 隐藏登录失败提示
+function switchAuthTab(formType) {
+    toggleAuthForm(formType);
+    const hint = document.getElementById('login-hint');
+    if (hint) hint.style.display = 'none';
 }
 
 // ── 忘记密码：请求发送重置邮件 ──
@@ -116,11 +129,19 @@ async function handleSignUp() {
         await handleLoginSuccess(userData);
     } catch (error) {
         const msg = String(error.message || error);
-        // 填了邀请码但注册失败 → 多半是邀请码无效/已过期/家庭已满，给更明确的提示
-        if (inviteCode && /404|410|403|400/.test(msg)) {
+        // 把后端错误码映射为本地化友好提示，避免直接透传英文原文
+        if (/Email already registered/i.test(msg)) {
+            showTemporaryMessage(t('common.emailRegistered'), 'error');
+        } else if (/Invalid email format/i.test(msg)) {
+            showTemporaryMessage(t('common.emailFormatInvalid'), 'error');
+        } else if (/Password must be 6-255/i.test(msg)) {
+            showTemporaryMessage(t('common.passwordLengthInvalid'), 'error');
+        } else if (inviteCode && /404|410|403|400/.test(msg)) {
             showTemporaryMessage(t('common.invalidInviteCode'), 'error');
+        } else if (/Network error/i.test(msg)) {
+            showTemporaryMessage(t('common.networkError'), 'error');
         } else {
-            showTemporaryMessage(t('common.registerFailed') + ': ' + escapeHtml(msg), 'error');
+            showTemporaryMessage(t('common.registerGenericError'), 'error');
         }
     }
 }
@@ -150,7 +171,17 @@ async function handleSignIn() {
         await handleLoginSuccess(userData);
     } catch (error) {
         console.error('登录过程中发生错误:', error);
-        showTemporaryMessage(t('common.loginFailed') + ': ' + escapeHtml(error.message), 'error');
+        const msg = String(error.message || error);
+        const hint = document.getElementById('login-hint');
+        if (/Invalid email or password/i.test(msg)) {
+            // 账号不存在或密码错误：本地化提示，并引导新用户去注册（常误把新邮箱填进登录框）
+            showTemporaryMessage(t('common.invalidCredentials'), 'error');
+            if (hint) hint.style.display = 'block';
+        } else if (/Network error/i.test(msg)) {
+            showTemporaryMessage(t('common.networkError'), 'error');
+        } else {
+            showTemporaryMessage(t('common.loginFailed'), 'error');
+        }
     }
 }
 
