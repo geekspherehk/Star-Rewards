@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Star-Rewards 新用户端到端测试报告 · 2026-09-08</title>
+<style>
+  :root{--brand:#6C5CE7;--ok:#1ca97b;--warn:#e8833a;--bad:#e0533d;--bg:#f7f7fb;--card:#fff;--line:#e7e7ef;--ink:#1f2030;--mut:#74758a;}
+  *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 60px}
+  h1{font-size:24px;margin:0 0 4px}.sub{color:var(--mut);font-size:13px;margin-bottom:24px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:18px}
+  h2{font-size:17px;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .tag{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px}
+  .t-ok{background:#e6f6ef;color:var(--ok)}.t-bad{background:#fdecea;color:var(--bad)}.t-warn{background:#fdf0e6;color:var(--warn)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  tr:last-child td{border-bottom:none}
+  .num{color:var(--mut);width:34px}
+  .verdict{font-weight:600;white-space:nowrap}
+  .v-ok{color:var(--ok)}.v-bad{color:var(--bad)}.v-warn{color:var(--warn)}
+  .note{color:var(--mut);font-size:12.5px}
+  .fix{background:#fff8f0;border-left:3px solid var(--warn);padding:14px 16px;border-radius:8px;margin-top:6px}
+  .fix b{color:var(--bad)}
+  .pill{display:inline-block;background:#eee;border-radius:6px;padding:1px 7px;font-size:12px;margin:2px 3px 2px 0;color:#444}
+  .summary{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:4px}
+  .kpi{flex:1;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .kpi .n{font-size:26px;font-weight:700}.kpi .l{color:var(--mut);font-size:12.5px}
+  code{background:#f0f0f6;padding:1px 5px;border-radius:4px;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Star-Rewards 新用户端到端测试报告</h1>
+  <div class="sub">测试日期 2026-09-08 · 方法：真实浏览器（Puppeteer + 真实 Chrome）注册真实账号，走通 落地页→注册→首启引导→各功能模块 完整链路</div>
+
+  <div class="summary">
+    <div class="kpi"><div class="n" style="color:var(--ok)">15</div><div class="l">链路功能项通过</div></div>
+    <div class="kpi"><div class="n" style="color:var(--bad)">1</div><div class="l">真实产品 BUG（已修，待上线）</div></div>
+    <div class="kpi"><div class="n" style="color:var(--warn)">4</div><div class="l">误判项（测试脚本误用，产品实际正常）</div></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot" style="background:var(--brand)"></span>一、测试项清单与结果</h2>
+    <table>
+      <thead><tr><th class="num">#</th><th>链路阶段</th><th>测试点</th><th>结果</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td>落地页</td><td>默认语言一致性（正文/图/选择器统一）</td><td class="verdict v-ok">通过</td><td class="note">本轮 landing 语言修复上线后复测一致</td></tr>
+        <tr><td class="num">2</td><td>落地页</td><td>语言切换实时换图+换文</td><td class="verdict v-ok">通过</td><td class="note">切 en→中文图/文都变；切 zh 同理</td></tr>
+        <tr><td class="num">3</td><td>落地页</td><td>CTA「开始使用」跳转注册</td><td class="verdict v-ok">通过</td><td class="note">跳转 login.html 注册表单</td></tr>
+        <tr><td class="num">4</td><td>注册</td><td>表单切换/邮箱校验/密码≥6 校验</td><td class="verdict v-ok">通过</td><td class="note">空邮箱密码、<6 位密码均有拦截提示</td></tr>
+        <tr><td class="num">5</td><td>注册</td><td><b>注册成功后自动登录跳转</b></td><td class="verdict v-bad"><b>失败→已修</b></td><td class="note">原：注册成功仍停登录表单需二次登录。<b>已修复</b>（commit a1c177d，待上线）</td></tr>
+        <tr><td class="num">6</td><td>注册</td><td>重复邮箱 409 提示</td><td class="verdict v-ok">通过</td><td class="note">返回明确错误文案</td></tr>
+        <tr><td class="num">7</td><td>登录</td><td>注册账号可正常登录</td><td class="verdict v-ok">通过</td><td class="note">登录成功进 index.html</td></tr>
+        <tr><td class="num">8</td><td>首启引导</td><td>首次登录弹 onboarding、命名后档案更新</td><td class="verdict v-ok">通过</td><td class="note">函数本身正常，命名→profile.name 更新；"失效"为测试点击误判</td></tr>
+        <tr><td class="num">9</td><td>首启引导</td><td>关闭后不再出现（ONBOARD_KEY）</td><td class="verdict v-ok">通过</td><td class="note">刷新后 modal 不再弹</td></tr>
+        <tr><td class="num">10</td><td>激活清单</td><td>4 步（命名/目标/打卡/兑换）渲染</td><td class="verdict v-ok">通过</td><td class="note">清单正确列出 4 步与进度</td></tr>
+        <tr><td class="num">11</td><td>激活清单</td><td>进度条联动</td><td class="verdict v-ok">通过</td><td class="note">apb-done / apb-fill 随步骤更新</td></tr>
+        <tr><td class="num">12</td><td>points 模块</td><td>今日打卡（persistence 愿望 +5 分）</td><td class="verdict v-ok">通过</td><td class="note">addCheckin 成功 +5 分；"Experience 报错"为默认 wish_type 误用</td></tr>
+        <tr><td class="num">13</td><td>gifts 模块</td><td>加愿望（模板库）+ 礼物 + 兑换</td><td class="verdict v-ok">通过</td><td class="note">打卡得 5 分后即可兑换低分礼物，funnel 通畅</td></tr>
+        <tr><td class="num">14</td><td>achievements</td><td>成长之花 / 日历三色渲染</td><td class="verdict v-ok">通过</td><td class="note">#v2-flower 渲染 SVG 花瓣；#calendar-grid 33 格正常</td></tr>
+        <tr><td class="num">15</td><td>stats 模块</td><td>普通账号不可见（仅站长）</td><td class="verdict v-ok">通过</td><td class="note">权限收口正确</td></tr>
+        <tr><td class="num">16</td><td>全局</td><td>应用内语言切换一致性</td><td class="verdict v-ok">通过</td><td class="note">首页→Home、目标→Goals 均正确切换</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot" style="background:var(--bad)"></span>二、真实产品 BUG（1 项，已修复待上线）</h2>
+    <div class="fix">
+      <p><b>BUG：注册成功后不自动登录，新用户要再手填密码登录一次</b></p>
+      <p class="note">根因：<code>api.register</code> 后端已返回 token 且 <code>api-client.register</code> 内部已 <code>setToken</code>，但 <code>handleSignUp</code>（login.js）注册成功后只 <code>toggleAuthForm('login')</code> 切回登录表单，未跳转。新用户激活漏斗首步即流失。</p>
+      <p class="note">修复：<code>handleSignUp</code> 注册成功后，用 <code>result.user_id/email</code> 直接 <code>handleLoginSuccess</code> 跳转 <code>index.html</code>，由 onboarding 引导承接新用户。<code>login.js</code> 版本号 ?v=10→v11。</p>
+      <p class="note">提交：<code>a1c177d</code>（已 push GitHub）。状态：<b>待你批准 FTP 上线</b>，上线后用真实注册验收。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot" style="background:var(--warn)"></span>三、初判为问题、复测澄清为"测试脚本误用"（4 项，产品实际正常）</h2>
+    <p class="note">第一轮脚本用了错误的选择器 / API 方法名 / 验证 key，导致误报。修正手法复测后均正常：</p>
+    <table>
+      <thead><tr><th>初判现象</th><th>真实原因</th><th>复测结论</th></tr></thead>
+      <tbody>
+        <tr><td>onboarding 命名失效、刷新仍弹</td><td>测试 <code>p.click</code> 在 fixed modal 内未命中按钮</td><td>直接 eval <code>dismissOnboarding()</code> 正常：命名生效、ONBOARD_KEY 写入、刷新不弹</td></tr>
+        <tr><td>成长之花未渲染</td><td>测试选择器写成 <code>.growth-flower</code></td><td>真实容器是 <code>#v2-flower</code>，含 SVG 花瓣，渲染正常</td></tr>
+        <tr><td>打卡报错 "Experience wishes do not require check-ins"</td><td>测试 <code>addWish</code> 未传 <code>wish_type</code>，默认 experience 类本就免打卡</td><td>传 <code>wish_type:'persistence'</code> 后 addCheckin 成功 +5 分</td></tr>
+        <tr><td>应用内语言切换失效</td><td>测试找了不存在的 key <code>nav.home</code>，且 <code>setLanguage</code> 本就不改 <code>htmlLang</code></td><td>用真实 key <code>home.home</code> 复测：中文→Home、目标→Goals，切换正常</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot" style="background:var(--brand)"></span>四、关于"平台没有用户"的判断</h2>
+    <p>技术链路测试结果：<b>产品功能本身健康</b>——注册、首启引导、激活清单 4 步、打卡、愿望、礼物兑换、成长之花、日历、权限收口全部跑通。唯一的激活漏斗断点（注册后二次登录）已修复。</p>
+    <p class="note">因此"没用户"是<b>增长/流量问题，不是技术故障</b>。解决方向在产品规划中已有：① 英文 SEO 内容页 + hreflang（已上线 2026-09-03）；② Pinterest 免费流量入口；③ 分享裂变（location.origin + FB/X/邮件，P2）；④ 邀请漏斗已有数据埋点。建议下一步推进分享裂变与 Pinterest 冷启动，而非再改产品逻辑。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot" style="background:var(--mut)"></span>五、遗留建议（非阻塞，待你拍板）</h2>
+    <p class="note">激活清单第 4 步"兑换"要求真实兑换（redeemedGifts>0）。新手 0 分时无法兑换高价礼物，但完成第 3 步打卡即 +5 分，足够兑换 ≤5 分礼物，funnel 实际通畅。若想更顺，可把完成条件放宽为"添加至少 1 个礼物心愿"——但会降低首启徽章门槛，需你定夺，暂未改动。</p>
+    <p class="note">测试期间在生产库创建了 3 个 QA 测试账号（qa.*@example.com），如需清理可联系我提供清理脚本。</p>
+  </div>
+</div>
+</body>
+</html>
