@@ -7,9 +7,16 @@ CREATE TABLE `users` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
+  `email_verified` tinyint(1) NOT NULL DEFAULT 0,
+  `verify_token_hash` char(64) DEFAULT NULL,
+  `verify_expires` datetime DEFAULT NULL,
+  `reset_token_hash` char(64) DEFAULT NULL,
+  `reset_expires` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
-  UNIQUE KEY `email` (`email`)
+  UNIQUE KEY `email` (`email`),
+  KEY `idx_users_reset` (`reset_token_hash`),
+  KEY `idx_users_verify` (`verify_token_hash`)
 ) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- families

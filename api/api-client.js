@@ -179,6 +179,16 @@ class ApiClient {
         return await this.request('reset_password', { token, password });
     }
 
+    // 邮箱验证：凭邮件链接里的一次性 token 置已验证
+    async verifyEmail(token) {
+        return await this.request('verify_email', { token });
+    }
+
+    // 重发验证邮件（后端防枚举，邮箱不存在也返回成功）
+    async resendVerification(email) {
+        return await this.request('resend_verification', { email });
+    }
+
     async logout() {
         try {
             if (this.token) {

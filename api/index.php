@@ -331,6 +331,12 @@ switch ($action) {
     case 'reset_password':
         handleResetPassword($pdo, $data);
         break;
+    case 'verify_email':
+        handleVerifyEmail($pdo, $data);
+        break;
+    case 'resend_verification':
+        handleResendVerification($pdo, $data);
+        break;
     case 'logout':
         handleLogout();
         break;
@@ -496,6 +502,13 @@ function handleRegister($pdo, $data) {
         $stmt->execute([$email, $passwordHash]);
         $userId = (int)$pdo->lastInsertId();
 
+        // 邮箱验证：新注册默认未验证，签发一次性验证令牌并发验证邮件（软验证：仍可正常进入 App）
+        $verifyToken = bin2hex(random_bytes(32));
+        $verifyHash = hash('sha256', $verifyToken);
+        $stmt = $pdo->prepare('UPDATE users SET verify_token_hash = ?, verify_expires = DATE_ADD(NOW(), INTERVAL 48 HOUR) WHERE id = ?');
+        $stmt->execute([$verifyHash, $userId]);
+        sendVerificationEmail($email, $verifyToken);
+
         $pdo->beginTransaction();
         $local = explode('@', $email)[0];
         if ($inviteCode !== '') {
@@ -571,6 +584,7 @@ function handleRegister($pdo, $data) {
             'token' => $token,
             'user_id' => $userId,
             'email' => $email,
+            'email_verified' => false,
             'expires_in' => TOKEN_TTL,
             'family_id' => $familyId,
             'via_invite' => $joinedViaInvite,
@@ -595,7 +609,7 @@ function handleLogin($pdo, $data) {
     }
 
     try {
-        $stmt = $pdo->prepare('SELECT id, email, password_hash FROM users WHERE email = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, email, password_hash, email_verified FROM users WHERE email = ? LIMIT 1');
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
@@ -615,6 +629,7 @@ function handleLogin($pdo, $data) {
             'token' => $token,
             'user_id' => (int)$user['id'],
             'email' => $user['email'],
+            'email_verified' => (bool)$user['email_verified'],
             'expires_in' => TOKEN_TTL,
             'profiles' => $profiles,
             'selected_profile_id' => $selected
@@ -728,6 +743,94 @@ function handleResetPassword($pdo, $data) {
     }
 }
 
+// ── 邮箱验证：凭一次性令牌置 email_verified=1 ──
+function handleVerifyEmail($pdo, $data) {
+    $token = trim((string)($data['token'] ?? ''));
+    if (!preg_match('/^[0-9a-f]{64}$/', $token)) sendError('Invalid verification token', 400);
+    try {
+        $hash = hash('sha256', $token);
+        $stmt = $pdo->prepare('SELECT id FROM users WHERE verify_token_hash = ? AND verify_expires > NOW() LIMIT 1');
+        $stmt->execute([$hash]);
+        $user = $stmt->fetch();
+        if (!$user) sendError('Verification link is invalid or expired', 400);
+        $stmt = $pdo->prepare('UPDATE users SET email_verified = 1, verify_token_hash = NULL, verify_expires = NULL WHERE id = ?');
+        $stmt->execute([(int)$user['id']]);
+        sendJson(['ok' => true, 'message' => 'Email verified.']);
+    } catch (Exception $e) {
+        sendError('Verification failed', 500, $e->getMessage());
+    }
+}
+
+// ── 重发验证邮件：限频 + 防枚举（无论邮箱是否存在/是否已验证都返回成功）──
+function handleResendVerification($pdo, $data) {
+    rateLimit('resend_verification', 3, 600); // 每 IP 10 分钟最多 3 次
+    $email = validateEmail($data['email'] ?? '');
+    if (!$email) sendError('Invalid email format', 400);
+
+    try {
+        $stmt = $pdo->prepare('SELECT id, email_verified FROM users WHERE email = ? LIMIT 1');
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+        if ($user && !(int)$user['email_verified']) {
+            $token = bin2hex(random_bytes(32));
+            $hash = hash('sha256', $token);
+            $stmt = $pdo->prepare('UPDATE users SET verify_token_hash = ?, verify_expires = DATE_ADD(NOW(), INTERVAL 48 HOUR) WHERE id = ?');
+            $stmt->execute([$hash, (int)$user['id']]);
+            sendVerificationEmail($email, $token);
+        }
+        sendJson(['ok' => true, 'message' => 'If that email exists and is unverified, a verification link has been sent.']);
+    } catch (Exception $e) {
+        sendError('Request failed', 500, $e->getMessage());
+    }
+}
+
+// ── 发送验证邮件（复用 SMTP，与重置邮件同款兜底）──
+function sendVerificationEmail($email, $token) {
+    $link = SITE_BASE_URL . '/login.html?verify=' . $token;
+    $subject = 'Star Rewards 邮箱验证 / Verify your email';
+    $body = "你好 / Hello,\r\n\r\n"
+        . "感谢注册 Star Rewards！请点击下面的链接验证你的邮箱（48 小时内有效）。验证后，若日后忘记密码即可正常通过邮件找回账号：\r\n"
+        . "Thanks for signing up for Star Rewards! Open the link below to verify your email (valid for 48 hours). Once verified, you'll be able to recover your account by email if you ever forget your password:\r\n\r\n"
+        . $link . "\r\n\r\n"
+        . "如果这不是你本人操作，请忽略此邮件。\r\n"
+        . "If you didn't sign up for this, just ignore this email.\r\n\r\n"
+        . "— Star Rewards\r\n";
+    $from = defined('MAIL_FROM') ? MAIL_FROM : 'noreply@gaocaihk.com';
+
+    if (defined('SMTP_PASSWORD') && SMTP_PASSWORD !== '') {
+        try {
+            require_once __DIR__ . '/phpmailer/Exception.php';
+            require_once __DIR__ . '/phpmailer/PHPMailer.php';
+            require_once __DIR__ . '/phpmailer/SMTP.php';
+            $mailer = new PHPMailer\PHPMailer\PHPMailer(true);
+            $mailer->isSMTP();
+            $mailer->Host = SMTP_HOST;
+            $mailer->Port = SMTP_PORT;
+            $mailer->SMTPAuth = true;
+            $mailer->Username = SMTP_USER;
+            $mailer->Password = SMTP_PASSWORD;
+            $mailer->SMTPSecure = (SMTP_PORT === 465) ? PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS : PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mailer->CharSet = 'UTF-8';
+            $mailer->SMTPDebug = 0;
+            $mailer->setFrom($from, 'Star Rewards');
+            $mailer->addAddress($email);
+            $mailer->Subject = $subject;
+            $mailer->Body = $body;
+            $mailer->send();
+            return;
+        } catch (Exception $e) {
+            error_log('[StarRewards] SMTP verify send failed (' . $email . '): ' . $e->getMessage() . ' — falling back to mail()');
+        }
+    }
+
+    $headers = 'MIME-Version: 1.0' . "\r\n"
+        . 'Content-Type: text/plain; charset=UTF-8' . "\r\n"
+        . 'From: Star Rewards <' . $from . '>' . "\r\n";
+    if (!@mail($email, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, $headers)) {
+        error_log('[StarRewards] verify email send failed: ' . $email);
+    }
+}
+
 // 账号删除（被遗忘权）：级联清理用户全部数据，并回收无成员的孤儿家庭
 // 依赖外键级联：users → profiles/family_members/user_configs/behaviors/gifts/redeemed_gifts/wishes
 //              profiles → checkins/milestones/growth_notes/child_voice/monthly_focus/growth_indicators/user_badges
@@ -824,6 +927,11 @@ function handleGetProfile($pdo) {
             $profile = ['id' => $profileId, 'name' => '孩子', 'avatar' => '⭐', 'color' => '#FFB300', 'current_points' => 0, 'total_points' => 0, 'user_id' => $userId];
         }
         $profile['user_id'] = $userId;
+        // 邮箱验证状态（软验证横幅依赖此字段，作为权威来源）
+        $stmt = $pdo->prepare('SELECT email_verified FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$userId]);
+        $uvRow = $stmt->fetch();
+        $profile['email_verified'] = $uvRow ? (bool)$uvRow['email_verified'] : false;
         sendJson($profile);
     } catch (Exception $e) {
         sendError('Failed to get profile', 500, $e->getMessage());

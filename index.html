@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=90">
+    <link rel="stylesheet" href="style.css?v=91">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
-    <script defer src="api/api-client.js?v=28"></script>
+    <script defer src="api/api-client.js?v=29"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=80"></script>
+    <script defer src="i18n.js?v=81"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=1"></script>
     <script defer src="themes.js?v=1"></script>
@@ -53,6 +53,15 @@
     <div id="wechat-browser-hint" class="wb-browser-hint" style="display:none;">
         <span data-i18n="v2.wechatHint">请在浏览器中打开，以体验完整功能（安装到主屏幕 / 打卡提醒）</span>
         <button type="button" class="wb-hint-close" onclick="closeWechatHint()" aria-label="关闭">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+    </div>
+    <!-- 邮箱验证横幅：未验证邮箱时显示（软验证，不阻断使用），点击邮件链接验证后自动消失 -->
+    <div id="verify-banner" class="verify-banner" style="display:none;" role="alert">
+        <svg class="vb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>
+        <span class="vb-text" id="vb-text" data-i18n="verify.banner">请验证邮箱以启用密码找回</span>
+        <button type="button" class="vb-btn" id="vb-resend" data-i18n="verify.resend" onclick="resendVerificationEmail()">重新发送验证邮件</button>
+        <button type="button" class="vb-close" onclick="dismissVerifyBanner()" aria-label="关闭">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
     </div>
@@ -523,7 +532,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=108"></script>
+    <script defer src="script.js?v=109"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {

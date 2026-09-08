@@ -72,6 +72,23 @@ async function handleForgotPassword() {
     }
 }
 
+// ── 邮箱验证：凭邮件链接里的 token 置已验证 ──
+async function handleVerifyEmail() {
+    const token = (new URLSearchParams(window.location.search).get('verify') || '').trim();
+    if (!token) return;
+    try {
+        await api.verifyEmail(token);
+        showTemporaryMessage(t('verify.success'), 'success');
+        // 清掉 URL 上的 token，避免刷新/分享泄漏；回到登录表单
+        window.history.replaceState({}, '', 'login.html');
+        setTimeout(() => toggleAuthForm('login'), 1500);
+    } catch (error) {
+        const msg = String(error.message || error);
+        showTemporaryMessage(/invalid or expired/i.test(msg) ? t('verify.invalid') : t('common.loginFailed') + ': ' + escapeHtml(msg), 'error');
+        window.history.replaceState({}, '', 'login.html');
+    }
+}
+
 // ── 重置密码：凭邮件链接里的 token 设置新密码 ──
 async function handleResetPassword() {
     const p1 = document.getElementById('reset-password').value;
@@ -226,6 +243,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const resetToken = (new URLSearchParams(window.location.search).get('reset') || '').trim();
     if (resetToken) {
         toggleAuthForm('reset');
+    }
+    // 邮箱验证链接 ?verify=TOKEN → 调用验证接口并提示结果
+    const verifyToken = (new URLSearchParams(window.location.search).get('verify') || '').trim();
+    if (verifyToken) {
+        handleVerifyEmail();
     }
     initAuth();
 });

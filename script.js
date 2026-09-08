@@ -2306,6 +2306,39 @@ function showLoggedInState(user) {
     console.log('Script.js: 已登录状态UI已显示');
 }
 
+// ── 邮箱验证横幅（软验证，不阻断使用）──
+function showVerifyBanner() {
+    const banner = document.getElementById('verify-banner');
+    if (banner) banner.style.display = 'flex';
+}
+function hideVerifyBanner() {
+    const banner = document.getElementById('verify-banner');
+    if (banner) banner.style.display = 'none';
+}
+// 关闭横幅：仅本次会话隐藏，下次加载若仍末验证会再出现
+function dismissVerifyBanner() {
+    hideVerifyBanner();
+    try { sessionStorage.setItem('verify_banner_dismissed', '1'); } catch (e) {}
+}
+// 重新发送验证邮件
+async function resendVerificationEmail() {
+    const btn = document.getElementById('vb-resend');
+    const email = localStorage.getItem('user_email');
+    if (!email) {
+        showTemporaryMessage(t('common.enterEmailAndPassword'), 'error');
+        return;
+    }
+    if (btn) { btn.disabled = true; btn.textContent = t('verify.sending'); }
+    try {
+        await api.resendVerification(email);
+        showTemporaryMessage(t('verify.sent'), 'success');
+    } catch (error) {
+        showTemporaryMessage(t('verify.resendFailed') + ': ' + escapeHtml(String(error.message || error)), 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = t('verify.resend'); }
+    }
+}
+
 // 初始化应用 - 仅云端加载数据
 async function initializeApp() {
     try {
@@ -2409,6 +2442,14 @@ async function loadDataFromCloud() {
         if (profile) {
             currentPoints = profile.current_points || 0;
             totalPoints = profile.total_points || 0;
+        }
+        // 邮箱验证横幅：依据 profile.email_verified 权威判断（软验证，不阻断）
+        let bannerDismissed = false;
+        try { bannerDismissed = sessionStorage.getItem('verify_banner_dismissed') === '1'; } catch (e) {}
+        if (profile && profile.email_verified) {
+            hideVerifyBanner();
+        } else if (!bannerDismissed) {
+            showVerifyBanner();
         }
         profiles = profilesData || [];
         if (profile && profile.id) {

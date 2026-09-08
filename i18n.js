@@ -2,6 +2,15 @@
 const translations = {
     zh: {
         appTitle: 'Star Rewards',
+        verify: {
+            banner: '请验证邮箱以启用密码找回',
+            resend: '重新发送验证邮件',
+            sending: '发送中…',
+            sent: '验证邮件已发送，请查收（注意垃圾邮箱）。',
+            resendFailed: '发送失败',
+            success: '邮箱已验证，欢迎使用 ✨',
+            invalid: '验证链接无效或已过期，请重新获取验证邮件。'
+        },
         login: {
             title: '登录',
             email: '邮箱',
@@ -996,6 +1005,15 @@ const translations = {
     },
     en: {
         appTitle: 'Star Rewards',
+        verify: {
+            banner: 'Verify your email to enable password recovery',
+            resend: 'Resend verification email',
+            sending: 'Sending…',
+            sent: 'Verification email sent. Please check your inbox (and spam folder).',
+            resendFailed: 'Failed to send',
+            success: 'Email verified. Welcome aboard ✨',
+            invalid: 'Verification link is invalid or expired. Please request a new one.'
+        },
         login: {
             title: 'Login',
             email: 'Email',
