@@ -104,15 +104,16 @@ async function handleSignUp() {
         return;
     }
     try {
-        await signUp(email, password, inviteCode);
+        const result = await signUp(email, password, inviteCode);
         track('register');
         if (inviteCode) track('register_with_invite', { code: inviteCode });
         showTemporaryMessage(t('common.registerSuccess'), 'success');
         sessionStorage.removeItem('pending_invite');
-        if (inviteInput) inviteInput.value = '';
-        toggleAuthForm('login');
-        document.getElementById('register-email').value = '';
-        document.getElementById('register-password').value = '';
+        // 注册即登录：api.register 内部已写入 token，直接跳转首页，由 onboarding 引导承接新用户
+        const userData = { id: result.user_id, email: result.email || email };
+        localStorage.setItem('user_email', userData.email);
+        localStorage.setItem('user_id', String(userData.id));
+        await handleLoginSuccess(userData);
     } catch (error) {
         const msg = String(error.message || error);
         // 填了邀请码但注册失败 → 多半是邀请码无效/已过期/家庭已满，给更明确的提示
