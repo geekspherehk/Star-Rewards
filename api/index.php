@@ -1755,6 +1755,12 @@ function trackEvent($pdo, $userId, $event, $meta = null) {
             $encoded = json_encode($meta, JSON_UNESCAPED_UNICODE);
             if ($encoded === false || strlen($encoded) > 2000) $meta = null;
         }
+        // 首启埋点幂等：同一 user_id 只记一次（跨浏览器/设备去重），保证留存/漏斗基准准确
+        if ($event === 'first_session') {
+            $chk = $pdo->prepare('SELECT 1 FROM analytics_events WHERE user_id = ? AND event = ? LIMIT 1');
+            $chk->execute([$userId, $event]);
+            if ($chk->fetch()) return;
+        }
         $familyId = getFamilyIdOfUser($pdo, $userId);
         $stmt = $pdo->prepare('INSERT INTO analytics_events (user_id, family_id, event, meta) VALUES (?, ?, ?, ?)');
         $stmt->execute([
