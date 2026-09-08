@@ -352,9 +352,11 @@
     <script src="i18n.js?v=79"></script>
     <script>
         (function () {
+            // 关键：首屏必须先用 initLanguage() 把 currentLanguage 与存储语言对齐，
+            // 否则正文(updateLanguageUI 读 currentLanguage) 与 图片/选择器(getLanguage 读 localStorage)
+            // 会分裂成「中文正文 + 英文图/选择器」的不一致
+            if (typeof initLanguage === 'function') initLanguage();
             var sel = document.getElementById('language-selector');
-            if (sel) sel.value = getLanguage();
-            updateLanguageUI();
 
             // 产品截图按语言切换（中英各一套素材；hero 插画无文字，不分语言）
             function swapLangImgs(lang) {
