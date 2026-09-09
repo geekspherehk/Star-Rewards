@@ -212,6 +212,13 @@ async function handleLoginSuccess(user) {
 
 async function initAuth() {
     console.log('Login.js: 初始化认证状态...');
+    // 验证/重置邮件链接场景（?verify= / ?reset=）：绝不自动跳转首页，
+    // 否则会与下方的邮件链接处理器并发，在 verifyEmail 完成前就把页面跳走，导致验证/重置失效
+    const _up = new URLSearchParams(window.location.search);
+    if (_up.get('verify') || _up.get('reset')) {
+        console.log('Login.js: 邮件链接模式（verify/reset），跳过自动跳转');
+        return;
+    }
     try {
         const token = api.getToken();
         if (token) {

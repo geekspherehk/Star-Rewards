@@ -4,7 +4,8 @@
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
         try {
-            const registration = await navigator.serviceWorker.register('./sw.js');
+            // 版本化 SW 脚本 URL：绕过 Hostinger CDN 对裸 sw.js 的缓存，确保新 SW 必被拉取
+            const registration = await navigator.serviceWorker.register('./sw.js?v=143');
             console.log('✅ ServiceWorker 注册成功:', registration.scope);
             
             // 监听更新
