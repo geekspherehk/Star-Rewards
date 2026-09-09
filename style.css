@@ -381,6 +381,26 @@ h3 {
     font-weight: 500;
 }
 
+/* 监护人同意勾选（注册表单内） */
+.consent-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 4px 0 2px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-2, #555);
+    text-align: left;
+    cursor: pointer;
+}
+.consent-label input[type="checkbox"] {
+    margin-top: 2px;
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    accent-color: var(--brand, #6C5CE7);
+}
+
 .auth-form a:hover {
     text-decoration: underline;
 }

@@ -343,6 +343,9 @@ switch ($action) {
     case 'delete_account':
         handleDeleteAccount($pdo, $data);
         break;
+    case 'delete_family':
+        handleDeleteFamily($pdo, $data);
+        break;
     case 'refreshToken':
         handleRefreshToken();
         break;
@@ -485,10 +488,12 @@ function handleRegister($pdo, $data) {
     $email = validateEmail($data['email'] ?? '');
     $password = $data['password'] ?? '';
     $inviteCode = strtoupper(trim($data['family_code'] ?? ($data['invite'] ?? '')));
+    $consent = !empty($data['consent']); // 监护人同意（儿童类产品合规必需）
 
     if (!$email) sendError('Invalid email format', 400);
     if (!validatePassword($password)) sendError('Password must be 6-255 characters', 400);
     if ($inviteCode !== '' && !preg_match('/^[0-9A-Z]{6}$/', $inviteCode)) sendError('Invalid invite code (6 characters)', 400);
+    if (!$consent) sendError('Parental consent required', 400);
 
     try {
         $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
@@ -498,7 +503,7 @@ function handleRegister($pdo, $data) {
         }
 
         $passwordHash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
-        $stmt = $pdo->prepare('INSERT INTO users (email, password_hash) VALUES (?, ?)');
+        $stmt = $pdo->prepare('INSERT INTO users (email, password_hash, consented_at) VALUES (?, ?, NOW())');
         $stmt->execute([$email, $passwordHash]);
         $userId = (int)$pdo->lastInsertId();
 
@@ -882,6 +887,68 @@ function handleDeleteAccount($pdo, $data) {
     } catch (Throwable $e) { /* 回收失败不影响账号删除结果 */ }
 
     sendJson(['success' => true, 'message' => 'Account deleted']);
+}
+
+// ── 家庭删除（仅 owner）：级联清理 family_members→profiles→子表 ──
+function handleDeleteFamily($pdo, $data) {
+    $userId = getUserId();
+    $confirm = trim((string)($data['confirm'] ?? ''));
+    if ($confirm !== 'DELETE') sendError('Confirmation required: send confirm=DELETE', 400);
+
+    // 当前用户所在且为 owner 的家庭（只能删自己拥有的家庭）
+    $stmt = $pdo->prepare("SELECT family_id FROM family_members WHERE user_id = ? AND role = 'owner'");
+    $stmt->execute([$userId]);
+    $owned = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    if (empty($owned)) {
+        sendError('No family owned by this account', 403);
+    }
+    // 默认删第一个拥有的家庭（多数用户只有一个家庭）；前端会传 family_id 精确指定
+    $familyId = !empty($data['family_id']) ? (int)$data['family_id'] : $owned[0];
+    if (!in_array($familyId, $owned, true)) {
+        sendError('Not allowed to delete this family', 403);
+    }
+
+    // 保护其他成员：家庭里还有别人时不许删（否则会连带清空他人数据）
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM family_members WHERE family_id = ?');
+    $stmt->execute([$familyId]);
+    if ((int)$stmt->fetchColumn() > 1) {
+        sendError('Family has other members; remove them first', 403);
+    }
+
+    try {
+        $pdo->beginTransaction();
+        // 先清无外键的 analytics_events（按该家庭成员归属），避免孤儿行
+        $stmt = $pdo->prepare('DELETE ae FROM analytics_events ae JOIN family_members fm ON ae.user_id = fm.user_id WHERE fm.family_id = ?');
+        $stmt->execute([$familyId]);
+        // 删家庭：级联 family_members→profiles→behaviors/wishes/checkins/... 全部清掉
+        $stmt = $pdo->prepare('DELETE FROM families WHERE id = ?');
+        $stmt->execute([$familyId]);
+
+        // 不变式：每个账号必须属于一个家庭。删掉后立刻建一个新的空 solo 家庭，
+        // 否则该账号再次登录时 getProfile 会因 requireFamilyMember 403 而完全不可用。
+        $stmt = $pdo->prepare('SELECT email FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$userId]);
+        $uRow = $stmt->fetch();
+        $local = $uRow ? explode('@', $uRow['email'])[0] : '我';
+        $code = generateInviteCode($pdo);
+        $stmt = $pdo->prepare('INSERT INTO families (name, invite_code, invite_expires_at) VALUES (?, ?, NULL)');
+        $stmt->execute([$local . ' 的家庭', $code]);
+        $newFamilyId = (int)$pdo->lastInsertId();
+        $stmt = $pdo->prepare('INSERT INTO family_members (family_id, user_id, role, display_name) VALUES (?, ?, "owner", ?)');
+        $stmt->execute([$newFamilyId, $userId, $local]);
+        $stmt = $pdo->prepare('INSERT INTO profiles (user_id, family_id, name, avatar, color, current_points, total_points) VALUES (?, ?, ?, ?, ?, 0, 0)');
+        $stmt->execute([$userId, $newFamilyId, '孩子', '⭐', '#FFB300']);
+        $newProfileId = (int)$pdo->lastInsertId();
+        // user_configs 仍指向已被级联删除的旧 profile，改指新的
+        $stmt = $pdo->prepare('UPDATE user_configs SET selected_profile_id = ? WHERE user_id = ?');
+        $stmt->execute([$newProfileId, $userId]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        sendError('Failed to delete family', 500, $e->getMessage());
+    }
+
+    sendJson(['success' => true, 'message' => 'Family deleted']);
 }
 
 function handleRefreshToken() {

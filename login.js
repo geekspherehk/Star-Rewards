@@ -18,9 +18,9 @@ async function checkUserLoggedIn() {
     }
 }
 
-async function signUp(email, password, inviteCode) {
+async function signUp(email, password, inviteCode, consent) {
     if (!email || !password) throw new Error(t('common.enterEmailAndPassword'));    console.log('SignUp: 调用API注册...');
-    const result = await api.register(email, password, inviteCode || '');
+    const result = await api.register(email, password, inviteCode || '', consent);
     console.log('SignUp: API响应:', result);
     return result;
 }
@@ -125,6 +125,8 @@ async function handleSignUp() {
     const password = document.getElementById('register-password').value;
     const inviteInput = document.getElementById('register-invite');
     const inviteCode = inviteInput ? inviteInput.value.trim().toUpperCase() : '';
+    const consentEl = document.getElementById('register-consent');
+    const consent = consentEl ? consentEl.checked : false;
     if (!email || !password) {
         showTemporaryMessage(t('common.enterEmailAndPassword'), 'error');
         return;
@@ -133,8 +135,13 @@ async function handleSignUp() {
         showTemporaryMessage(t('common.passwordMinLength'), 'error');
         return;
     }
+    if (!consent) {
+        showTemporaryMessage(t('common.consentRequired'), 'error');
+        if (consentEl) consentEl.focus();
+        return;
+    }
     try {
-        const result = await signUp(email, password, inviteCode);
+        const result = await signUp(email, password, inviteCode, true);
         track('register');
         if (inviteCode) track('register_with_invite', { code: inviteCode });
         showTemporaryMessage(t('common.registerSuccess'), 'success');

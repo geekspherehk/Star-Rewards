@@ -2618,10 +2618,13 @@ function renderFamilyModal() {
     const newBtn = document.getElementById('family-new-invite-btn');
     const leaveBtn = document.getElementById('family-leave-btn');
     const joinBtn = document.getElementById('family-join-btn');
+    const deleteBtn = document.getElementById('family-delete-btn');
     if (codeEl) codeEl.textContent = fam.invite_code || '-';
     if (linkEl) linkEl.value = fam.invite_link || currentFamily.invite_link || '';
     if (newBtn) newBtn.style.display = isOwner ? 'inline-block' : 'none';
     if (leaveBtn) leaveBtn.style.display = isOwner ? 'none' : 'inline-block';
+    // 仅家庭 owner 可见「删除家庭」（级联清空全家数据，不可恢复）
+    if (deleteBtn) deleteBtn.style.display = isOwner ? 'inline-block' : 'none';
     // solo 家庭（自己一人且为 owner）时显示「加入家庭」入口，支持用邀请码加入其他家庭
     if (joinBtn) joinBtn.style.display = (isOwner && fam.member_count <= 1) ? 'inline-block' : 'none';
 
@@ -2731,6 +2734,31 @@ async function familyLeave() {
         showTemporaryMessage(t('home.family.leaveSuccess'), 'success');
     } catch (e) {
         showTemporaryMessage(String(e.message || e), 'error');
+    }
+}
+
+// 删除家庭（仅 owner）：级联清空全家数据，不可恢复
+async function deleteMyFamily() {
+    const familyId = currentFamily && currentFamily.family ? currentFamily.family.id : null;
+    if (!familyId) { showTemporaryMessage(t('common.error'), 'error'); return; }
+    if (!confirm(t('home.deleteFamilyConfirm1'))) return;
+    if (!confirm(t('home.deleteFamilyConfirm2'))) return;
+    try {
+        showLoading(t('home.deleting'));
+        await api.deleteFamily(familyId);
+        closeFamilyModal();
+        // 清空本地登录态并退出到落地页
+        sessionStorage.clear();
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_email');
+        currentUser = null; currentFamily = null;
+        showTemporaryMessage(t('home.deleteFamilyDone'), 'success');
+        setTimeout(() => { window.location.href = 'landing.html'; }, 1500);
+    } catch (e) {
+        showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
+    } finally {
+        hideLoading();
     }
 }
 

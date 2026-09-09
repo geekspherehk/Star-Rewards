@@ -10,6 +10,7 @@ CREATE TABLE `users` (
   `email_verified` tinyint(1) NOT NULL DEFAULT 0,
   `verify_token_hash` char(64) DEFAULT NULL,
   `verify_expires` datetime DEFAULT NULL,
+  `consented_at` datetime DEFAULT NULL COMMENT '监护人同意时间戳；NULL=未记录同意',
   `reset_token_hash` char(64) DEFAULT NULL,
   `reset_expires` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),

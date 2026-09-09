@@ -147,9 +147,10 @@ class ApiClient {
         return result;
     }
 
-    async register(email, password, familyCode = '') {
+    async register(email, password, familyCode = '', consent = false) {
         const payload = { email, password };
         if (familyCode) payload.family_code = familyCode;
+        payload.consent = consent ? '1' : '';
         const result = await this.request('register', payload);
         if (result.token) {
             this.setToken(result.token, result.expires_in);
@@ -214,6 +215,11 @@ class ApiClient {
             try { localStorage.removeItem('push_invite_done'); } catch (e) {}
             try { localStorage.removeItem('sr_onboarded'); } catch (e) {}
         }
+    }
+
+    // 家庭删除（仅 owner）：服务端级联清理家庭全部数据
+    async deleteFamily(familyId) {
+        return await this.request('delete_family', { confirm: 'DELETE', family_id: familyId });
     }
 
     async getProfile() {
