@@ -35,7 +35,7 @@
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=30"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=83"></script>
+    <script defer src="i18n.js?v=84"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=2"></script>
     <script defer src="themes.js?v=1"></script>
@@ -84,6 +84,7 @@
                         <div class="um-children" id="um-children"></div>
                         <button type="button" class="um-item" onclick="openProfileModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="home.profile.add">添加孩子</span></button>
                         <button type="button" class="um-item" onclick="openFamilyModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span data-i18n="home.family.open">家庭</span></button>
+                        <button type="button" class="um-item" onclick="window.open((typeof currentLanguage!=='undefined' &amp;&amp; currentLanguage==='en') ? 'guides-en.html' : 'guides.html', '_blank')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span data-i18n="home.guides">育儿指南</span></button>
                         <button type="button" class="um-item um-item--logout" onclick="doSignOut()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span data-i18n="home.logout">退出登录</span></button>
                         <button type="button" class="um-item um-item--danger" onclick="deleteMyAccount()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span data-i18n="home.deleteAccount">删除账号</span></button>
                     </div>
