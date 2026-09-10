@@ -1,6 +1,7 @@
 // 建 Pinterest 画板（用户名 ujpu7859）
-// 每个板独立 try/catch：Pinterest 点击常触发导航导致 frame detach，单个失败不影响其他
-// 每个板建完都去 _created 页独立复核，不拿「点击成功」当成功
+// 关键教训：Pinterest 是 React 应用，DOM 上的 el.click() 对弹窗提交按钮不可靠，
+//           必须用 puppeteer 真实鼠标点击（page.click / elementHandle.click）。
+//           弹窗提交按钮选择器： [data-test-id="board-form-submit-button"]
 const puppeteer = require('/Users/xuversa/.workbuddy/binaries/node/workspace/node_modules/puppeteer-core');
 const fs = require('fs');
 
@@ -19,7 +20,23 @@ const BOARDS = [
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const log = (...a) => console.log('[boards]', ...a);
-const SCOPE = '[role="dialog"], div[aria-modal="true"]';
+
+// 用真实鼠标点击第一个匹配文案的元素（React 才认）
+async function realClick(page, words, skipAria = []) {
+  const handles = await page.$$('button, div[role="button"], a, [role="menuitem"]');
+  for (const h of handles) {
+    const info = await h.evaluate(el => ({
+      t: (el.innerText || '').trim().toLowerCase(),
+      a: (el.getAttribute('aria-label') || '').trim().toLowerCase(),
+    })).catch(() => null);
+    if (!info || (!info.t && !info.a)) continue;
+    if (skipAria.some(x => info.a.includes(x))) continue;
+    if (words.some(w => info.t === w || info.t.startsWith(w) || info.a.includes(w))) {
+      try { await h.click(); return info.t || info.a; } catch (e) { /* 元素不可点则跳过 */ }
+    }
+  }
+  return null;
+}
 
 (async () => {
   const out = { user: USER, startedAt: new Date().toISOString() };
@@ -38,69 +55,40 @@ const SCOPE = '[role="dialog"], div[aria-modal="true"]';
       await page.goto(`https://www.pinterest.com/${USER}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
       await sleep(4000);
 
-      // 已存在则跳过
       const has = await page.evaluate((n) =>
         (document.body ? document.body.innerText : '').toLowerCase().includes(n.toLowerCase()), name);
       if (has) { log('已存在，跳过:', name); created.push(name + ' (已存在)'); continue; }
 
-      // 1) 点顶部 Create（aria: Create a Pin or a board）
-      const opened = await page.evaluate(() => {
-        const els = Array.from(document.querySelectorAll('button, div[role="button"], a'));
-        for (const el of els) {
-          const a = (el.getAttribute('aria-label') || '').trim().toLowerCase();
-          const t = (el.innerText || '').trim().toLowerCase();
-          if (a.includes('pin or a board') || t === 'create') { el.click(); return t || a; }
-        }
-        return null;
-      });
-      if (!opened) { failed.push({ board: name, why: '找不到 Create 入口' }); continue; }
+      // 1) 顶部 Create 菜单（真实点击）
+      let ok = false;
+      const createBtn = await page.$('[aria-label="Create a Pin or a board"]');
+      if (createBtn) { await createBtn.click(); ok = true; }
+      if (!ok) { failed.push({ board: name, why: '找不到 Create 入口' }); continue; }
       await sleep(3000);
 
-      // 2) 菜单里选 Board
-      const picked = await page.evaluate(() => {
-        const els = Array.from(document.querySelectorAll('button, div[role="button"], a, [role="menuitem"]'));
-        for (const el of els) {
-          const t = (el.innerText || '').trim().toLowerCase();
-          const a = (el.getAttribute('aria-label') || '').trim().toLowerCase();
-          if (a.includes('pin or a board')) continue;
-          if (t === 'board' || t.includes('create board') || a.includes('create board')) { el.click(); return t || a; }
-        }
-        return null;
-      });
+      // 2) 菜单里选 Board（真实点击，且不要点回入口）
+      const picked = await realClick(page, ['board'], ['pin or a board']);
       if (!picked) { failed.push({ board: name, why: '菜单里找不到 Board' }); continue; }
       await sleep(3500);
 
-      // 3) 弹窗内填名（必须限定作用域，否则点到顶部导航的 Create）
-      const typed = await page.evaluate((SCOPE) => {
-        const roots = Array.from(document.querySelectorAll(SCOPE));
-        const scope = roots.length ? roots[roots.length - 1] : document;
-        for (const inp of Array.from(scope.querySelectorAll('input, textarea'))) {
-          const s = [inp.placeholder || '', inp.getAttribute('aria-label') || '',
-                     inp.name || '', inp.id || ''].join(' ').toLowerCase();
-          if (/board|name|title/.test(s)) { inp.focus(); return true; }
-        }
-        return false;
-      }, SCOPE);
-      if (!typed) { failed.push({ board: name, why: '弹窗内找不到名称输入框' }); continue; }
-      await page.keyboard.type(name, { delay: 35 });
+      // 3) 填名
+      const input = await page.$('[role="dialog"] input, [aria-modal="true"] input');
+      if (!input) { failed.push({ board: name, why: '弹窗内找不到输入框' }); continue; }
+      await input.click();
+      await page.keyboard.type(name, { delay: 30 });
       await sleep(1200);
 
-      // 4) 弹窗内提交
-      const done = await page.evaluate((SCOPE) => {
-        const roots = Array.from(document.querySelectorAll(SCOPE));
-        const scope = roots.length ? roots[roots.length - 1] : document;
-        for (const el of Array.from(scope.querySelectorAll('button, div[role="button"]'))) {
-          const t = (el.innerText || '').trim().toLowerCase();
-          if (t === 'create' || t === 'done' || t === 'save' || t === 'create board') { el.click(); return t; }
-        }
-        return null;
-      }, SCOPE);
-      if (!done) { failed.push({ board: name, why: '弹窗内找不到提交按钮' }); continue; }
-      await sleep(4500);
+      // 4) 真实点击提交按钮（test-id 最稳）
+      const submit = await page.$('[data-test-id="board-form-submit-button"]')
+        || await page.$('[role="dialog"] button[type="submit"]');
+      if (!submit) { failed.push({ board: name, why: '找不到提交按钮' }); continue; }
+      await submit.click();
+      log('已点击提交');
+      await sleep(6000);
 
       // 5) 独立复核
       await page.goto(`https://www.pinterest.com/${USER}/_created/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-      await sleep(4000);
+      await sleep(5000);
       const really = await page.evaluate((n) =>
         (document.body ? document.body.innerText : '').toLowerCase().includes(n.toLowerCase()), name);
       if (really) { created.push(name); log('✅ 复核通过:', name); }
@@ -110,7 +98,7 @@ const SCOPE = '[role="dialog"], div[aria-modal="true"]';
       log('本轮异常:', e.message);
       failed.push({ board: name, why: '异常: ' + e.message });
       try { await page.close(); } catch (e2) {}
-      try { page = await browser.newPage(); } catch (e3) { log('重建页面失败'); break; }
+      try { page = await browser.newPage(); } catch (e3) { break; }
     }
   }
 
