@@ -117,21 +117,43 @@ async function dismissTour(page) {
   await shot('01b-after-dismiss');
 
   // 3) 填标题
-  for (const sel of ['input[name="title"]', 'input[aria-label*="Title"]', 'input[id="title"]', '#pin-title']) {
+  //    ⚠️ 真实结构是 TEXTAREA 且 id 为动态 UUID：textarea#pin-draft-title-<uuid>，placeholder "Add your title"
+  //    曾用 input[name="title"] 等选择器 —— <input> 永远匹配不到 <textarea>，标题被静默跳过
+  let titleOK = false;
+  for (const sel of ['textarea[id^="pin-draft-title"]', 'textarea[placeholder*="Add your title" i]']) {
     const el = await page.$(sel);
-    if (el) { await el.click({ clickCount: 3 }); await el.type(String(item.pin_title || item.title), { delay: 20 }); log('已填标题'); break; }
+    if (el) { await el.click({ clickCount: 3 }); await el.type(String(item.pin_title || item.title), { delay: 20 }); titleOK = true; log('已填标题'); break; }
   }
+  if (!titleOK) log('⚠️ 标题框未找到');
 
-  // 4) 填描述
-  for (const sel of ['textarea[name="description"]', 'textarea[aria-label*="Description"]', 'div[contenteditable="true"]']) {
+  // 4) 填描述（上传图片后才出现，同为动态 id 的 textarea）
+  let descOK = false;
+  for (const sel of ['textarea[id^="pin-draft-description"]', 'textarea[placeholder*="description" i]', 'div[contenteditable="true"]']) {
     const el = await page.$(sel);
-    if (el) { await el.click(); await el.type(String(item.description || ''), { delay: 15 }); log('已填描述'); break; }
+    if (el) { await el.click(); await el.type(String(item.description || ''), { delay: 12 }); descOK = true; log('已填描述'); break; }
   }
+  if (!descOK) log('⚠️ 描述框未找到');
 
-  // 5) 填目标链接
-  for (const sel of ['input[name="link"]', 'input[aria-label*="link" i]', 'input[placeholder*="link" i]']) {
+  // 5) 填目标链接 —— 全流程最关键的一步（用户流量的唯一入口）
+  //    ⚠️ 真实结构：textarea#pin-draft-link-<uuid>，placeholder "Add a destination link"
+  //    曾用 input[name="link"]/input[aria-label*=link] —— 全部匹配不到 textarea，链接被静默跳过，
+  //    导致发出的 Pin 只有「已认领域名」的署名、没有可点击的落地页链接
+  let linkOK = false;
+  for (const sel of ['textarea[id^="pin-draft-link"]', 'textarea[placeholder*="destination link" i]']) {
     const el = await page.$(sel);
-    if (el) { await el.click(); await el.type(item.url, { delay: 15 }); log('已填链接'); break; }
+    if (el) { await el.click(); await el.type(item.url, { delay: 15 }); linkOK = true; log('已填链接:', item.url); break; }
+  }
+  if (!linkOK) { log('❌ 找不到链接输入框(textarea#pin-draft-link)，中止'); await shot('fail-no-link-input'); await browser.close(); process.exit(1); }
+
+  // 5b) 回读校验：把框里的实际值读出来，确认链接真的进去了（不能只凭 type 没抛错就认为成功）
+  const readback = await page.evaluate(() => {
+    const t = (s) => { const e = document.querySelector(s); return e ? (e.value || e.innerText || '') : ''; };
+    return { title: t('textarea[id^="pin-draft-title"]'), link: t('textarea[id^="pin-draft-link"]') };
+  });
+  log('回读 → 标题:', JSON.stringify(readback.title.slice(0, 50)), '| 链接:', JSON.stringify(readback.link));
+  if (!/gaocaihk\.com/.test(readback.link)) {
+    log('❌ 链接未生效（框内为空或非本站域名），中止发布');
+    await shot('fail-link-empty'); await browser.close(); process.exit(1);
   }
 
   // 6) 选画板（不存在则新建）
