@@ -4578,8 +4578,8 @@ function renderEduColumn() {
         { title: t('home.eduArt2Title'), sub: t('home.eduArt2Sub'), zh: 'habit-building-guide.html', en: 'habit-building-guide-en.html' },
         { title: t('home.eduArt3Title'), sub: t('home.eduArt3Sub'), zh: 'reward-ideas.html', en: 'reward-ideas-en.html' },
         { title: t('home.eduArt4Title'), sub: t('home.eduArt4Sub'), zh: 'behavior-templates.html', en: 'behavior-templates-en.html' },
-        { title: t('home.eduArt5Title'), sub: t('home.eduArt5Sub'), zh: null, en: 'chore-chart-guide-en.html' },
-        { title: t('home.eduArt6Title'), sub: t('home.eduArt6Sub'), zh: null, en: 'kids-points-chart-guide-en.html' }
+        { title: t('home.eduArt5Title'), sub: t('home.eduArt5Sub'), zh: 'chore-chart-guide.html', en: 'chore-chart-guide-en.html' },
+        { title: t('home.eduArt6Title'), sub: t('home.eduArt6Sub'), zh: 'kids-points-chart-guide.html', en: 'kids-points-chart-guide-en.html' }
     ];
     const urlOf = a => isEn ? a.en : (a.zh || a.en);
     let html = articles.map(a =>
