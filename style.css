@@ -4293,6 +4293,9 @@ a:hover { text-decoration: underline; }
 .edu-card-more { margin-top: auto; padding-top: 6px; font-size: .8rem; font-weight: 600; color: var(--brand, #4A148C); }
 .edu-card--soon { opacity: .7; border-style: dashed; }
 .edu-card--soon .edu-card-title { color: var(--text-2, #9aa0ac); }
+.edu-card--all { border-style: dashed; background: var(--brand-soft, #ede7f6); }
+.edu-card--all .edu-card-title { color: var(--brand, #4A148C); }
+.edu-card--all:hover { border-color: var(--brand, #4A148C); }
 
 /* ── 首次登录引导弹窗 ── */
 .onboarding-modal .onboarding-content { max-width: 420px; text-align: center; }

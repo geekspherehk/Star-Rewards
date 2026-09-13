@@ -4567,27 +4567,35 @@ function closeHelpPanel() {
     if (el) el.style.display = 'none';
 }
 
-// 教育专栏：列出已有 SEO 文章 + 占位卡
+// 教育专栏：列出全部已有 SEO 文章 + 合集入口（2026-09-13 补全 6 篇入口，未登录也可见）
 function renderEduColumn() {
     const el = document.getElementById('edu-cards');
     if (!el) return;
-    // 文章链接跟随界面语言：英文读者直接看英文版 SEO 页（2026-09-05 修复英文模式打开中文文章）
+    // 文章链接跟随界面语言：英文读者看英文版；中文读者优先中文版，缺中文版则回退英文版
     const isEn = getLanguage() === 'en';
     const articles = [
-        { title: t('home.eduArt1Title'), sub: t('home.eduArt1Sub'), url: isEn ? 'star-chart-guide-en.html' : 'star-chart-guide.html' },
-        { title: t('home.eduArt2Title'), sub: t('home.eduArt2Sub'), url: isEn ? 'habit-building-guide-en.html' : 'habit-building-guide.html' },
-        { title: t('home.eduArt3Title'), sub: t('home.eduArt3Sub'), url: isEn ? 'reward-ideas-en.html' : 'reward-ideas.html' }
+        { title: t('home.eduArt1Title'), sub: t('home.eduArt1Sub'), zh: 'star-chart-guide.html', en: 'star-chart-guide-en.html' },
+        { title: t('home.eduArt2Title'), sub: t('home.eduArt2Sub'), zh: 'habit-building-guide.html', en: 'habit-building-guide-en.html' },
+        { title: t('home.eduArt3Title'), sub: t('home.eduArt3Sub'), zh: 'reward-ideas.html', en: 'reward-ideas-en.html' },
+        { title: t('home.eduArt4Title'), sub: t('home.eduArt4Sub'), zh: 'behavior-templates.html', en: 'behavior-templates-en.html' },
+        { title: t('home.eduArt5Title'), sub: t('home.eduArt5Sub'), zh: null, en: 'chore-chart-guide-en.html' },
+        { title: t('home.eduArt6Title'), sub: t('home.eduArt6Sub'), zh: null, en: 'kids-points-chart-guide-en.html' }
     ];
+    const urlOf = a => isEn ? a.en : (a.zh || a.en);
     let html = articles.map(a =>
-        '<a class="edu-card" href="' + a.url + '" target="_blank" rel="noopener">' +
+        '<a class="edu-card" href="' + urlOf(a) + '" target="_blank" rel="noopener">' +
             '<span class="edu-card-tag">' + escapeHtml(t('home.eduReadMore')) + '</span>' +
             '<h4 class="edu-card-title">' + escapeHtml(a.title) + '</h4>' +
             '<p class="edu-card-sub">' + escapeHtml(a.sub) + '</p>' +
             '<span class="edu-card-more">' + escapeHtml(t('home.eduReadMore')) + ' →</span>' +
         '</a>'
     ).join('');
-    html += '<div class="edu-card edu-card--soon"><span class="edu-card-tag">' + escapeHtml(t('home.eduComingSoon')) + '</span>' +
-        '<h4 class="edu-card-title">…</h4><p class="edu-card-sub">' + escapeHtml(t('home.eduComingSoon')) + '</p></div>';
+    html += '<a class="edu-card edu-card--all" href="' + (isEn ? 'guides-en.html' : 'guides.html') + '" target="_blank" rel="noopener">' +
+        '<span class="edu-card-tag">' + escapeHtml(t('home.eduViewAll')) + '</span>' +
+        '<h4 class="edu-card-title">' + escapeHtml(t('home.eduViewAllTitle')) + '</h4>' +
+        '<p class="edu-card-sub">' + escapeHtml(t('home.eduViewAllSub')) + '</p>' +
+        '<span class="edu-card-more">' + escapeHtml(t('home.eduViewAll')) + ' →</span>' +
+    '</a>';
     el.innerHTML = html;
 }
 // 高级选项（目标天数 / 难度）手动展开/收起
