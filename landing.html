@@ -337,13 +337,13 @@
         <footer class="lp-footer">
             <div class="lp-wrap">
                 <div class="lp-footer-links">
-                    <a href="guides.html" data-i18n="land.guidesTitle">育儿指南</a>
-                    <a href="star-chart-guide.html">积分奖励表指南</a>
-                    <a href="habit-building-guide.html">积分制培养好习惯</a>
-                    <a href="reward-ideas.html">奖励创意</a>
-                    <a href="behavior-templates.html">行为模板</a>
-                    <a href="chore-chart-guide.html">家务表 vs 积分制</a>
-                    <a href="kids-points-chart-guide.html">儿童积分表指南</a>
+                    <a href="guides.html" data-zh="guides.html" data-en="guides-en.html" data-i18n="land.guidesTitle">育儿指南</a>
+                    <a href="star-chart-guide.html" data-zh="star-chart-guide.html" data-en="star-chart-guide-en.html">积分奖励表指南</a>
+                    <a href="habit-building-guide.html" data-zh="habit-building-guide.html" data-en="habit-building-guide-en.html">积分制培养好习惯</a>
+                    <a href="reward-ideas.html" data-zh="reward-ideas.html" data-en="reward-ideas-en.html">奖励创意</a>
+                    <a href="behavior-templates.html" data-zh="behavior-templates.html" data-en="behavior-templates-en.html">行为模板</a>
+                    <a href="chore-chart-guide.html" data-zh="chore-chart-guide.html" data-en="chore-chart-guide-en.html">家务表 vs 积分制</a>
+                    <a href="kids-points-chart-guide.html" data-zh="kids-points-chart-guide.html" data-en="kids-points-chart-guide-en.html">儿童积分表指南</a>
                     <a href="login.html">登录</a>
                 </div>
                 <p>Star Rewards · stellar.gaocaihk.com</p>
@@ -351,8 +351,8 @@
         </footer>
     </main>
 
-    <script src="api/api-client.js?v=18"></script>
-    <script src="i18n.js?v=79"></script>
+    <script src="api/api-client.js?v=30"></script>
+    <script src="i18n.js?v=86"></script>
     <script>
         (function () {
             // 关键：首屏必须先用 initLanguage() 把 currentLanguage 与存储语言对齐，
@@ -369,12 +369,21 @@
                     if (next && img.getAttribute('src') !== next) img.src = next;
                 });
             }
+            // 页脚教育专栏链接：按语言切换中英文版本（2026-09-13 引流入口补全）
+            function swapFooterLang(lang) {
+                var en = lang === 'en';
+                document.querySelectorAll('.lp-footer-links a[data-en]').forEach(function (a) {
+                    a.href = en ? a.dataset.en : (a.dataset.zh || a.getAttribute('href'));
+                });
+            }
             swapLangImgs(getLanguage());
+            swapFooterLang(getLanguage());
             if (typeof setLanguage === 'function') {
                 var _setLang = setLanguage;
                 window.setLanguage = function (lang) {
                     var r = _setLang.apply(this, arguments);
                     swapLangImgs(lang);
+                    swapFooterLang(lang);
                     if (sel) sel.value = lang;
                     return r;
                 };
