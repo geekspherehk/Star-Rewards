@@ -25,7 +25,11 @@
     "pin_title": "Points Chart | Star Rewards",
     "description": "No apps, no printing — just a chart and a marker Free guide from Star Rewards.",
     "url": "https://stellar.gaocaihk.com/kids-points-chart-guide-en.html",
-    "board": "Kids Reward Chart Ideas"
+    "board": "Kids Reward Chart Ideas",
+    "posted": true,
+    "posted_at": "2026-09-17T14:40:00.000Z",
+    "pin_id": "1123155594603764946",
+    "note": "2026-09-17 人工补记：el.click() 选板静默失败后，改用真实点击成功发布"
   },
   {
     "file": "/Users/work/code/Star-Rewards/assets/pins/pin-star-chart.png",
@@ -43,7 +47,11 @@
     "pin_title": "Free Printable | Star Rewards",
     "description": "Print it tonight, start tomorrow morning Free guide from Star Rewards.",
     "url": "https://stellar.gaocaihk.com/star-chart-guide-en.html",
-    "board": "Star Chart for Kids"
+    "board": "Star Chart for Kids",
+    "posted": true,
+    "posted_at": "2026-09-17T15:00:00.000Z",
+    "pin_id": "1123155594603765766",
+    "note": "2026-09-17 复核通过（差集新增1张、标题一致）；画板名断言为旧选择器误报"
   },
   {
     "file": "/Users/work/code/Star-Rewards/assets/pins/pin-star-chart-c.png",
@@ -51,7 +59,10 @@
     "pin_title": "Star Charts | Star Rewards",
     "description": "What actually works at each stage Free guide from Star Rewards.",
     "url": "https://stellar.gaocaihk.com/star-chart-guide-en.html",
-    "board": "Star Chart for Kids"
+    "board": "Star Chart for Kids",
+    "posted": true,
+    "posted_at": "2026-09-17T15:04:43.996Z",
+    "pin_id": "1123155594603765824"
   },
   {
     "file": "/Users/work/code/Star-Rewards/assets/pins/pin-habit-building.png",
@@ -69,7 +80,10 @@
     "pin_title": "Habits Don’t | Star Rewards",
     "description": "What really makes a habit stick in kids Free guide from Star Rewards.",
     "url": "https://stellar.gaocaihk.com/habit-building-guide-en.html",
-    "board": "Habit Building for Children"
+    "board": "Habit Building for Children",
+    "posted": true,
+    "posted_at": "2026-09-17T15:18:29.109Z",
+    "pin_id": "1123155594603766562"
   },
   {
     "file": "/Users/work/code/Star-Rewards/assets/pins/pin-habit-building-c.png",
