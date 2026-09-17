@@ -6,7 +6,8 @@
 // 要点：
 //  1. 登录态必须用探针页真实校验（只看 _auth cookie 会假阳性）
 //  2. 画板不存在时在下拉里选「Create <板名>」顺手新建
-//  3. 发布后去 _created 页独立复核，不拿点击当成功
+//  3. 发布后按「Pin 自身」复核（拿 pin id → 读该 Pin 的真实画板/链接）
+//     ⚠️ 不可用「整页搜板名」复核：只要该画板存在就必然命中，发错画板也会假阳性（2026-09-13 实证）
 const fs = require('fs');
 const puppeteer = require('/Users/xuversa/.workbuddy/binaries/node/workspace/node_modules/puppeteer-core');
 
@@ -73,6 +74,37 @@ async function dismissTour(page) {
   // 最后再试一次 Escape
   try { await page.keyboard.press('Escape'); } catch (e) {}
   return false;
+}
+
+// 采集某画板首页的 pin id → alt 映射（用独立标签页，避免打断 pin-builder 草稿）
+// 用于发布前后做差集：新增的 pin 就是刚发的
+async function collectBoardPins(browser, boardUrl) {
+  const p = await browser.newPage();
+  try {
+    await p.setDefaultTimeout(60000);
+    await p.goto(boardUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await sleep(6000);
+    await p.evaluate(() => window.scrollBy(0, window.innerHeight * 1.5)).catch(() => {});
+    await sleep(2500);
+    const data = await p.evaluate(() => {
+      const map = {};
+      // 画板名：第一个不是站点 logo("Pinterest") 的 h1；抓不到也不影响判定
+      const h1s = Array.from(document.querySelectorAll('h1'))
+        .map(e => (e.innerText || '').trim())
+        .filter(t => t && t.toLowerCase() !== 'pinterest');
+      for (const a of document.querySelectorAll('a[href*="/pin/"]')) {
+        const mm = (a.getAttribute('href') || '').match(/\/pin\/(\d{15,20})/);
+        if (!mm) continue;
+        const img = a.querySelector('img');
+        if (!(mm[1] in map)) map[mm[1]] = img ? (img.alt || '') : '';
+      }
+      return { map, title: h1s[0] || null };
+    });
+    return data;
+  } catch (e) {
+    log('采集画板失败:', boardUrl, e.message);
+    return { map: {}, title: null };
+  } finally { try { await p.close(); } catch (e) {} }
 }
 
 (async () => {
@@ -170,20 +202,36 @@ async function dismissTour(page) {
   if (!opened) { opened = !!(await realClickByText(page, ['select a board', 'board'])); log('兜底打开下拉:', opened); }
   await sleep(2000);
 
+  let chosenHref = null;   // 选中的画板 href（用于发布后按板复核），需在 if(opened) 外声明
   if (opened) {
     await sleep(1500);
 
-    // A. 下拉里已有同名画板 → 直接选
-    let chosen = await page.evaluate((name) => {
-      const els = Array.from(document.querySelectorAll('div,li,button,[role="option"],[role="menuitem"]'));
-      for (const el of els) {
-        const t = (el.innerText || '').trim().toLowerCase();
-        if (t.length > 40) continue;              // 只看短文案，排除整页大容器
-        if (t === name.toLowerCase()) { el.click(); return t; }
+    // A. 下拉里已有同名画板 → 直接选（顺带抓该画板的 href，用于发布后按板复核）
+    //    ⚠️ 必须用「真实鼠标点击」。Pinterest 是 React SPA，el.click()（JS 触发）常静默无效
+    async function clickByExactText(name) {
+      const handles = await page.$$('div,li,button,[role="option"],[role="menuitem"],a');
+      for (const h of handles) {
+        const info = await h.evaluate(el => ({
+          t: (el.innerText || '').trim(),
+          href: el.getAttribute('href') || (el.closest('a') ? el.closest('a').getAttribute('href') : null),
+        })).catch(() => null);
+        if (!info) continue;
+        if (info.t.length > 40) continue;              // 只看短文案，排除整页大容器
+        if (info.t.toLowerCase() === name.toLowerCase()) {
+          try {
+            await h.evaluate(el => el.scrollIntoView({ block: 'center' })).catch(() => {});
+            await sleep(250);
+            await h.click();                            // 真实鼠标点击
+            return info;
+          } catch (e) {}
+        }
       }
       return null;
-    }, item.board);
-    log('选已有画板:', chosen);
+    }
+    const chosenObj = await clickByExactText(item.board);
+    const chosen = chosenObj ? chosenObj.t : null;
+    if (chosenObj && chosenObj.href) chosenHref = chosenObj.href;
+    log('选已有画板(真实点击):', chosen, '| href:', chosenHref);
 
     if (!chosen) {
       await page.keyboard.type(item.board, { delay: 40 });
@@ -213,31 +261,103 @@ async function dismissTour(page) {
   await shot('03-before-publish');
 
   // 7) 发布
+  //    先挂网络监听：抓「创建 Pin」接口返回的 pin id（DOM 拿不到时靠它兜底）
+  const createdPinIds = new Set();
+  const onResp = async (res) => {
+    try {
+      const u = res.url();
+      if (!/pinterest\.com\/(resource|graphql|_api)/.test(u)) return;
+      if (!/PinResource/i.test(u)) return;
+      const ct = res.headers()['content-type'] || '';
+      if (!/json/.test(ct)) return;
+      const t = await res.text();
+      const re = /"(?:id|pin_id)"\s*:\s*"(\d{15,20})"/g;
+      let m; while ((m = re.exec(t))) createdPinIds.add(m[1]);
+    } catch (e) {}
+  };
+  page.on('response', onResp);
+
+  // 发布前先确认画板真的被选上了（否则点了发布也白点）
+  const boardSelTxt = await page.evaluate(() => {
+    const b = document.querySelector('[data-test-id="board-dropdown-select-button"], [data-test-id="board-dropdown"]');
+    return b ? (b.innerText || '').trim() : null;
+  });
+  log('发布前画板选择器文本:', JSON.stringify(boardSelTxt));
+
+  // 6b) 发布前快照：目标画板当前的 pin id 集合（用独立标签页，不打断草稿）
+  const slugifyBoard = n => String(n).toLowerCase().replace(/&/g, ' ')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const boardSlug = (chosenHref && ((chosenHref.match(/^\/([^\/?#]+)\/([^\/?#]+)/) || [])[2])) || slugifyBoard(item.board);
+  const boardUrl = `https://www.pinterest.com/${USER}/${boardSlug}/`;
+  log('目标画板 URL:', boardUrl);
+  const beforeSnap = await collectBoardPins(browser, boardUrl);
+  const beforeIds = new Set(Object.keys(beforeSnap.map));
+  log('发布前该板 pin 数:', beforeIds.size, '| 板名:', JSON.stringify(beforeSnap.title));
+
   let published = false;
   for (const sel of ['button[data-test-id="board-dropdown-save-button"]', 'button[data-test-id="pin-builder-publish"]']) {
     const b = await page.$(sel);
-    if (b) { try { await b.click(); published = true; log('点击发布:', sel); break; } catch (e) {} }
+    if (!b) continue;
+    const dis = await b.evaluate(el => el.disabled === true || el.getAttribute('aria-disabled') === 'true').catch(() => false);
+    if (dis) { log('⚠️ 发布按钮处于 disabled:', sel); continue; }
+    try {
+      await b.evaluate(el => el.scrollIntoView({ block: 'center' })).catch(() => {});
+      await sleep(250);
+      await b.click(); published = true; log('点击发布:', sel); break;
+    } catch (e) {}
   }
   if (!published) { const t = await realClickByText(page, ['publish', 'save']); published = !!t; log('兜底发布:', t); }
-  await sleep(8000);
+  await sleep(9000);
   await shot('04-after-publish');
+  page.off('response', onResp);
 
-  // 8) 独立复核：去「已保存」页看板名是否真的出现
-  //    注意不能查 /_created/ —— 那个 tab 只显示 board 卡片轮廓、不含板名文本（踩过，导致误判失败）
-  await page.goto(`https://www.pinterest.com/${USER}/_saved/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await sleep(5500);
-  const verified = await page.evaluate((n) =>
-    (document.body ? document.body.innerText : '').toLowerCase().includes(n.toLowerCase()), item.board);
-  await shot('05-verify');
-  log('复核画板是否出现:', verified ? '✅' : '⚠️ 未出现');
+  // 发布后诊断：URL 是否跳转、页面上有没有报错文案（便于定位"点了没反应"）
+  log('发布后 URL:', page.url());
+  const postState = await page.evaluate(() => {
+    const body = document.body ? document.body.innerText : '';
+    const err = body.match(/(Please select a board|Something went wrong|Try again|couldn't|failed|required)/i);
+    const dialog = document.querySelector('[role="dialog"]');
+    return { errHint: err ? err[0] : null, hasDialog: !!dialog, dialogText: dialog ? (dialog.innerText || '').slice(0, 300) : null };
+  });
+  log('发布后状态:', JSON.stringify(postState));
 
-  if (published && verified) {
+  // 8) 独立复核：按「画板差集」判定 —— 不猜 pin id、不搜整页文本
+  //    ⚠️ 旧做法去 /_saved/ 搜「板名字符串是否出现在页面」：只要该画板存在，板名必然出现，
+  //       发到错误画板也会报成功（2026-09-13 实证的假阳性）。
+  //    ⚠️ 也不要试图从 create 响应里猜 pin id：该响应含 board/user 等多个 id，
+  //       实测取第一个会拿到**非 pin** 的 id，导致复核永远失败（2026-09-17 实证）。
+  //    ⚠️ Pin 详情页不可用：会被未完成的 business 引导弹窗劫持、跳 /?show_error=true。
+  //    可靠做法：发布前后各采集一次目标画板首页的 pin id，**新增的那个就是刚发的**。
+
+  // 8a) 发布后快照 + 差集
+  const norm = s => String(s || '').trim().toLowerCase();
+  const afterSnap = await collectBoardPins(browser, boardUrl);
+  const newIds = Object.keys(afterSnap.map).filter(id => !beforeIds.has(id));
+  const newPinId = newIds[0] || null;
+  const newAlt = newPinId ? afterSnap.map[newPinId] : null;
+  const nameOk = !afterSnap.title || norm(afterSnap.title) === norm(item.board);
+  const titleOk = !newAlt || !item.pin_title || newAlt.toLowerCase().includes(String(item.pin_title).toLowerCase());
+  // 判据：① 期望画板出现「新增」pin（这一步能抓到"发错板"）② 新 pin 标题与预期一致
+  // 画板名文本仅作参考：站点 logo 等元素会污染 h1，不作阻断条件
+  const pinOk = published && newIds.length > 0 && titleOk;
+  await shot('05-after');
+
+  log('发布后该板 pin 数:', Object.keys(afterSnap.map).length, '| 新增:', newIds.length, JSON.stringify(newIds));
+  log('复核 → 画板名一致?', nameOk ? '✅' : '❌', JSON.stringify(afterSnap.title),
+      '| 新 pin 标题一致?', titleOk ? '✅' : '⚠️', JSON.stringify(newAlt));
+
+  if (pinOk) {
     item.posted = true; item.posted_at = new Date().toISOString();
+    if (newPinId) item.pin_id = newPinId;
     fs.writeFileSync(QUEUE, JSON.stringify(queue, null, 2));
     const left = queue.filter(q => !q.posted).length;
-    console.log(`POST_OK: ${item.file} 已发布到「${item.board}」。剩余待发 ${left} 条。`);
+    console.log(`POST_OK: ${item.file} 已发布到「${afterSnap.title}」(pin ${newPinId})。剩余待发 ${left} 条。`);
     await browser.close(); process.exit(0);
   }
-  console.log(`POST_FAIL: published=${published} verified=${verified}。截图 /tmp/pinshots/`);
+  const why = !published ? '发布动作未成功'
+    : (newIds.length === 0 ? '目标画板没有新增 pin（没发出去，或发到了别的板）'
+                           : '新 pin 标题与预期不一致');
+  console.log(`POST_FAIL: ${why} | published=${published} 新增=${newIds.length} 复核画板=${JSON.stringify(afterSnap.title)} 期望=${JSON.stringify(item.board)}。截图 /tmp/pinshots/`);
+  console.log('⚠️ POST_FAIL ≠ 一定没发出去：请先人工核对画板；若已发出请手动把该条标记 posted，避免重发造成重复。');
   await browser.close(); process.exit(1);
 })().catch(e => { console.error('ERROR:', e.message); process.exit(1); });
