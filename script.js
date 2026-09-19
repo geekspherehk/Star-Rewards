@@ -2345,7 +2345,17 @@ async function resendVerificationEmail() {
 }
 
 // 初始化应用 - 仅云端加载数据
+// 幂等守卫：index.html 内联脚本（DOMContentLoaded 的 checkAuthStatus + window load 的
+// 二次 checkAuthStatus）与下面的 DOMContentLoaded 一共会调用本函数 3 次。
+// 修复前每次都完整重跑一遍首屏加载 —— 请求量 ×3，是打满数据库每小时连接数上限的主因
+// （配 bootstrap 聚合接口后，首屏从 27 个请求降到 3 个）。
+let appInitializeStarted = false;
 async function initializeApp() {
+    if (appInitializeStarted) {
+        console.log('Script.js: 应用已初始化，跳过重复调用');
+        return;
+    }
+    appInitializeStarted = true;
     try {
         console.log('Script.js: 开始初始化应用...');
         
