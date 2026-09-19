@@ -47,7 +47,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+// ── 响应捕获（bootstrap 聚合接口专用）──────────────────────────────
+// Hostinger 共享库对「每小时新建连接数」有上限（max_connections_per_hour=500），
+// 而每个 HTTP 请求都会新建一条 PDO 连接、没有池化。首屏原本要打 9-10 个接口，
+// 于是 40-60 次页面加载就打满配额，之后全站返回 500。
+// 这里让 sendJson 支持「捕获模式」：不输出、不 exit，只记下第一个响应，
+// 使 handleBootstrap 能在同一条连接里串起多个既有 handler，
+// 首屏连接数 9-10 → 1。正常模式下行为完全不变（仍是输出 + exit）。
+$GLOBALS['SR_CAPTURE_MODE'] = false;
+$GLOBALS['SR_CAPTURED'] = null;
+
+// 捕获模式下跑一个 handler，返回其响应体；非 200 或抛错则返回 null
+function srCapture(callable $fn) {
+    $GLOBALS['SR_CAPTURE_MODE'] = true;
+    $GLOBALS['SR_CAPTURED'] = null;
+    try {
+        $fn();
+    } catch (Throwable $e) {
+        error_log('[StarRewards bootstrap] captured handler failed: ' . $e->getMessage());
+    }
+    $GLOBALS['SR_CAPTURE_MODE'] = false;
+    $res = $GLOBALS['SR_CAPTURED'];
+    $GLOBALS['SR_CAPTURED'] = null;
+    return ($res !== null && (int)$res['code'] === 200) ? $res['data'] : null;
+}
+
 function sendJson($data, $code = 200) {
+    if ($GLOBALS['SR_CAPTURE_MODE']) {
+        // 先到先得：handler 里 sendError 之后可能还有兜底语句，忽略后续响应
+        if ($GLOBALS['SR_CAPTURED'] === null) {
+            $GLOBALS['SR_CAPTURED'] = ['code' => $code, 'data' => $data];
+        }
+        return;
+    }
     http_response_code($code);
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
@@ -246,9 +278,14 @@ function getFamilyIdOfUser($pdo, $userId) {
 }
 
 function requireFamilyMember($pdo, $userId) {
+    // 请求内缓存：bootstrap 聚合会在同一请求里串起 8-9 个 handler，
+    // 每个都校验一次家庭归属；缓存后查询数从 9 次降到 1 次。
+    // static 变量在每个 PHP 请求开始时重置，不存在跨请求串号风险。
+    static $familyCache = [];
+    if (isset($familyCache[$userId])) return $familyCache[$userId];
     $fid = getFamilyIdOfUser($pdo, $userId);
     if (!$fid) sendError('You are not in a family', 403);
-    return $fid;
+    return $familyCache[$userId] = $fid;
 }
 
 function profileBelongsToFamily($pdo, $familyId, $profileId) {
@@ -319,6 +356,9 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $data = getRequestData();
 
 switch ($action) {
+    case 'bootstrap':
+        handleBootstrap($pdo, $data);
+        break;
     case 'register':
         handleRegister($pdo, $data);
         break;
@@ -973,6 +1013,56 @@ function handleRefreshToken() {
     sendJson([
         'token' => $newToken,
         'expires_in' => TOKEN_TTL
+    ]);
+}
+
+// ── 首屏聚合：一次请求返回首页需要的全部数据 ──
+// 前端 initializeApp 原本并发打 6 个（loadDataFromCloud）+ 2 个（loadV2Data）
+// + 1 个（canViewStats），每个都是独立 HTTP 请求 → 独立 PDO 连接。
+// 这里在同一条连接内串起这些 handler，连接数降一个数量级。
+// 失败语义：profile 拿不到即整体失败（前端回落逐个请求）；family / v2 / checkins
+// 允许为 null（原本前端也是容错处理）。
+function handleBootstrap($pdo, $data) {
+    $userId = getUserId();
+    requireFamilyMember($pdo, $userId);
+
+    $req = is_array($data) ? $data : [];
+    if (empty($req['profile_id'])) {
+        $sel = getSelectedProfileId($pdo, $userId);
+        if ($sel) $req['profile_id'] = $sel;
+    }
+
+    // 档案是其余数据的锚点：拿不到就没有继续的意义
+    $profile = srCapture(function () use ($pdo) { handleGetProfile($pdo); });
+    if (!is_array($profile) || !isset($profile['id'])) {
+        sendError('Failed to load profile', 500);
+    }
+    // 前端未指定孩子时，以服务端 selected 为准（getProfile 已做过有效性回退）
+    if (empty($req['profile_id'])) $req['profile_id'] = (int)$profile['id'];
+
+    $profiles = srCapture(function () use ($pdo) { handleGetProfiles($pdo); });
+    $behaviors = srCapture(function () use ($pdo, $req) { handleGetBehaviors($pdo, $req); });
+    $gifts = srCapture(function () use ($pdo, $req) { handleGetGifts($pdo, $req); });
+    $redeemed = srCapture(function () use ($pdo, $req) { handleGetRedeemedGifts($pdo, $req); });
+    $family = srCapture(function () use ($pdo) { handleGetFamily($pdo); });
+    $v2 = srCapture(function () use ($pdo, $req) { handleGetV2Overview($pdo, $req); });
+    $checkins = srCapture(function () use ($pdo, $req) {
+        $d = $req; $d['wish_id'] = 0;   // 0 = 拉全量打卡（成长日历口径）
+        handleGetCheckins($pdo, $d);
+    });
+    $stats = srCapture(function () use ($pdo) { handleCanViewStats($pdo); });
+
+    sendJson([
+        'success' => true,
+        'profile' => $profile,
+        'profiles' => $profiles,
+        'behaviors' => $behaviors,
+        'gifts' => $gifts,
+        'redeemed_gifts' => $redeemed,
+        'family' => $family,
+        'v2' => $v2,
+        'checkins' => ($checkins && isset($checkins['checkins'])) ? $checkins['checkins'] : null,
+        'can_view_stats' => ($stats && isset($stats['allowed'])) ? (bool)$stats['allowed'] : false,
     ]);
 }
 

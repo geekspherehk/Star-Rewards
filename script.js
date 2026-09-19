@@ -51,6 +51,11 @@ let redeemedGifts = [];
 let checkins = [];      // 打卡记录（含补卡），供成长日历按日期展示
 let diaryEntries = [];
 
+// 首屏聚合（bootstrap）一次性暂存：只在 initializeApp 首轮加载后存活，
+// 由 loadV2Data / maybeShowStatsNav 各消费一次即弃，避免与后续刷新抢数据
+let firstPaintV2 = null;             // { v2, checkins }
+let firstPaintStatsAllowed = null;   // boolean
+
 // 多孩档案
 let profiles = [];
 let selectedProfileId = null;
@@ -2362,7 +2367,7 @@ async function initializeApp() {
         currentUser = { email: email, id: localStorage.getItem('user_id') };
         console.log('Script.js: 用户已登录:', email);
         
-        await loadDataFromCloud();
+        await loadDataFromCloud(true);
         console.log('Script.js: 云端数据加载成功');
         
         showLoggedInState(currentUser);
@@ -2417,22 +2422,53 @@ async function initializeApp() {
 }
 
 // 从云端加载用户数据
-async function loadDataFromCloud() {
+// isFirstPaint=true 时走 bootstrap 聚合接口（1 个请求替代原来 6 个），
+// 并把 V2 概览/打卡/看板权限暂存给同一次首屏渲染复用。
+async function loadDataFromCloud(isFirstPaint = false) {
     console.log('Script.js: 开始从云端加载用户数据...');
-    
+
     try {
         if (!api.getToken()) {
             throw new Error(t('common.notLoggedIn'));        }
-        
-        const [profile, profilesData, behaviorsData, giftsData, redeemedGiftsData, familyData] = await Promise.all([
-            api.getProfile(),
-            api.getProfiles(),
-            api.getBehaviors(),
-            api.getGifts(),
-            api.getRedeemedGifts(),
-            api.getFamily().catch(() => null)
-        ]);
-        
+
+        let profile, profilesData, behaviorsData, giftsData, redeemedGiftsData, familyData;
+
+        let boot = null;
+        if (isFirstPaint && api.bootstrap) {
+            try {
+                boot = await api.bootstrap(selectedProfileId || 0);
+                if (!boot || !boot.success || !boot.profile) boot = null;
+            } catch (e) {
+                console.warn('Script.js: bootstrap 聚合接口不可用，回退逐请求加载:', e);
+                boot = null;
+            }
+        }
+
+        if (boot) {
+            profile = boot.profile;
+            profilesData = boot.profiles || [];
+            behaviorsData = boot.behaviors || [];
+            giftsData = boot.gifts || [];
+            redeemedGiftsData = boot.redeemed_gifts || [];
+            familyData = boot.family || null;
+            // 暂存给同一次首屏的 loadV2Data / maybeShowStatsNav（各消费一次）
+            firstPaintV2 = boot.v2 ? { v2: boot.v2, checkins: boot.checkins } : null;
+            firstPaintStatsAllowed = !!boot.can_view_stats;
+        } else {
+            // 非首屏 / 聚合接口异常 → 原逐请求路径（行为与历史版本一致）
+            [profile, profilesData, behaviorsData, giftsData, redeemedGiftsData, familyData] = await Promise.all([
+                api.getProfile(),
+                api.getProfiles(),
+                api.getBehaviors(),
+                api.getGifts(),
+                api.getRedeemedGifts(),
+                api.getFamily().catch(() => null)
+            ]);
+            // 切孩子等非首屏加载：作废首屏暂存，强制后续走真实请求拿最新数据
+            firstPaintV2 = null;
+            firstPaintStatsAllowed = null;
+        }
+
         console.log('Script.js: 数据加载成功:');
         console.log('- 档案:', profile ? `当前积分: ${profile.current_points}, 总积分: ${profile.total_points}` : '无档案');
         console.log('- 行为记录:', behaviorsData.length, '条');
@@ -3627,8 +3663,22 @@ async function refreshCheckins(force = false) {
 async function loadV2Data(forceCheckins = false) {
     if (!api.getToken()) return null;
     try {
-        v2Data = await api.getV2Overview();
-        await refreshCheckins(forceCheckins);
+        // 首屏：bootstrap 已一并带回 V2 概览与打卡记录，直接复用（再省 2 个请求）；
+        // 其余场景（加分/打卡/切孩子后刷新）走真实请求，保证数据最新。
+        const fp = forceCheckins ? null : firstPaintV2;
+        firstPaintV2 = null;
+        if (fp && fp.v2) {
+            v2Data = fp.v2;
+            if (Array.isArray(fp.checkins)) {
+                checkins = fp.checkins;
+                lastCheckinsRefresh = Date.now();
+            } else {
+                await refreshCheckins(forceCheckins);
+            }
+        } else {
+            v2Data = await api.getV2Overview();
+            await refreshCheckins(forceCheckins);
+        }
         renderV2All();
         updateDiaryList();   // 打卡记录就绪后刷新成长日历（含本周成长）
         return v2Data;
@@ -4483,10 +4533,16 @@ let statsNavAllowed = false;
 async function maybeShowStatsNav() {
     const card = document.getElementById('stats-nav-card');
     if (!card) return;
-    try {
-        statsNavAllowed = await api.canViewStats();
-    } catch (e) {
-        statsNavAllowed = false;
+    // 首屏：bootstrap 已带回站长权限位，省一个请求；其余场景实时探测
+    if (firstPaintStatsAllowed !== null) {
+        statsNavAllowed = firstPaintStatsAllowed;
+        firstPaintStatsAllowed = null;
+    } else {
+        try {
+            statsNavAllowed = await api.canViewStats();
+        } catch (e) {
+            statsNavAllowed = false;
+        }
     }
     card.style.display = statsNavAllowed ? '' : 'none';
     // 非站长：若当前正停在看板模块，退回首页，避免停留在无权限页面
