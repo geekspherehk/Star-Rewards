@@ -1910,6 +1910,18 @@ li:hover {
         font-size: 0.9rem;
         width: 100%;
     }
+
+    /* 上面这条全局规则会误伤「行内按钮」：它们自身没有声明 width，于是被撑成整行宽，
+       要么把同级文本挤到 0 宽（汉字逐字竖排），要么让按钮独占一行。
+       （2026-09-19：邮箱验证横幅崩坏、激活进度条的「步已完成」被压成竖排，都是它造成的。）
+       下面显式声明 width: auto 收口 —— 特异性 0,1,0 高于裸 button 的 0,0,1，且位于其后。
+       以后新增「确实要满宽」的主 CTA，请用自己的类名声明 width: 100%，不要依赖裸 button。 */
+    .apb-go,
+    .reminder-toggle,
+    .export-btn,
+    .poster-btn {
+        width: auto;
+    }
     
     .cloud-buttons,
     .button-group {
@@ -4768,8 +4780,10 @@ a:hover { text-decoration: underline; }
 .push-invite-text b { font-size: var(--fs-md, 1rem); color: var(--text-1, #2c2c2a); }
 .push-invite-text span { font-size: var(--fs-sm, 0.85rem); color: var(--text-2, #6b6b68); }
 .push-invite-actions { display: flex; gap: 8px; }
+/* flex: 1 1 0 让两个按钮等宽。缺这条时次按钮没有 flex、却带着移动端全局的 width:100%，
+   会被撑到主按钮的 3 倍宽（实测 272px : 84px），视觉层级刚好反过来。 */
 .push-invite-actions .primary-btn,
-.push-invite-actions .ghost-btn { padding: 8px 16px; font-size: var(--fs-sm, 0.85rem); border-radius: var(--r-md, 12px); white-space: nowrap; }
+.push-invite-actions .ghost-btn { flex: 1 1 0; width: auto; padding: 8px 16px; font-size: var(--fs-sm, 0.85rem); border-radius: var(--r-md, 12px); white-space: nowrap; }
 @media (max-width: 560px) {
     .push-invite { bottom: 76px; }
     .push-invite-actions { width: 100%; justify-content: flex-end; }
