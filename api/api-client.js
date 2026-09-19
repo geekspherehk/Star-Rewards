@@ -254,8 +254,8 @@ class ApiClient {
         return await this.request('getBehaviors', { profile_id: this.selectedProfileId });
     }
 
-    async addBehavior(description, points) {
-        return await this.request('addBehavior', Object.assign({ description, points, profile_id: this.selectedProfileId }, extra || {}));
+    async addBehavior(description, points, extra = {}) {
+        return await this.request('addBehavior', Object.assign({ description, points, profile_id: this.selectedProfileId }, extra));
     }
 
     async getGifts() {
