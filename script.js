@@ -3799,8 +3799,15 @@ function shortDayLabel(key) {
     return Number(p[1]) + '/' + Number(p[2]);
 }
 
+// 点阵依赖 checkins.wish_id（后端 get_checkins 返回）。老版本接口不带该字段时，
+// 全部记录会被误判成「漏卡」——所以先探测，探测不到就退回旧的通用补卡入口。
+function checkinDataHasWishId() {
+    return (Array.isArray(checkins) ? checkins : []).some(c => c && c.wish_id !== undefined && c.wish_id !== null && c.wish_id !== '');
+}
+
 // 点阵：今天只做状态提示（不用点击，避免误触加分）；漏掉的那天直接可点补卡
 function renderCheckinDots(wish) {
+    if (!checkinDataHasWishId()) return '';
     const days = checkinLast7Days(wish);
     const dots = days.map(d => {
         const label = shortDayLabel(d.key);
@@ -3839,13 +3846,17 @@ function renderHomeCheckin() {
             const checkinBtn = done
                 ? '<button type="button" class="v2-checkin-btn is-done" disabled><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkedIn')) + '</button>'
                 : '<button type="button" class="v2-checkin-btn" onclick="v2Checkin(' + w.id + ')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkin')) + ' +5</button>';
-            const days = checkinLast7Days(w);
-            const missed = days.filter(d => d.state === 'missed');
-            // 有漏卡才出现补卡入口，并把「哪一天」写进按钮文案（不用自己去日期控件里找）
-            const missedBtn = missed.length
-                ? '<button type="button" class="v2-makeup-btn tci-makeup" onclick="openMakeupCheckin(' + w.id + ',\'' + missed[missed.length - 1].key + '\')" title="' + escapeHtml(t('v2.makeupTip')) + '">' +
+            // 有漏卡才出现补卡入口，并把「哪一天」写进按钮文案（不用自己去日期控件里找）；
+            // 若拿不到 per-目标 打卡数据（版本错配），退回不带日期的通用入口
+            const dotsUsable = checkinDataHasWishId();
+            const missed = dotsUsable ? checkinLast7Days(w).filter(d => d.state === 'missed') : [];
+            const lastMissed = missed.length ? missed[missed.length - 1].key : '';
+            const makeupLabel = dotsUsable ? t('v2.makeupOn', { date: shortDayLabel(lastMissed) }) : t('v2.makeup');
+            const showMakeup = !dotsUsable || missed.length > 0;
+            const missedBtn = showMakeup
+                ? '<button type="button" class="v2-makeup-btn tci-makeup" onclick="openMakeupCheckin(' + w.id + (lastMissed ? ',\'' + lastMissed + '\'' : '') + ')" title="' + escapeHtml(t('v2.makeupTip')) + '">' +
                     '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>' +
-                    '<span class="tmi-text">' + escapeHtml(t('v2.makeupOn', { date: shortDayLabel(missed[missed.length - 1].key) })) + '</span></button>'
+                    '<span class="tmi-text">' + escapeHtml(makeupLabel) + '</span></button>'
                 : '';
             return '<div class="today-checkin-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
                 '<div class="tci-top">' +
@@ -4330,14 +4341,14 @@ function showCelebrate(wish, res) {
 
 // ── 补打卡：最近 7 天漏掉的日期直接点选（不用自己去日期控件里猜哪一天） ──
 let makeupWishId = null;
-let makeupCheckedDates = [];
+let makeupCheckedDates = null;   // null = 该目标数据还没拉到，先用首页全局 checkins 兜底渲染
 let makeupSelectedDate = '';
 
 async function openMakeupCheckin(id, presetDate) {
     const wishes = (v2Data && v2Data.wishes) || [];
     const wish = wishes.find(w => w.id === id);
     makeupWishId = id;
-    makeupCheckedDates = [];
+    makeupCheckedDates = null;
     makeupSelectedDate = presetDate || '';
 
     const nameEl = document.getElementById('makeup-wish-name');
@@ -4412,7 +4423,7 @@ async function confirmMakeupCheckin() {
     if (!makeupWishId) return;
     const date = makeupSelectedDate;
     if (!date) { showTemporaryMessage(t('v2.makeupPick'), 'error'); return; }
-    if (makeupCheckedDates.indexOf(date) >= 0) { showTemporaryMessage(t('v2.makeupDupe'), 'error'); return; }
+    if (Array.isArray(makeupCheckedDates) && makeupCheckedDates.indexOf(date) >= 0) { showTemporaryMessage(t('v2.makeupDupe'), 'error'); return; }
     const noteEl = document.getElementById('makeup-note');
     const note = noteEl ? noteEl.value : '';
     closeMakeupModal();

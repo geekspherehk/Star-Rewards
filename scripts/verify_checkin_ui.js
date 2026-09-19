@@ -46,6 +46,7 @@ const extracted = extract(scriptSrc, [
     /^function v2CatVar\(/m,
     /^function v2CatSoftVar\(/m,
     /^function calendarDateKey\(/m,
+    /^function checkinDataHasWishId\(/m,
     /^function checkinLast7Days\(/m,
     /^function shortDayLabel\(/m,
     /^function renderCheckinDots\(/m,
@@ -225,6 +226,29 @@ const dayKey = offset => {
             await new Promise(r => setTimeout(r, 200));
             await page.screenshot({ path: SHOT, fullPage: true });
         }
+        await page.close();
+    }
+
+    // ── 降级验证：老后端返回的打卡记录不带 wish_id，不能把每一天都误判成「漏卡」 ──
+    {
+        const page = await browser.newPage();
+        await page.setViewport({ width: 430, height: 900, deviceScaleFactor: 2 });
+        await page.goto('file://' + tmpHtml, { waitUntil: 'load' });
+        await page.addScriptTag({ path: path.join(ROOT, 'utils.js') });
+        await page.addScriptTag({ path: path.join(ROOT, 'i18n.js') });
+        await page.addScriptTag({ content: extracted });
+        const legacy = await page.evaluate(() => {
+            window.v2Data = { wishes: [{ id: 1, title: '每天读 10 分钟', category: 'self_drive', status: 'active', wish_type: 'habit', streak: 3, created_at: '2026-09-01 08:00:00' }] };
+            window.checkins = [{ checkin_date: '2026-09-18' }];   // 老接口：没有 wish_id
+            renderHomeCheckin();
+            const row = document.querySelector('.today-checkin-row');
+            return {
+                dots: row.querySelectorAll('.ci-dot').length,
+                makeupText: row.querySelector('.tci-makeup') ? row.querySelector('.tci-makeup').textContent.trim() : null,
+            };
+        });
+        check('降级：无 wish_id 时不渲染点阵（不误报漏卡）', legacy.dots === 0, 'dots=' + legacy.dots);
+        check('降级：补卡按钮退回通用文案', legacy.makeupText === '补卡', JSON.stringify(legacy.makeupText));
         await page.close();
     }
 
