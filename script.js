@@ -3700,7 +3700,9 @@ async function quickAddBehavior() {
             }
         } catch (e) {}
     } catch (e) {
-        showTemporaryMessage(t('common.addPointsFailed') + (e && e.error ? ': ' + e.error : ''), 'error');
+        // e.error = 服务端返回的报错；e.message = 前端异常（如 ReferenceError），两者都暴露出来便于定位
+        const detail = (e && (e.error || e.message)) || '';
+        showTemporaryMessage(t('common.addPointsFailed') + (detail ? ': ' + escapeHtml(String(detail)) : ''), 'error');
     }
 }
 function renderHomeCheckin() {
