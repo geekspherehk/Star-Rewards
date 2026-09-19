@@ -147,6 +147,15 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
     await page.screenshot({ path: path.join(OUT, 'bootstrap-ok.png') });
 
+    // 新账号必然弹新手引导遮罩，会挡住首页主体 —— 关掉后补一张干净的产品界面
+    await page.evaluate(() => {
+      const ob = document.getElementById('onboarding-modal');
+      if (typeof dismissOnboarding === 'function') dismissOnboarding();
+      if (ob) ob.style.display = 'none';
+    });
+    await sleep(900);
+    await page.screenshot({ path: path.join(OUT, 'bootstrap-home.png') });
+
     // ── 反向：聚合接口故障时必须回退且不退化 ─────────────
     console.log('\n───── 反向：bootstrap 返回 500 ─────');
     await page.setRequestInterception(true);
