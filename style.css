@@ -3901,11 +3901,37 @@ a:hover { text-decoration: underline; }
 .makeup-content { position: relative; }
 .makeup-content h3 { padding-right: 32px; }
 .makeup-content .form-group { margin-bottom: 14px; }
-.makeup-content input[type="date"] {
-    width: 100%; padding: 10px 12px;
-    border: 1px solid var(--border-strong); border-radius: 8px;
-    font-size: 1rem; box-sizing: border-box; background: var(--surface);
-    color: var(--text); appearance: none; -webkit-appearance: none;
+/* 补打卡弹窗：近 7 天日期芯片（点选即可，不用自己在日期控件里找漏的那天） */
+.makeup-days {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+}
+.mk-day {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    min-height: 60px; padding: 8px 4px; box-sizing: border-box;
+    /* 显式尺寸：移动端全局 button{width:100%} 会撑爆未声明宽度的按钮 */
+    width: auto; flex: 0 0 auto;
+    border: 1.5px solid var(--border); border-radius: var(--r-md);
+    background: var(--surface-2); color: var(--text-2);
+    font: inherit; font-size: var(--fs-xs); line-height: 1.2; cursor: default;
+}
+.mk-day .mk-w { font-size: var(--fs-xs); color: var(--muted); }
+.mk-day .mk-d { font-size: var(--fs-sm); font-weight: 700; color: var(--text); }
+.mk-day .mk-tick { display: inline-flex; }
+.mk-day .mk-tick svg { width: 12px; height: 12px; }
+.mk-day.is-checked { background: var(--success-soft); border-color: transparent; }
+.mk-day.is-checked .mk-w, .mk-day.is-checked .mk-d { color: var(--success-700); }
+.mk-day.is-before { opacity: .45; }
+.mk-day.is-missed { background: var(--accent-soft); border-color: var(--accent); cursor: pointer; }
+.mk-day.is-missed .mk-d { color: var(--accent-ink); }
+.mk-day.is-today { background: var(--brand-soft); border-color: var(--brand); cursor: pointer; }
+.mk-day.is-today .mk-d { color: var(--brand-700); }
+.mk-day.is-selected { background: var(--brand); border-color: var(--brand); }
+.mk-day.is-selected .mk-w { color: rgba(255, 255, 255, .78); }
+.mk-day.is-selected .mk-d,
+.mk-day.is-selected .mk-tick { color: #fff; }
+@media (max-width: 380px) {
+    .makeup-days { gap: 4px; }
+    .mk-day { min-height: 56px; padding: 6px 2px; }
 }
 .makeup-content input[type="text"] { box-sizing: border-box; }
 .makeup-wish-name {
@@ -4101,6 +4127,24 @@ a:hover { text-decoration: underline; }
 .tci-streak { flex: 0 0 auto; font-size: var(--fs-xs); color: var(--text-2); white-space: nowrap; }
 /* 下行：打卡 / 补卡按钮，跟随信息流左对齐 */
 .tci-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-start; }
+/* 近 7 天打卡点阵：一眼看出打过哪些天、哪几天漏了（漏的那天可直接点补卡） */
+.ci-dots-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ci-edge { flex: 0 0 auto; font-size: var(--fs-xs); color: var(--muted); }
+.ci-dots { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ci-dot {
+    /* 显式尺寸：移动端全局 button{width:100%} 会撑爆未声明宽度的按钮 */
+    flex: 0 0 auto; width: 18px; height: 18px; padding: 0; box-sizing: border-box;
+    border: 1.5px solid transparent; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--surface-3);
+}
+.ci-dot.is-checked { background: var(--pc); }
+.ci-dot.is-today { background: transparent; border: 1.5px dashed var(--pc); }
+.ci-dot.is-missed { background: var(--accent-soft); border-color: var(--accent); cursor: pointer; }
+.ci-dot.is-missed::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.ci-dot.is-missed { transition: transform .12s ease; }
+.ci-dot.is-missed:hover { transform: scale(1.12); }
+.ci-dot.is-before { opacity: .5; }
 .today-checkin-row .v2-checkin-btn { flex: 0 0 auto; width: auto; white-space: nowrap; }
 .today-checkin-row .v2-makeup-btn { flex: 0 0 auto; padding: 8px 10px; font-size: var(--fs-xs); }
 .today-checkin-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: var(--sp-4); color: var(--text-2); font-size: var(--fs-sm); text-align: center; }
@@ -4109,11 +4153,9 @@ a:hover { text-decoration: underline; }
 @media (max-width: 560px) {
     .today-checkin-row { gap: 7px; padding: 9px 11px; }
     .today-checkin-row .v2-checkin-btn { padding: 7px 12px; font-size: var(--fs-xs); }
-    /* 补卡：手机端变成纯图标方按钮，避免文字让按钮过长 */
-    .today-checkin-row .tci-makeup { width: 36px; height: 36px; padding: 0; justify-content: center; }
-    .today-checkin-row .tci-makeup .tmi-text { display: none; }
-    /* 图标模式下清掉 .btn-ico 的右外边距，否则会把图标向左推 3px 偏离中心 */
-    .today-checkin-row .tci-makeup .btn-ico { margin-right: 0; }
+    /* 补卡：手机端保留「补 9/16」文案（要让人一眼知道补哪天），只做紧凑化 */
+    .today-checkin-row .tci-makeup { width: auto; padding: 7px 10px; gap: 4px; }
+    .today-checkin-row .tci-makeup .btn-ico { margin-right: 0; width: 14px; height: 14px; }
 }
 
 /* ── 成长成就页：汇总统计条 ── */

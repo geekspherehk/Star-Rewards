@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=96">
+    <link rel="stylesheet" href="style.css?v=97">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=32"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=86"></script>
+    <script defer src="i18n.js?v=87"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=3"></script>
     <script defer src="themes.js?v=1"></script>
@@ -534,7 +534,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=115"></script>
+    <script defer src="script.js?v=116"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
@@ -839,8 +839,8 @@
                 <div class="makeup-wish-name" id="makeup-wish-name"></div>
             </div>
             <div class="form-group">
-                <label data-i18n="v2.makeupDate">打卡日期</label>
-                <input type="date" id="makeup-date">
+                <label data-i18n="v2.makeupDaysTitle">要补哪一天？</label>
+                <div class="makeup-days" id="makeup-days"></div>
                 <p class="makeup-hint" id="makeup-hint"></p>
             </div>
             <div class="form-group">

@@ -2472,11 +2472,12 @@ function handleGetCheckins($pdo, $data) {
     $wishId = (int)($data['wish_id'] ?? 0);
 
     if ($wishId > 0) {
-        $stmt = $pdo->prepare('SELECT c.checkin_date, c.note, c.created_at FROM checkins c WHERE c.wish_id = ? AND c.profile_id = ? ORDER BY c.checkin_date DESC');
+        $stmt = $pdo->prepare('SELECT c.wish_id, c.checkin_date, c.note, c.created_at FROM checkins c WHERE c.wish_id = ? AND c.profile_id = ? ORDER BY c.checkin_date DESC');
         $stmt->execute([$wishId, $profileId]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } else {
-        $stmt = $pdo->prepare('SELECT c.checkin_date, c.note, c.created_at, w.title AS wish_title FROM checkins c LEFT JOIN wishes w ON w.id = c.wish_id WHERE c.profile_id = ? AND c.family_id = ? ORDER BY c.checkin_date DESC LIMIT 200');
+        // wish_id 供前端按目标判断「哪几天已打卡 / 哪几天漏了」（首页近 7 天点阵与补卡提示）
+        $stmt = $pdo->prepare('SELECT c.wish_id, c.checkin_date, c.note, c.created_at, w.title AS wish_title FROM checkins c LEFT JOIN wishes w ON w.id = c.wish_id WHERE c.profile_id = ? AND c.family_id = ? ORDER BY c.checkin_date DESC LIMIT 200');
         $stmt->execute([$profileId, $familyId]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
