@@ -222,6 +222,14 @@ class ApiClient {
         return await this.request('delete_family', { confirm: 'DELETE', family_id: familyId });
     }
 
+    // 首屏聚合：一次请求返回首页所需的全部数据（档案/孩子列表/行为/礼物/已兑换/家庭/V2概览/打卡/看板权限）。
+    // 目的是把首屏 HTTP 请求数（进而 DB 连接数）从 ~9 降到 1，绕开共享库的每小时连接数上限。
+    async bootstrap(profileId = 0) {
+        const payload = {};
+        if (profileId) payload.profile_id = profileId;
+        return await this.request('bootstrap', payload);
+    }
+
     async getProfile() {
         return await this.request('getProfile', { profile_id: this.selectedProfileId });
     }
