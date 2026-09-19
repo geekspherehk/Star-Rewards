@@ -4672,6 +4672,10 @@ a:hover { text-decoration: underline; }
 /* ── 激活进度条：sticky 任务栏（顶部常驻） ── */
 .activation-progress-bar {
     display: flex; align-items: center; gap: var(--sp-3);
+    /* .apb-track 用 flex: 1 1 100% 想独占一行，但容器缺 flex-wrap 就换不了行 ——
+       结果是进度条被压在同一行，把 .apb-text 挤窄，「0/4 步已完成」被拆成两行。
+       原先只在 >=720px 的媒体查询里补了 wrap，移动端（问题最明显的尺寸）反而漏了。 */
+    flex-wrap: wrap;
     background: var(--surface);
     border: 1px solid rgba(108, 92, 231, 0.22);
     border-radius: var(--r-lg);
