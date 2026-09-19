@@ -3765,6 +3765,62 @@ async function quickAddBehavior() {
         showTemporaryMessage(t('common.addPointsFailed') + (detail ? ': ' + escapeHtml(String(detail)) : ''), 'error');
     }
 }
+// ── 近 7 天打卡点阵：一眼看出「打过哪些天 / 哪几天漏了」 ──
+// 返回时间正序的 7 格（左 = 6 天前，右 = 今天），state：
+//   checked 已打卡 / today 今天待打卡 / missed 漏打卡（可补）/ before 目标尚未建立（不可补）
+function checkinLast7Days(wish, checkedDates) {
+    const checked = new Set();
+    if (Array.isArray(checkedDates)) {
+        checkedDates.forEach(d => checked.add(String(d).slice(0, 10)));
+    } else {
+        (Array.isArray(checkins) ? checkins : []).forEach(c => {
+            if (String(c.wish_id) === String(wish.id)) checked.add(String(c.checkin_date).slice(0, 10));
+        });
+    }
+    const start = wish && wish.created_at ? String(wish.created_at).slice(0, 10) : '';
+    const now = new Date();
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        const key = calendarDateKey(d);
+        let state;
+        if (checked.has(key)) state = 'checked';
+        else if (i === 0) state = 'today';
+        else if (start && key < start) state = 'before';   // 目标建之前的日子不算漏卡
+        else state = 'missed';
+        days.push({ key, date: d, state });
+    }
+    return days;
+}
+
+// 9/18
+function shortDayLabel(key) {
+    const p = String(key).split('-');
+    return Number(p[1]) + '/' + Number(p[2]);
+}
+
+// 点阵：今天只做状态提示（不用点击，避免误触加分）；漏掉的那天直接可点补卡
+function renderCheckinDots(wish) {
+    const days = checkinLast7Days(wish);
+    const dots = days.map(d => {
+        const label = shortDayLabel(d.key);
+        let tip, onclick = '';
+        if (d.state === 'checked') tip = t('v2.dotChecked', { date: label });
+        else if (d.state === 'today') tip = t('v2.dotToday');
+        else if (d.state === 'missed') { tip = t('v2.dotMissed', { date: label }); onclick = ' onclick="openMakeupCheckin(' + wish.id + ',\'' + d.key + '\')"'; }
+        else tip = t('v2.dotBefore', { date: label });
+        const tipAttr = ' title="' + escapeHtml(tip) + '" aria-label="' + escapeHtml(tip) + '"';
+        return onclick
+            ? '<button type="button" class="ci-dot is-' + d.state + '"' + onclick + tipAttr + '></button>'
+            : '<span class="ci-dot is-' + d.state + '"' + tipAttr + '></span>';
+    }).join('');
+    return '<div class="ci-dots-row">' +
+        '<span class="ci-edge">' + escapeHtml(t('v2.days7Title')) + '</span>' +
+        '<div class="ci-dots" role="group" aria-label="' + escapeHtml(t('v2.days7Title')) + '">' + dots + '</div>' +
+        '<span class="ci-edge ci-edge-end">' + escapeHtml(t('v2.dayToday')) + '</span>' +
+        '</div>';
+}
+
 function renderHomeCheckin() {
     const el = document.getElementById('today-checkin-list');
     if (!el) return;
@@ -3783,9 +3839,14 @@ function renderHomeCheckin() {
             const checkinBtn = done
                 ? '<button type="button" class="v2-checkin-btn is-done" disabled><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkedIn')) + '</button>'
                 : '<button type="button" class="v2-checkin-btn" onclick="v2Checkin(' + w.id + ')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkin')) + ' +5</button>';
-            const makeupBtn = '<button type="button" class="v2-makeup-btn tci-makeup" onclick="openMakeupCheckin(' + w.id + ')" title="' + escapeHtml(t('v2.makeupTip')) + '">' +
-                '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>' +
-                '<span class="tmi-text">' + escapeHtml(t('v2.makeup')) + '</span></button>';
+            const days = checkinLast7Days(w);
+            const missed = days.filter(d => d.state === 'missed');
+            // 有漏卡才出现补卡入口，并把「哪一天」写进按钮文案（不用自己去日期控件里找）
+            const missedBtn = missed.length
+                ? '<button type="button" class="v2-makeup-btn tci-makeup" onclick="openMakeupCheckin(' + w.id + ',\'' + missed[missed.length - 1].key + '\')" title="' + escapeHtml(t('v2.makeupTip')) + '">' +
+                    '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>' +
+                    '<span class="tmi-text">' + escapeHtml(t('v2.makeupOn', { date: shortDayLabel(missed[missed.length - 1].key) })) + '</span></button>'
+                : '';
             return '<div class="today-checkin-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
                 '<div class="tci-top">' +
                     '<span class="tci-cat">' + escapeHtml(catShort(c.code)) + '</span>' +
@@ -3794,7 +3855,8 @@ function renderHomeCheckin() {
                         '<span class="tci-streak">' + escapeHtml(t('v2.streak', { n: w.streak || 0 })) + '</span>' +
                     '</div>' +
                 '</div>' +
-                '<div class="tci-actions">' + checkinBtn + makeupBtn + '</div>' +
+                renderCheckinDots(w) +
+                '<div class="tci-actions">' + checkinBtn + missedBtn + '</div>' +
             '</div>';
         }).join('');
     } catch (err) {
@@ -4266,40 +4328,79 @@ function showCelebrate(wish, res) {
     track('wish_celebrate', { wish_id: wish.id });
 }
 
-// ── 补打卡：给最近 7 天内漏掉的日期补记 ──
+// ── 补打卡：最近 7 天漏掉的日期直接点选（不用自己去日期控件里猜哪一天） ──
 let makeupWishId = null;
 let makeupCheckedDates = [];
+let makeupSelectedDate = '';
 
-async function openMakeupCheckin(id) {
+async function openMakeupCheckin(id, presetDate) {
     const wishes = (v2Data && v2Data.wishes) || [];
     const wish = wishes.find(w => w.id === id);
     makeupWishId = id;
     makeupCheckedDates = [];
+    makeupSelectedDate = presetDate || '';
 
     const nameEl = document.getElementById('makeup-wish-name');
     if (nameEl && wish) nameEl.textContent = wish.title;
     const noteEl = document.getElementById('makeup-note');
     if (noteEl) noteEl.value = '';
 
-    const today = new Date();
-    const max = calendarDateKey(today);
-    const min = calendarDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6));
-    const dateEl = document.getElementById('makeup-date');
-    const btn = document.getElementById('makeup-confirm-btn');
-    if (dateEl) { dateEl.min = min; dateEl.max = max; dateEl.value = ''; dateEl.disabled = true; }
-    if (btn) btn.disabled = true;
-    const hintEl = document.getElementById('makeup-hint');
-    if (hintEl) hintEl.textContent = t('v2.makeupRange', { min, max });
-
+    renderMakeupDays(wish);   // 先用首页已有数据渲染，弹窗秒开不空窗
     const modal = document.getElementById('makeup-modal');
     if (modal) modal.style.display = 'flex';
 
     try {
         const res = await api.getCheckins(id);
-        makeupCheckedDates = (res && Array.isArray(res.checkins)) ? res.checkins.map(c => c.checkin_date) : [];
+        makeupCheckedDates = (res && Array.isArray(res.checkins)) ? res.checkins.map(c => String(c.checkin_date).slice(0, 10)) : [];
+        renderMakeupDays(wish);   // 以服务端数据为准复渲染
     } catch (e) { /* 拉取失败不影响补卡，重复日期由后端兜底 */ }
-    if (dateEl) dateEl.disabled = false;
-    if (btn) btn.disabled = false;
+}
+
+// 近 7 天日期芯片：已打卡打勾禁用，漏掉的高亮可点，今天/更早区分开
+function renderMakeupDays(wish) {
+    const box = document.getElementById('makeup-days');
+    const hintEl = document.getElementById('makeup-hint');
+    const btn = document.getElementById('makeup-confirm-btn');
+    if (!box) return;
+
+    const days = checkinLast7Days(wish, makeupCheckedDates);
+    const missed = days.filter(d => d.state === 'missed');
+    const wk = t('v2.weekdayNames');
+    const wkNames = Array.isArray(wk) ? wk : ['一', '二', '三', '四', '五', '六', '日'];
+
+    box.innerHTML = days.map(d => {
+        const idx = (d.date.getDay() + 6) % 7;                                                     // 周一 = 0
+        const isYesterday = d.state !== 'today' && d.key === calendarDateKey(new Date(Date.now() - 86400000));
+        const top = d.state === 'today' ? t('v2.dayToday') : (isYesterday ? t('v2.dayYesterday') : wkNames[idx]);
+        const clickable = d.state === 'missed' || d.state === 'today';
+        const cls = 'mk-day is-' + d.state + (d.key === makeupSelectedDate ? ' is-selected' : '');
+        const tip = d.state === 'checked' ? t('v2.makeupCheckedTag') : (d.state === 'before' ? t('v2.dotBefore', { date: shortDayLabel(d.key) }) : t('v2.makeupOn', { date: shortDayLabel(d.key) }));
+        const tick = d.state === 'checked'
+            ? '<span class="mk-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>'
+            : '';
+        const body = '<span class="mk-w">' + escapeHtml(top) + '</span><span class="mk-d">' + shortDayLabel(d.key) + '</span>' + tick;
+        return clickable
+            ? '<button type="button" class="' + cls + '" title="' + escapeHtml(tip) + '" onclick="pickMakeupDate(\'' + d.key + '\')">' + body + '</button>'
+            : '<span class="' + cls + '" title="' + escapeHtml(tip) + '">' + body + '</span>';
+    }).join('');
+
+    if (hintEl) {
+        hintEl.textContent = missed.length
+            ? t('v2.makeupMissedSummary', { n: missed.length, days: missed.map(d => shortDayLabel(d.key)).join(getLanguage() === 'en' ? ', ' : '、') })
+            : t('v2.makeupAllDone');
+    }
+    if (btn) {
+        btn.disabled = !makeupSelectedDate;
+        btn.textContent = makeupSelectedDate
+            ? t('v2.makeupConfirmOn', { date: shortDayLabel(makeupSelectedDate) })
+            : t('v2.makeupPick');
+    }
+}
+
+function pickMakeupDate(key) {
+    makeupSelectedDate = key;
+    const wishes = (v2Data && v2Data.wishes) || [];
+    renderMakeupDays(wishes.find(w => String(w.id) === String(makeupWishId)));
 }
 
 function closeMakeupModal() {
@@ -4309,13 +4410,14 @@ function closeMakeupModal() {
 
 async function confirmMakeupCheckin() {
     if (!makeupWishId) return;
-    const dateEl = document.getElementById('makeup-date');
-    const noteEl = document.getElementById('makeup-note');
-    const date = dateEl ? dateEl.value : '';
-    if (!date) { showTemporaryMessage(t('v2.makeupPickDate'), 'error'); return; }
+    const date = makeupSelectedDate;
+    if (!date) { showTemporaryMessage(t('v2.makeupPick'), 'error'); return; }
     if (makeupCheckedDates.indexOf(date) >= 0) { showTemporaryMessage(t('v2.makeupDupe'), 'error'); return; }
+    const noteEl = document.getElementById('makeup-note');
+    const note = noteEl ? noteEl.value : '';
     closeMakeupModal();
-    await v2Checkin(makeupWishId, date, noteEl ? noteEl.value : '');
+    makeupSelectedDate = '';
+    await v2Checkin(makeupWishId, date, note);
 }
 
 // 撤卡仪式：习惯已内化，把打卡位让给下一个目标
