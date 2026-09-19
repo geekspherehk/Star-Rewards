@@ -256,9 +256,11 @@ function profileBelongsToUser($pdo, $userId, $profileId) {
 // Resolve which child profile a request targets (family-scoped): explicit profile_id (if in family) → selected → first in family
 function resolveProfileId($pdo, $familyId, $userId, $data) {
     $pid = isset($data['profile_id']) ? (int)$data['profile_id'] : 0;
-    if ($pid > 0 && profileBelongsToFamily($pdo, $familyId, $pid)) {
-        return $pid;
+    // 显式传了 profile_id 但不属于当前家庭 → 直接 404（不再静默回退，避免掩盖前端记错孩子的 bug）
+    if ($pid > 0 && !profileBelongsToFamily($pdo, $familyId, $pid)) {
+        sendError('Profile not found', 404);
     }
+    if ($pid > 0) return $pid;
     $sel = getSelectedProfileId($pdo, $userId);
     if ($sel && profileBelongsToFamily($pdo, $familyId, $sel)) return $sel;
     $stmt = $pdo->prepare('SELECT id FROM profiles WHERE family_id = ? ORDER BY id ASC LIMIT 1');
@@ -1263,10 +1265,10 @@ function handleAddBehavior($pdo, $data) {
         $currentDelta = $points;
         $totalDelta = max($points, 0);
 
-        $stmt = $pdo->prepare('UPDATE profiles 
-            SET current_points = current_points + ?, 
+        $stmt = $pdo->prepare('UPDATE profiles
+            SET current_points = GREATEST(0, current_points + ?),
                 total_points = total_points + ?,
-                updated_at = NOW() 
+                updated_at = NOW()
             WHERE id = ? AND family_id = ?');
         $stmt->execute([$currentDelta, $totalDelta, $profileId, $familyId]);
 
@@ -2218,31 +2220,77 @@ function handleGetV2Overview($pdo, $data) {
     $stmt = $pdo->prepare('SELECT * FROM wishes WHERE family_id = ? AND profile_id = ? ORDER BY status ASC, created_at DESC');
     $stmt->execute([$familyId, $profileId]);
     $wishes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // —— 批量取打卡数据（消除每愿望 3 条的 N+1）——
+    $wishIds = array_map('intval', array_column($wishes, 'id'));
+    $cntByWish = [];
+    $datesByWish = [];
+    if ($wishIds) {
+        // ① 精确累计打卡次数（服务端聚合，不受时间窗限制）
+        $ph = implode(',', array_fill(0, count($wishIds), '?'));
+        $stmt = $pdo->prepare("SELECT wish_id, COUNT(*) c FROM checkins WHERE wish_id IN ($ph) GROUP BY wish_id");
+        $stmt->execute($wishIds);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $cntByWish[(int)$row['wish_id']] = (int)$row['c'];
+        }
+        // ② 连续天数只需最近一年内的日期集合（streak 从今天往回数，进度按 persistence_days 封顶）
+        $stmt = $pdo->prepare("SELECT wish_id, checkin_date FROM checkins WHERE wish_id IN ($ph) AND checkin_date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)");
+        $stmt->execute($wishIds);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $datesByWish[(int)$row['wish_id']][$row['checkin_date']] = true;
+        }
+    }
+    $today = date('Y-m-d');
     foreach ($wishes as &$w) {
-        $prog = v2WishProgress($pdo, $w, (int)$profile['current_points']);
-        $w['progress'] = $prog['progress'];
-        $w['streak'] = $prog['streak'];
-        $w['stage'] = $prog['stage'];
-        $w['checkin_count'] = 0;
-        $stmt = $pdo->prepare('SELECT COUNT(*) FROM checkins WHERE wish_id = ?');
-        $stmt->execute([$w['id']]);
-        $w['checkin_count'] = (int)$stmt->fetch(PDO::FETCH_COLUMN);
-        $stmt = $pdo->prepare('SELECT 1 FROM checkins WHERE wish_id = ? AND checkin_date = ? LIMIT 1');
-        $stmt->execute([$w['id'], date('Y-m-d')]);
-        $w['today_checked'] = (bool)$stmt->fetch(PDO::FETCH_COLUMN);
-        $w['internalized'] = $w['wish_type'] !== 'experience' && (int)$w['checkin_count'] >= max(1, (int)$w['persistence_days']);
+        $wid = (int)$w['id'];
+        $w['checkin_count'] = $cntByWish[$wid] ?? 0;
+        $w['today_checked'] = isset($datesByWish[$wid][$today]);
+        // 纯 PHP 算连续天数（替代逐愿望 v2WishStreakInfo 查询）
+        $streak = 0;
+        if (!empty($datesByWish[$wid])) {
+            $anchor = isset($datesByWish[$wid][$today]) ? $today : date('Y-m-d', strtotime('-1 day'));
+            if (isset($datesByWish[$wid][$anchor])) {
+                $cursor = new DateTime($anchor);
+                while (isset($datesByWish[$wid][$cursor->format('Y-m-d')])) {
+                    $streak++;
+                    $cursor->modify('-1 day');
+                }
+            }
+        }
+        $stage = $streak >= 21 ? 'internalizing' : ($streak >= 7 ? 'stable' : 'building');
+        $w['streak'] = $streak;
+        $w['stage'] = $stage;
+        if ($w['status'] === 'achieved') {
+            $progress = 1.0;
+        } elseif ($w['wish_type'] === 'experience') {
+            $target = (int)$w['points_target'];
+            $progress = $target > 0 ? min(1.0, (int)$profile['current_points'] / $target) : 0;
+        } else {
+            $target = max(1, (int)$w['persistence_days']);
+            $progress = min(1.0, $streak / $target);
+        }
+        $w['progress'] = round($progress * 100);
+        $w['internalized'] = $w['wish_type'] !== 'experience' && $w['checkin_count'] >= max(1, (int)$w['persistence_days']);
     }
     unset($w);
 
-    // 玫瑰覆盖：每类行为数 + 达成愿望数
+    // —— 玫瑰覆盖：每类行为数 + 达成愿望数（8 类 × 2 条 → 2 条 GROUP BY）——
+    $behByCat = array_fill_keys(V2_CATEGORIES, 0);
+    $stmt = $pdo->prepare("SELECT dimension, COUNT(*) c FROM behaviors WHERE family_id = ? AND profile_id = ? AND dimension IS NOT NULL AND dimension <> '' GROUP BY dimension");
+    $stmt->execute([$familyId, $profileId]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        if (isset($behByCat[$row['dimension']])) $behByCat[$row['dimension']] = (int)$row['c'];
+    }
+    $achByCat = array_fill_keys(V2_CATEGORIES, 0);
+    $stmt = $pdo->prepare("SELECT category, COUNT(*) c FROM wishes WHERE family_id = ? AND profile_id = ? AND status = 'achieved' GROUP BY category");
+    $stmt->execute([$familyId, $profileId]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        if (isset($achByCat[$row['category']])) $achByCat[$row['category']] = (int)$row['c'];
+    }
     $coverage = [];
     foreach (V2_CATEGORIES as $cat) {
-        $stmt = $pdo->prepare('SELECT COUNT(*) FROM behaviors WHERE family_id = ? AND profile_id = ? AND dimension = ?');
-        $stmt->execute([$familyId, $profileId, $cat]);
-        $beh = (int)$stmt->fetch(PDO::FETCH_COLUMN);
-        $stmt = $pdo->prepare('SELECT COUNT(*) FROM wishes WHERE family_id = ? AND profile_id = ? AND category = ? AND status = \'achieved\'');
-        $stmt->execute([$familyId, $profileId, $cat]);
-        $ach = (int)$stmt->fetch(PDO::FETCH_COLUMN);
+        $beh = $behByCat[$cat];
+        $ach = $achByCat[$cat];
         $coverage[$cat] = ['behaviors' => $beh, 'wishes_achieved' => $ach, 'active' => $beh > 0 || $ach > 0];
     }
 
@@ -2444,14 +2492,15 @@ function handleAddCheckin($pdo, $data) {
             isset($data['note']) ? substr(trim((string)$data['note']), 0, 500) : null
         ]);
     } catch (PDOException $e) {
-        if ($e->getCode() == 23000) sendError('Already checked in today', 409);
+        // 仅唯一键冲突（uniq_wish_date，errno 1062）才算重复打卡；FK 冲突等其他 23000 继续抛出
+        if (($e->errorInfo[1] ?? 0) == 1062) sendError('Already checked in today', 409);
         throw $e;
     }
 
     // 打卡奖励：每次 +5 分（每愿望每天限 1 次）
     $checkinPoints = 5;
-    $stmt = $pdo->prepare('UPDATE profiles SET current_points = current_points + ?, total_points = total_points + ? WHERE id = ?');
-    $stmt->execute([$checkinPoints, $checkinPoints, $profileId]);
+    $stmt = $pdo->prepare('UPDATE profiles SET current_points = current_points + ?, total_points = total_points + ? WHERE id = ? AND family_id = ?');
+    $stmt->execute([$checkinPoints, $checkinPoints, $profileId, $familyId]);
 
     $info = v2WishStreakInfo($pdo, $wishId);
     $internalized = $info['streak'] >= max(1, (int)$wish['persistence_days']);
@@ -2472,7 +2521,7 @@ function handleGetCheckins($pdo, $data) {
     $wishId = (int)($data['wish_id'] ?? 0);
 
     if ($wishId > 0) {
-        $stmt = $pdo->prepare('SELECT c.wish_id, c.checkin_date, c.note, c.created_at FROM checkins c WHERE c.wish_id = ? AND c.profile_id = ? ORDER BY c.checkin_date DESC');
+        $stmt = $pdo->prepare('SELECT c.wish_id, c.checkin_date, c.note, c.created_at FROM checkins c WHERE c.wish_id = ? AND c.profile_id = ? ORDER BY c.checkin_date DESC LIMIT 400');
         $stmt->execute([$wishId, $profileId]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } else {
