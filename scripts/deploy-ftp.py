@@ -84,6 +84,18 @@ def preflight(targets):
             if src.count('<div') != src.count('</div>'):
                 issues.append(f"{t}: HTML div 标签不平衡 "
                               f"(<div> {src.count('<div')} / </div> {src.count('</div')})")
+
+    # 实参>形参 扫描（防 addBehavior 式「漏形参却读变量」隐身 bug——node --check 查不出）
+    # 该类 bug 是跨文件的（调用方在 script.js、定义在 api-client.js），所以只要有 JS/HTML
+    # 参与部署就对全项目扫一遍；扫描脚本自带坏用例夹具可回归（见 scripts/scan_call_args.js 头注释）。
+    js_or_html = [t for t in targets
+                  if (t if os.path.isabs(t) else os.path.join(REPO_ROOT, t)).endswith(('.js', '.html'))]
+    if js_or_html and node:
+        scanner = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scan_call_args.js')
+        r = subprocess.run([node, scanner, '--quiet'], capture_output=True, text=True)
+        if r.returncode != 0:
+            issues.append("实参/形参数不匹配:\n  " + "\n  ".join(
+                l.strip() for l in r.stderr.strip().splitlines() if l.strip()))
     return issues
 
 
