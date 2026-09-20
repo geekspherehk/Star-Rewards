@@ -61,12 +61,12 @@
         <!-- 用户认证区域 -->
         <div id="auth-section">
             <div class="auth-tabs" id="auth-tabs">
-                <button type="button" class="auth-tab active" data-form="register" onclick="switchAuthTab('register')" data-i18n="common.registerTab">注册</button>
-                <button type="button" class="auth-tab" data-form="login" onclick="switchAuthTab('login')" data-i18n="common.loginTab">登录</button>
+                <button type="button" class="auth-tab active" data-form="login" onclick="switchAuthTab('login')" data-i18n="common.loginTab">登录</button>
+                <button type="button" class="auth-tab" data-form="register" onclick="switchAuthTab('register')" data-i18n="common.registerTab">注册</button>
             </div>
             <div id="auth-forms">
-                <!-- 注册表单（默认显示） -->
-                <div id="register-form" class="auth-form">
+                <!-- 注册表单 -->
+                <div id="register-form" class="auth-form" style="display:none;">
                     <h3><span data-i18n="login.registerButton">用户注册</span></h3>
                     <input type="email" id="register-email" data-i18n-placeholder="login.emailPlaceholder" placeholder="邮箱地址">
                     <input type="password" id="register-password" data-i18n-placeholder="login.passwordPlaceholder" placeholder="密码（至少6位）">
@@ -79,8 +79,8 @@
                     <p><span data-i18n="common.hasAccount">已有账户？</span><a href="#" onclick="switchAuthTab('login')" data-i18n="common.loginNow">立即登录</a></p>
                 </div>
 
-                <!-- 登录表单 -->
-                <div id="login-form" class="auth-form" style="display:none;">
+                <!-- 登录表单（默认显示；老用户直达，新用户走"立即注册"或落地页"免费创建家庭"） -->
+                <div id="login-form" class="auth-form">
                     <h3><span data-i18n="login.title">用户登录</span></h3>
                     <input type="email" id="login-email" data-i18n-placeholder="login.emailPlaceholder" placeholder="邮箱地址">
                     <input type="password" id="login-password" data-i18n-placeholder="login.passwordPlaceholder" placeholder="密码">
@@ -110,7 +110,7 @@
         </div>
     </div>
     
-    <script defer src="login.js?v=15"></script>
+    <script defer src="login.js?v=16"></script>
     <script defer src="pwa-manager.js?v=3"></script>
 </body>
 </html>

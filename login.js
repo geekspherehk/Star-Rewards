@@ -39,11 +39,14 @@ function toggleAuthForm(formType) {
         const el = document.getElementById(id);
         if (el) el.style.display = (id === target) ? 'block' : 'none';
     });
-    // 登录/注册是顶部主标签，切换表单时同步标签高亮（forgot/reset 不属标签，不动）
+    // 登录/注册是顶部主标签，切换表单时同步标签高亮；
+    // forgot/reset 不属标签 → 清掉高亮（否则"登录"亮着下面却是重置密码表单，误导）
     if (formType === 'login' || formType === 'register') {
         document.querySelectorAll('.auth-tab').forEach(t => {
             t.classList.toggle('active', t.dataset.form === formType);
         });
+    } else {
+        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
     }
 }
 
@@ -263,5 +266,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (verifyToken) {
         handleVerifyEmail();
     }
+    // ?mode=login|register → 直达对应 tab（落地页「免费登录」→ login，「免费创建家庭」→ register）
+    // 无参数默认登录 tab；带 ?invite= 默认注册（受邀用户要先注册）；?reset=/?verify= 深链优先，不抢 tab
+    const authMode = (new URLSearchParams(window.location.search).get('mode') || '').trim().toLowerCase();
+    const effectiveTab = (authMode === 'login' || authMode === 'register') ? authMode
+        : (urlInvite ? 'register' : 'login');
+    if (!resetToken && !verifyToken) switchAuthTab(effectiveTab);
     initAuth();
 });
