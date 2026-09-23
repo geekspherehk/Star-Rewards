@@ -857,5 +857,26 @@
             </div>
         </div>
     </div>
+    <!-- 第三方访问量计数（StatCounter 免费挂件） -->
+    <!-- 使用步骤：1) 去 statcounter.com 免费注册  2) 建项目拿到 Project ID + Security Code -->
+    <!-- 3) 把下方 YOUR_SC_PROJECT_ID 换成数字、YOUR_SC_SECURITY 换成安全码  4) 把 sc_invisible 改为 0 即显示「访问量」徽章 -->
+    <footer class="app-footer" style="margin-top:24px;padding:14px 0;text-align:center;border-top:1px solid rgba(0,0,0,.06);">
+        <div class="app-footer-visits">
+            <script type="text/javascript">
+            var sc_project = 0;                 // ← 替换为你的 StatCounter Project ID（纯数字）
+            var sc_invisible = 1;             // ← 填好 ID 后改成 0 即显示「访问量」徽章；1 = 仅后台统计
+            var sc_security = "REPLACE_ME";   // ← 替换为你的 StatCounter Security Code
+            var scJsHost = (("https:" === document.location.protocol) ? "https://secure." : "http://www.");
+            document.write("<sc" + "ript type='text/javascript' src='" + scJsHost + "statcounter.com/counter/counter.js'></" + "script>");
+            </script>
+            <noscript>
+                <div class="statcounter">
+                    <a title="访问量统计" href="https://statcounter.com/" target="_blank">
+                        <img class="statcounter" src="https://c.statcounter.com/0/0/REPLACE_ME/0/" alt="访问量统计">
+                    </a>
+                </div>
+            </noscript>
+        </div>
+    </footer>
 </body>
 </html>
