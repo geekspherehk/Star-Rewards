@@ -35,7 +35,7 @@
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=32"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=87"></script>
+    <script defer src="i18n.js?v=88"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=3"></script>
     <script defer src="themes.js?v=1"></script>
@@ -459,6 +459,10 @@
                     <h4 class="stats-funnel-title" data-i18n="home.statsTrend">近 30 日活动趋势</h4>
                     <div class="stats-trend-bars" id="stats-trend"></div>
                 </div>
+                <div class="stats-funnel">
+                    <h4 class="stats-funnel-title" data-i18n="home.statsRecent">最近新注册</h4>
+                    <div class="stats-funnel-list" id="stats-recent"></div>
+                </div>
             </div>
 
             <!-- V2 全人成长内容已按功能拆入：首页今日打卡 / 目标（愿望+礼物） / 成长成就（统计+日历+里程碑+玫瑰） -->
@@ -534,7 +538,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=116"></script>
+    <script defer src="script.js?v=117"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {

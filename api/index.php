@@ -1632,6 +1632,7 @@ function handleGetStats($pdo) {
             'share_email'    => statEvent($pdo, 'share_email'),
         ];
         $stats['trend_30d'] = statTrend($pdo, 30);
+        $stats['recent_registrations'] = recentRegistrations($pdo, 10);
         $stats['generated_at'] = date('c');
         sendJson($stats);
     } catch (Exception $e) {
@@ -1673,6 +1674,14 @@ function statTrend($pdo, $days) {
     $s = $pdo->prepare('SELECT DATE(created_at) AS d, COUNT(*) AS c FROM analytics_events WHERE created_at >= NOW() - INTERVAL ? DAY GROUP BY d ORDER BY d');
     $s->execute([$days]);
     return $s->fetchAll(PDO::FETCH_ASSOC);
+}
+// 最近新注册用户（仅站长可见，已在 requireStatsOwner 内）：用于运营看板识别新增账号
+function recentRegistrations($pdo, $limit) {
+    $s = $pdo->prepare('SELECT id, email, created_at FROM users ORDER BY created_at DESC LIMIT ?');
+    $s->execute([(int)$limit]);
+    return array_map(function($r) {
+        return ['id' => (int)$r['id'], 'email' => $r['email'], 'created_at' => $r['created_at']];
+    }, $s->fetchAll(PDO::FETCH_ASSOC));
 }
 
 function handleDeleteBehavior($pdo, $data) {

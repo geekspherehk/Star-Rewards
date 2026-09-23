@@ -4713,6 +4713,16 @@ async function loadStats() {
         if (inviteEl) inviteEl.innerHTML = funnelRows(s.funnel_invite);
         if (shareEl) shareEl.innerHTML = funnelRows(s.funnel_share);
         if (trendEl) trendEl.innerHTML = renderTrend(s.trend_30d);
+        const recentEl = document.getElementById('stats-recent');
+        if (recentEl) {
+            const recs = (s.recent_registrations || []);
+            recentEl.innerHTML = recs.length
+                ? recs.map(function(r) {
+                    const d = (r.created_at ? new Date(r.created_at).toLocaleDateString() : '–');
+                    return '<div class="stats-funnel-row"><span class="stats-funnel-key" title="' + escapeHtml(r.email) + '">' + escapeHtml(r.email) + '</span><span class="stats-funnel-val">' + escapeHtml(d) + '</span></div>';
+                }).join('')
+                : '<div class="stats-funnel-row"><span class="stats-funnel-key">—</span></div>';
+        }
     } catch (e) {
         grid.innerHTML = '<div class="stats-loading">' + escapeHtml(t('home.statsEmpty')) + '</div>';
     }
