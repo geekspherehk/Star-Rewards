@@ -3,13 +3,22 @@
 // 遇到验证码会暂停并等你手动过（浏览器可见窗口）
 const puppeteer = require('/Users/xuversa/.workbuddy/binaries/node/workspace/node_modules/puppeteer-core');
 const fs = require('fs');
+const readline = require('readline');
 
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const PROFILE = '/Users/work/code/Star-Rewards/.workbuddy/pinterest-profile';
 const CREDS = '/Users/work/code/Star-Rewards/.workbuddy/pinterest-credentials.json';
 
 const EMAIL = 'ujpu7859@agent.qq.com';
-const PASSWORD = '***REDACTED***';
+// ⚠️ 安全铁律：密码绝不硬编码进 git 跟踪文件。运行时从环境变量 PINTEREST_PASSWORD 读取，
+// 缺失则交互式从 stdin 输入（仅内存，绝不落盘、绝不写进凭据文件、绝不打印）。
+async function resolvePassword() {
+  if (process.env.PINTEREST_PASSWORD) return process.env.PINTEREST_PASSWORD;
+  return await new Promise(res => {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
+    rl.question('请输入 Pinterest 密码: ', a => { rl.close(); res((a || '').trim()); });
+  });
+}
 const BIRTHDAY = '05/14/1985';      // 展示用
 const BIRTHDAY_ISO = '1985-05-14';  // input[type=date] 需要 ISO
 const BIZ_NAME = 'Star Rewards';
@@ -107,6 +116,8 @@ async function clickByText(page, words, exclude = ['skip to content']) {
 
 // ---------- 主流程 ----------
 (async () => {
+  const PASSWORD = await resolvePassword();
+  if (!PASSWORD) { console.error('[register] 未提供密码，退出。'); process.exit(1); }
   const out = { email: EMAIL, startedAt: new Date().toISOString() };
 
   const browser = await puppeteer.launch({
@@ -175,7 +186,6 @@ async function clickByText(page, words, exclude = ['skip to content']) {
 
   const loggedIn = await probeLoggedIn(browser);
   out.loggedIn = loggedIn;
-  out.password = PASSWORD;
   out.birthday = BIRTHDAY;
   out.businessName = BIZ_NAME;
   out.website = WEBSITE;
@@ -184,7 +194,7 @@ async function clickByText(page, words, exclude = ['skip to content']) {
 
   log('=====================================');
   log('登录态:', loggedIn ? '✅ 已登录' : '❌ 未登录');
-  log('账号:', EMAIL, ' 密码:', PASSWORD);
+  log('账号:', EMAIL);
   log('凭据:', CREDS);
   log('=====================================');
   log('浏览器保持打开 90 秒供检查…');
