@@ -30,7 +30,7 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=99">
+    <link rel="stylesheet" href="style.css?v=101">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=32"></script>
@@ -246,6 +246,8 @@
             <!-- 本周打卡模块：习惯 × 7 天网格（点格即打卡/补卡）+ AI 海报导出 -->
             <div id="weekly-module" class="module-content">
                 <div class="weekly-wrap">
+                <div class="weekly-hero"></div>
+                <div class="weekly-card">
                     <div class="weekly-head">
                         <div>
                             <h2 class="weekly-title" id="weekly-title"></h2>
@@ -258,6 +260,8 @@
                     <div class="weekly-legend" id="weekly-legend"></div>
                     <div class="weekly-grid" id="weekly-grid"></div>
                     <p class="weekly-empty" id="weekly-empty" style="display:none;"></p>
+                </div>
+                <span class="weekly-wm" aria-hidden="true">STELLAR ♡</span>
                 </div>
             </div>
 

@@ -32,18 +32,22 @@ const PAGE = `<!doctype html>
 <body>
   <div id="weekly-module" class="module-content">
     <div class="weekly-wrap">
-      <div class="weekly-head">
-        <div>
-          <h2 class="weekly-title" id="weekly-title"></h2>
-          <p class="weekly-range" id="weekly-range"></p>
+      <div class="weekly-hero"></div>
+      <div class="weekly-card">
+        <div class="weekly-head">
+          <div>
+            <h2 class="weekly-title" id="weekly-title"></h2>
+            <p class="weekly-range" id="weekly-range"></p>
+          </div>
+          <div class="weekly-actions">
+            <button type="button" class="primary-btn" id="weekly-export-btn"><span>导出本周海报</span></button>
+          </div>
         </div>
-        <div class="weekly-actions">
-          <button type="button" class="primary-btn" id="weekly-export-btn"><span>导出本周海报</span></button>
-        </div>
+        <div class="weekly-legend" id="weekly-legend"></div>
+        <div class="weekly-grid" id="weekly-grid"></div>
+        <p class="weekly-empty" id="weekly-empty" style="display:none;"></p>
       </div>
-      <div class="weekly-legend" id="weekly-legend"></div>
-      <div class="weekly-grid" id="weekly-grid"></div>
-      <p class="weekly-empty" id="weekly-empty" style="display:none;"></p>
+      <span class="weekly-wm" aria-hidden="true">STELLAR ♡</span>
     </div>
   </div>
 
@@ -116,7 +120,9 @@ function findChrome() {
     page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
     page.on('pageerror', (e) => errs.push('PAGEERROR ' + e.message));
 
-    await page.setViewport({ width: 900, height: 1620, deviceScaleFactor: 1 });
+    const VW = parseInt(process.env.WEEKLY_W || '900', 10);
+    const SUF = VW === 900 ? '' : ('-' + VW);
+    await page.setViewport({ width: VW, height: 1620, deviceScaleFactor: 1 });
     await page.goto(URL, { waitUntil: 'networkidle0' });
 
     const outDir = path.join(ROOT, 'shots');
@@ -125,7 +131,7 @@ function findChrome() {
     const gridRows = await page.evaluate(() => window.__renderGrid());
     console.log('grid rows', gridRows);
     const mod = await page.$('#weekly-module');
-    await mod.screenshot({ path: path.join(outDir, 'weekly_grid_selfcheck.png') });
+    await mod.screenshot({ path: path.join(outDir, 'weekly_grid_selfcheck' + SUF + '.png') });
 
     const res = await page.evaluate(() => window.__renderPoster());
     console.log('poster', JSON.stringify(res));
