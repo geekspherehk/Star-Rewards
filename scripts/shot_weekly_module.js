@@ -114,6 +114,9 @@ const ts = Math.floor(Date.now() / 1000);
       if (typeof dismissOnboarding === 'function') dismissOnboarding();
       if (m) m.style.display = 'none';
       document.querySelectorAll('.onboarding-modal, .help-overlay').forEach(e => e.remove());
+      // 新用户专属的过渡性元素会遮挡周表标题/图例，截 UI 时隐藏以看清真实版式
+      ['activation-progress-bar', 'welcome-banner', 'home-focus-banner', 'activation-checklist']
+        .forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
     });
     await page.evaluate(() => {
       if (typeof showModule === 'function') showModule('points-module');
@@ -131,6 +134,9 @@ const ts = Math.floor(Date.now() / 1000);
     console.log('周表:', JSON.stringify(gridInfo));
 
     await page.evaluate(() => {
+      // showModule() 会重新显示新用户进度条，需在截图前再清一次
+      ['activation-progress-bar', 'welcome-banner', 'home-focus-banner', 'activation-checklist']
+        .forEach(id => { const e = document.getElementById(id); if (e) e.remove(); });
       const el = document.getElementById('weekly-section');
       if (el) el.scrollIntoView({ block: 'start' });
     });
