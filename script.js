@@ -3716,6 +3716,7 @@ function renderV2All() {
     renderAchStats();
     updateV2ModuleStat();
     renderActivationChecklist();
+    renderWeeklyModule();
 }
 
 // ── 行为记录卡（V2 临时加分入口）──
@@ -5056,4 +5057,483 @@ function updateV2ModuleStat() {
         const n = Object.values(v2Data.badges).filter(b => b && b.unlocked).length;
         sA.innerHTML = STAT_ICO.star + n + '/11';
     }
+}
+
+/* ============================================================
+   本周打卡（Week View）
+   站内周表（周日起算）+ AI 海报导出
+   美术层：assets/weekly/weekly-bg-c.png（AI 生成）
+   图标层：assets/weekly/icon-cat-{code}.png（按素养类别，AI 生成）
+   仅做真实数据叠加，后端零改动（addCheckin 已支持前 6 天补卡）
+   ============================================================ */
+
+const WEEKLY_BG = 'assets/weekly/weekly-bg-c.png?v=1';
+const WEEKLY_CAT_ORDER = ['self_drive', 'money', 'empathy', 'relationship', 'planning', 'resilience', 'health', 'aesthetics'];
+
+let _weeklyImgs = { bg: null, icons: {} };
+let _weeklyImgsLoading = null;
+
+function weeklyCatIconSrc(code) { return 'assets/weekly/icon-cat-' + (code || 'self_drive') + '.png?v=1'; }
+
+function loadWeeklyAssets() {
+    if (_weeklyImgsLoading) return _weeklyImgsLoading;
+    _weeklyImgsLoading = (function () {
+        const jobs = [];
+        jobs.push(new Promise(function (res) {
+            const im = new Image();
+            im.onload = function () { _weeklyImgs.bg = im; res(); };
+            im.onerror = function () { _weeklyImgs.bg = null; res(); };
+            im.src = WEEKLY_BG;
+        }));
+        WEEKLY_CAT_ORDER.forEach(function (code) {
+            jobs.push(new Promise(function (res) {
+                const im = new Image();
+                im.onload = function () { _weeklyImgs.icons[code] = im; res(); };
+                im.onerror = function () { _weeklyImgs.icons[code] = null; res(); };
+                im.src = weeklyCatIconSrc(code);
+            }));
+        });
+        return Promise.all(jobs);
+    })();
+    return _weeklyImgsLoading;
+}
+
+function weeklyWeekStart() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dow = today.getDay(); // 0=Sun
+    const sun = new Date(today);
+    sun.setDate(today.getDate() - dow);
+    return sun;
+}
+function weeklyWeekDates() {
+    const sun = weeklyWeekStart();
+    const out = [];
+    for (let i = 0; i < 7; i++) out.push(new Date(sun.getFullYear(), sun.getMonth(), sun.getDate() + i));
+    return out;
+}
+function weeklyActiveWishes() {
+    return ((v2Data && v2Data.wishes) || []).filter(function (w) {
+        return w && (w.status === 'active' || w.status === 'in_progress' || !w.status);
+    });
+}
+function weeklyCheckedSet(wishId) {
+    const s = new Set();
+    (Array.isArray(checkins) ? checkins : []).forEach(function (c) {
+        if (String(c.wish_id) === String(wishId)) s.add(String(c.checkin_date).slice(0, 10));
+    });
+    return s;
+}
+
+/* 站内周表网格（周日→周六，7 列） */
+function renderWeeklyModule() {
+    const grid = document.getElementById('weekly-grid');
+    const legend = document.getElementById('weekly-legend');
+    const titleEl = document.getElementById('weekly-title');
+    const rangeEl = document.getElementById('weekly-range');
+    const emptyEl = document.getElementById('weekly-empty');
+    if (!grid) return;
+
+    const wishes = weeklyActiveWishes();
+    const langEn = getLanguage() === 'en-US';
+    const days = weeklyWeekDates();
+    const todayKey = calendarDateKey(new Date());
+    const todayDow = new Date().getDay();
+    const todayMid = new Date(todayKey + 'T00:00:00');
+
+    if (rangeEl) {
+        const f = function (x) { return (x.getMonth() + 1) + (langEn ? '/' : '月') + x.getDate() + (langEn ? '' : '日'); };
+        rangeEl.textContent = f(days[0]) + (langEn ? ' – ' : ' — ') + f(days[6]);
+    }
+    if (titleEl) {
+        const prof = (typeof getSelectedProfile === 'function') ? getSelectedProfile() : null;
+        const nm = (prof && prof.name) || '';
+        titleEl.textContent = t('weekly.title', { name: nm });
+    }
+
+    if (legend) {
+        const mk = function (cls, label) {
+            return '<span class="wk-legend-item"><span class="wk-dot is-' + cls + '"></span>' + escapeHtml(label) + '</span>';
+        };
+        legend.innerHTML = mk('checked', t('weekly.legendChecked')) + mk('today', t('weekly.legendToday')) +
+            mk('missed', t('weekly.legendMissed')) + mk('future', t('weekly.legendFuture'));
+    }
+
+    if (!wishes.length) {
+        grid.innerHTML = '';
+        if (emptyEl) { emptyEl.style.display = 'block'; emptyEl.textContent = t('weekly.empty'); }
+        const stat = document.getElementById('stat-weekly');
+        if (stat) stat.textContent = '';
+        return;
+    } else if (emptyEl) { emptyEl.style.display = 'none'; }
+
+    const dayNames = t('weekly.days'); // array[7]
+    let html = '<div class="wk-row wk-head">';
+    html += '<div class="wk-task-h">' + escapeHtml(t('weekly.tasks')) + '</div>';
+    for (let d = 0; d < 7; d++) {
+        const dt = days[d];
+        const isToday = (d === todayDow);
+        html += '<div class="wk-day-h' + (isToday ? ' is-today' : '') + '"><span class="wk-dow">' +
+            escapeHtml(dayNames[d] || '') + '</span><span class="wk-date">' + dt.getDate() + '</span></div>';
+    }
+    html += '</div>';
+
+    let doneCount = 0, totalCount = 0;
+    wishes.forEach(function (w) {
+        const code = w.category || 'self_drive';
+        const checked = weeklyCheckedSet(w.id);
+        const start = w.created_at ? String(w.created_at).slice(0, 10) : '';
+        html += '<div class="wk-row">';
+        html += '<div class="wk-task"><span class="wk-cat-ico"><img src="' + weeklyCatIconSrc(code) + '" alt=""></span>' +
+            '<span class="wk-task-name" title="' + escapeHtml(w.title || '') + '">' + escapeHtml(w.title || '') + '</span></div>';
+        for (let d = 0; d < 7; d++) {
+            const dt = days[d];
+            const key = calendarDateKey(dt);
+            let st;
+            if (checked.has(key)) st = 'checked';
+            else if (key === todayKey) st = 'today';
+            else if (dt > todayMid) st = 'future';
+            else if (start && key < start) st = 'before';
+            else st = 'missed';
+            if (st === 'checked' || st === 'missed') { totalCount++; if (st === 'checked') doneCount++; }
+            let cls = 'wk-cell is-' + st;
+            let click = '';
+            if (st === 'today') { cls += ' is-click'; click = ' onclick="v2Checkin(\'' + w.id + '\')"'; }
+            else if (st === 'missed') { cls += ' is-click'; click = ' onclick="openMakeupCheckin(\'' + w.id + '\',\'' + key + '\')"'; }
+            html += '<div class="' + cls + '"' + click + '><span class="wk-mark"></span></div>';
+        }
+        html += '</div>';
+    });
+    grid.innerHTML = html;
+
+    const stat = document.getElementById('stat-weekly');
+    if (stat) stat.textContent = doneCount + '/' + totalCount;
+}
+
+/* ---------- 海报绘制工具 ---------- */
+function _wk_rr(ctx, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+function _wk_star(ctx, cx, cy, R, f) {
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+        const ang = -Math.PI / 2 + i * Math.PI / 5;
+        const r = (i % 2) ? R * f : R;
+        const px = cx + r * Math.cos(ang), py = cy + r * Math.sin(ang);
+        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.closePath();
+}
+function _wk_hex(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+function _wk_shadow(ctx, color, blur, dy) { ctx.shadowColor = color; ctx.shadowBlur = blur; ctx.shadowOffsetY = dy || 0; }
+function _wk_noshadow(ctx) { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; }
+function _wk_fit(ctx, text, maxW, startPx, minPx) {
+    let px = startPx;
+    while (px > minPx && ctx.measureText(text).width > maxW) { px -= 1; ctx.font = ctx.font.replace(/\d+(\.\d+)?px/, px + 'px'); }
+    return px;
+}
+function _wk_dateShort(d, zh) {
+    const e = new Date(d.getTime() + 6 * 864e5);
+    if (zh) return (d.getMonth() + 1) + '/' + d.getDate() + '–' + (e.getMonth() + 1) + '/' + e.getDate();
+    const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return M[d.getMonth()] + ' ' + d.getDate() + '–' + M[e.getMonth()] + ' ' + e.getDate();
+}
+
+/* 组装海报数据（真实打卡） */
+function weeklyPosterData(blank) {
+    const langEn = getLanguage() === 'en-US';
+    const days = weeklyWeekDates();
+    const todayKey = calendarDateKey(new Date());
+    const todayMid = new Date(todayKey + 'T00:00:00');
+    const wishes = blank ? [] : weeklyActiveWishes().slice(0, 7);
+    const rows = wishes.map(function (w) { return { code: w.category || 'self_drive', id: w.id, title: w.title || '', created_at: w.created_at }; });
+    const cellState = rows.map(function (w) {
+        const checked = weeklyCheckedSet(w.id);
+        const start = blank ? '' : (w.created_at ? String(w.created_at).slice(0, 10) : '');
+        return days.map(function (dt) {
+            const key = calendarDateKey(dt);
+            if (blank) return 'empty';
+            if (checked.has(key)) return 'done';
+            if (key === todayKey) return 'today';
+            if (dt > todayMid) return 'future';
+            if (start && key < start) return 'before';
+            return 'miss';
+        });
+    });
+    let done = 0, total = 0;
+    cellState.forEach(function (arr) { arr.forEach(function (st) { if (st === 'before' || st === 'future' || st === 'empty') return; total++; if (st === 'done') done++; }); });
+    return { langEn: langEn, days: days, todayDow: new Date().getDay(), rows: rows, cellState: cellState, done: done, total: total, blank: blank };
+}
+
+/* 主绘制：C 升级版底图（banner 版式） */
+function drawWeeklyPoster(cv, data) {
+    const W = 1024, H = 1536;
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    const zh = !data.langEn;
+    const T = {
+        eyebrow: t('weekly.posterEyebrow'),
+        h1: t('weekly.posterTitle'),
+        of: t('weekly.posterOf'),
+        done: t('weekly.posterDone'),
+        unit: t('weekly.posterUnit'),
+        tasks: t('weekly.tasks'),
+        rewards: [t('weekly.reward1'), t('weekly.reward2'), t('weekly.reward3')],
+        rewardCost: [t('weekly.rewardCost1'), t('weekly.rewardCost2'), t('weekly.rewardCost3')],
+        qr: t('weekly.posterQr'),
+        brand: t('weekly.posterBrand'),
+        days: t('weekly.days')
+    };
+
+    const cfg = {
+        titleMode: 'banner',
+        panel: { x: 78, y: 690, w: 866, h: 460, padTop: 56 },
+        header: { x: 256, y: 662, w: 528, h: 74 },
+        ribbons: { L: { cx: 200, cy: 350, w: 212, h: 104 }, R: { cx: 840, cy: 350, w: 212, h: 104 } },
+        tiles: { y: 1190, h: 190, w: 192, xs: [80, 304, 528, 752] },
+        strip: { x: 272, y: 1412, w: 480, h: 68 },
+        sticker: { x: 852, y: 1458, w: 162, h: 66 }
+    };
+
+    const starColor = '#F7C948', starEdge = '#DFA318';
+    const name = data.blank ? (zh ? '＿＿' : '_ _') : (((typeof getSelectedProfile === 'function' && getSelectedProfile() && getSelectedProfile().name) || (zh ? '小朋友' : 'Kid')));
+    const todayDow = data.todayDow;
+
+    // 1. 底图
+    const bg = _weeklyImgs.bg;
+    if (bg) ctx.drawImage(bg, 0, 0, W, H); else { ctx.fillStyle = '#FBF1E4'; ctx.fillRect(0, 0, W, H); }
+
+    // 2. 标题头带 + 丝带
+    ctx.textBaseline = 'alphabetic';
+    const HD = cfg.header;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#B0496A';
+    let hfs = 34;
+    ctx.font = '700 ' + hfs + 'px "Arial Rounded MT Bold","PingFang SC",sans-serif';
+    hfs = _wk_fit(ctx, T.h1, HD.w - 56, hfs, 22);
+    ctx.fillText(T.h1, HD.x + HD.w / 2, HD.y + HD.h / 2 + hfs * 0.36);
+    ctx.restore();
+
+    if (cfg.ribbons) {
+        const RL = cfg.ribbons.L, RR = cfg.ribbons.R;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#B9607A';
+        let nfs = 40;
+        ctx.font = '700 ' + nfs + 'px "Arial Rounded MT Bold","PingFang SC",sans-serif';
+        const nmTxt = data.blank ? (zh ? '＿＿' : '_ _') : name;
+        nfs = _wk_fit(ctx, nmTxt, RL.w - 54, nfs, 20);
+        ctx.fillText(nmTxt, RL.cx, RL.cy + nfs * 0.36);
+        ctx.fillStyle = '#A98A6B';
+        let dfs = 24;
+        ctx.font = '700 ' + dfs + 'px "Arial Rounded MT Bold","PingFang SC",sans-serif';
+        const dtTxt = data.blank ? '____ / ____' : _wk_dateShort(data.days[0], zh);
+        dfs = _wk_fit(ctx, dtTxt, RR.w - 48, dfs, 13);
+        ctx.fillText(dtTxt, RR.cx, RR.cy + dfs * 0.36 + 2);
+        ctx.restore();
+    }
+
+    // 4. 面板
+    const P = cfg.panel;
+    const padX = 24, padY = 22, padTop = (P.padTop == null ? padY : P.padTop);
+    const cx0 = P.x + padX, cy0 = P.y + padTop;
+    const cw = P.w - padX * 2, ch = P.h - padTop - padY;
+    const labelW = 262, headH = 58;
+    const colW = (cw - labelW) / 7;
+    const rowsTop = cy0 + headH;
+    const rowsH = ch - headH;
+    const n = data.rows.length;
+    const rowH = n > 0 ? Math.min(84, rowsH / n) : 0;
+    const usedH = rowH * n;
+    const startY = rowsTop + Math.max(0, (rowsH - usedH) / 2);
+
+    ctx.textAlign = 'center';
+    for (let d = 0; d < 7; d++) {
+        const dcx = cx0 + labelW + colW * (d + 0.5);
+        const dcy = cy0 + headH / 2 + 2;
+        const isToday = (d === todayDow) && !data.blank;
+        ctx.beginPath(); ctx.arc(dcx, dcy, 24, 0, Math.PI * 2);
+        ctx.fillStyle = isToday ? '#ED5B7C' : '#F6EFE5'; ctx.fill();
+        ctx.fillStyle = isToday ? '#fff' : '#8A7A68';
+        ctx.font = '700 22px "PingFang SC",sans-serif';
+        ctx.fillText((T.days[d] || ''), dcx, dcy + 8);
+    }
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#B5A491';
+    ctx.font = '700 20px "PingFang SC",sans-serif';
+    ctx.fillText(T.tasks, cx0 + 10, cy0 + headH / 2 + 7);
+
+    const chips = ['#DDF0E2', '#FCE1E8', '#E6E0F8', '#FCEFC7', '#D9E9F8', '#F6E1D8', '#E2EFD9'];
+    for (let i = 0; i < n; i++) {
+        const hyy = startY + i * rowH;
+        const chip = chips[i % chips.length];
+        ctx.fillStyle = 'rgba(255,255,255,0.72)';
+        _wk_rr(ctx, cx0, hyy + 5, cw, rowH - 10, 20); ctx.fill();
+        const chipW = labelW - 16, chipH = rowH - 22, chipX = cx0 + 8, chipY = hyy + 11;
+        ctx.fillStyle = chip; _wk_rr(ctx, chipX, chipY, chipW, chipH, 16); ctx.fill();
+        const isz = Math.min(46, rowH - 30);
+        ctx.fillStyle = 'rgba(255,255,255,.78)';
+        _wk_rr(ctx, chipX + 7, hyy + (rowH - isz - 12) / 2, isz + 12, isz + 12, 13); ctx.fill();
+        const ic = _weeklyImgs.icons[data.rows[i].code];
+        if (ic) ctx.drawImage(ic, chipX + 13, hyy + (rowH - isz) / 2, isz, isz);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#22306B';
+        let fs = Math.min(23, Math.max(16, rowH - 40));
+        const label = data.rows[i].title || '';
+        const tx0 = chipX + isz + 21;
+        ctx.font = '700 ' + fs + 'px "PingFang SC",sans-serif';
+        fs = _wk_fit(ctx, label, chipX + chipW - 14 - tx0, fs, 13);
+        ctx.fillText(label, tx0, hyy + rowH / 2 + fs * 0.36);
+
+        for (let d2 = 0; d2 < 7; d2++) {
+            const cxx = cx0 + labelW + colW * (d2 + 0.5);
+            const cyy = hyy + rowH / 2;
+            const st = data.cellState[i][d2];
+            const R = Math.min(21, rowH * 0.28);
+            ctx.strokeStyle = 'rgba(215,198,178,.55)'; ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(cx0 + labelW + colW * d2, hyy + 12);
+            ctx.lineTo(cx0 + labelW + colW * d2, hyy + rowH - 12);
+            ctx.stroke();
+            if (st === 'done') {
+                ctx.save(); _wk_shadow(ctx, _wk_hex(starEdge, .45), 10, 4);
+                _wk_star(ctx, cxx, cyy + 1, R, 0.46); ctx.fillStyle = starColor; ctx.fill(); _wk_noshadow(ctx);
+                ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 1.6; ctx.stroke();
+                ctx.beginPath(); ctx.ellipse(cxx - R * 0.28, cyy - R * 0.36, R * 0.26, R * 0.16, -0.5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fill(); ctx.restore();
+            } else if (st === 'miss') {
+                _wk_star(ctx, cxx, cyy, R, 0.46); ctx.strokeStyle = '#E3C9A4'; ctx.lineWidth = 2.6; ctx.stroke();
+            } else if (st === 'today') {
+                _wk_rr(ctx, cxx - R - 5, cyy - R - 5, (R + 5) * 2, (R + 5) * 2, 12);
+                ctx.strokeStyle = '#ED5B7C'; ctx.lineWidth = 2.6; ctx.setLineDash([6, 5]); ctx.stroke(); ctx.setLineDash([]);
+                _wk_star(ctx, cxx, cyy, R * 0.86, 0.46); ctx.strokeStyle = '#F0B7C6'; ctx.lineWidth = 2.2; ctx.stroke();
+            } else if (st === 'future') {
+                ctx.beginPath(); ctx.arc(cxx, cyy, 3.2, 0, Math.PI * 2); ctx.fillStyle = '#EDE1D2'; ctx.fill();
+            } else if (st === 'before') {
+                ctx.beginPath(); ctx.arc(cxx, cyy, 4.5, 0, Math.PI * 2); ctx.fillStyle = '#E7E1D8'; ctx.fill();
+            } else {
+                _wk_star(ctx, cxx, cyy, R, 0.46); ctx.strokeStyle = '#EBD7BC'; ctx.lineWidth = 2.4; ctx.stroke();
+            }
+        }
+    }
+
+    // 5. 底部奖励卡 + 二维码卡
+    const T3 = cfg.tiles;
+    const tY = T3.y, tH = T3.h, tW = T3.w;
+    const capColors = ['#FBD3DF', '#C9E8D6', '#DED6F5', '#FBE7A8'];
+    ctx.textAlign = 'center';
+    for (let tt = 0; tt < 4; tt++) {
+        const tX = T3.xs[tt];
+        const capH = 62;
+        ctx.save(); _wk_shadow(ctx, 'rgba(120,90,60,.13)', 14, 5);
+        ctx.fillStyle = '#FFFDF9'; _wk_rr(ctx, tX, tY, tW, tH, 26); ctx.fill(); _wk_noshadow(ctx); ctx.restore();
+        ctx.fillStyle = capColors[tt]; ctx.save(); _wk_rr(ctx, tX, tY, tW, capH + 26, 26); ctx.clip(); ctx.fillRect(tX, tY, tW, capH); ctx.restore();
+        if (tt < 3) {
+            _wk_star(ctx, tX + tW / 2, tY + 32, 20, 0.46); ctx.fillStyle = starColor; ctx.fill();
+            const pw2 = 74, ph2 = 30, px2 = tX + (tW - pw2) / 2, py2 = tY + capH + 12;
+            ctx.fillStyle = '#F7F1E8'; _wk_rr(ctx, px2, py2, pw2, ph2, ph2 / 2); ctx.fill();
+            ctx.fillStyle = starColor; _wk_star(ctx, px2 + 20, py2 + 15, 10, 0.46); ctx.fill();
+            ctx.fillStyle = '#22306B'; ctx.font = '700 19px "Arial Rounded MT Bold","PingFang SC",sans-serif';
+            ctx.textAlign = 'left'; ctx.fillText(T.rewardCost[tt], px2 + 35, py2 + 22); ctx.textAlign = 'center';
+            const rl = T.rewards[tt]; let rfs = 16;
+            ctx.fillStyle = '#5E5148'; ctx.font = '700 ' + rfs + 'px "PingFang SC",sans-serif';
+            rfs = _wk_fit(ctx, rl, tW - 24, rfs, 11);
+            ctx.fillText(rl, tX + tW / 2, tY + tH - 22);
+        } else {
+            const box = 104, ox = tX + (tW - box) / 2, oy = tY + capH + 6;
+            try {
+                const url = 'https://stellar.gaocaihk.com';
+                const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+                const mc = qr.getModuleCount(); const m = box / mc;
+                ctx.fillStyle = '#22306B';
+                for (let r2 = 0; r2 < mc; r2++) for (let c2 = 0; c2 < mc; c2++)
+                    if (qr.isDark(r2, c2)) ctx.fillRect(ox + c2 * m, oy + r2 * m, Math.ceil(m), Math.ceil(m));
+            } catch (e) {
+                ctx.strokeStyle = '#D9CDBE'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2; _wk_rr(ctx, ox, oy, box, box, 10); ctx.stroke(); ctx.setLineDash([]);
+            }
+            ctx.fillStyle = '#5E5148'; ctx.font = '700 14px "PingFang SC",sans-serif';
+            ctx.fillText(T.qr, tX + tW / 2, oy + box + 20);
+        }
+    }
+
+    // 6. 底部粉条
+    const S = cfg.strip; const scy = S.y + S.h / 2;
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.fillStyle = '#B9607A';
+    ctx.font = '700 21px "Arial Rounded MT Bold","PingFang SC",sans-serif';
+    if (ctx.letterSpacing !== undefined) ctx.letterSpacing = '1.5px';
+    ctx.fillText(T.brand + '  ·  stellar.gaocaihk.com', S.x + S.w / 2, scy + 8);
+    if (ctx.letterSpacing !== undefined) ctx.letterSpacing = '0px';
+    ctx.restore();
+
+    // 7. 品牌贴纸盖水印
+    const C = cfg.sticker;
+    ctx.save(); _wk_shadow(ctx, 'rgba(120,90,60,.10)', 12, 4);
+    ctx.fillStyle = '#FFFDF9'; _wk_rr(ctx, C.x, C.y, C.w, C.h, 20); ctx.fill(); _wk_noshadow(ctx);
+    ctx.strokeStyle = '#F2D8D0'; ctx.lineWidth = 1.6; _wk_rr(ctx, C.x, C.y, C.w, C.h, 20); ctx.stroke();
+    ctx.restore();
+    ctx.textAlign = 'center'; ctx.fillStyle = '#C79AA6';
+    ctx.font = '700 17px "Arial Rounded MT Bold","PingFang SC",sans-serif';
+    ctx.fillText('STELLAR ♡', C.x + C.w / 2, C.y + C.h / 2 + 6);
+}
+
+/* ---------- 海报弹窗控制 ---------- */
+function openWeeklyPoster() {
+    const modal = document.getElementById('weekly-poster-modal');
+    if (modal) modal.style.display = 'flex';
+    drawWeeklyPosterFromData(false);
+}
+function closeWeeklyPoster() {
+    const modal = document.getElementById('weekly-poster-modal');
+    if (modal) modal.style.display = 'none';
+}
+function drawWeeklyPosterFromData(blank) {
+    const cv = document.getElementById('weekly-poster-canvas');
+    if (!cv) return;
+    const tip = document.getElementById('weekly-poster-tip');
+    loadWeeklyAssets().then(function () {
+        const data = weeklyPosterData(blank);
+        drawWeeklyPoster(cv, data);
+        if (tip) tip.textContent = blank ? '' : (t('weekly.posterDone') + ' ' + data.done + ' / ' + data.total);
+    });
+}
+function downloadWeeklyPoster() {
+    const cv = document.getElementById('weekly-poster-canvas');
+    if (!cv) return;
+    cv.toBlob(function (blob) {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'stellar-weekly-' + calendarDateKey(weeklyWeekStart()) + '.png';
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    }, 'image/png');
+}
+function downloadWeeklyBlankPoster() {
+    const modal = document.getElementById('weekly-poster-modal');
+    if (modal) modal.style.display = 'flex';
+    loadWeeklyAssets().then(function () {
+        const cv = document.getElementById('weekly-poster-canvas');
+        const data = weeklyPosterData(true);
+        drawWeeklyPoster(cv, data);
+        cv.toBlob(function (blob) {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'stellar-weekly-blank.png';
+            a.click();
+            setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+        }, 'image/png');
+    });
 }
