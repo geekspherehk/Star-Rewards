@@ -116,7 +116,7 @@ const ts = Math.floor(Date.now() / 1000);
       document.querySelectorAll('.onboarding-modal, .help-overlay').forEach(e => e.remove());
     });
     await page.evaluate(() => {
-      if (typeof showModule === 'function') showModule('weekly-module');
+      if (typeof showModule === 'function') showModule('points-module');
       if (typeof renderWeeklyModule === 'function') renderWeeklyModule();
     });
     await sleep(1200);
@@ -131,11 +131,11 @@ const ts = Math.floor(Date.now() / 1000);
     console.log('周表:', JSON.stringify(gridInfo));
 
     await page.evaluate(() => {
-      const el = document.getElementById('weekly-module');
+      const el = document.getElementById('weekly-section');
       if (el) el.scrollIntoView({ block: 'start' });
     });
     await sleep(600);
-    const mod = await page.$('#weekly-module');
+    const mod = await page.$('#weekly-section');
     const p1 = path.join(OUT, `weekly-live-module-${WIDTH}.png`);
     await mod.screenshot({ path: p1 });
     shots.push(p1);

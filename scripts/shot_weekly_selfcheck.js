@@ -25,31 +25,23 @@ const PAGE = `<!doctype html>
 <meta charset="utf-8">
 <link rel="stylesheet" href="style.css?v=999">
 <style>body{background:#F4F5F9;margin:0;padding:16px;}
-#weekly-module{display:block !important;}
+#weekly-section{display:block !important;}
 #weekly-poster-canvas{max-width:520px;height:auto;box-shadow:0 6px 20px rgba(0,0,0,.15);}
 </style>
 </head>
 <body>
-  <div id="weekly-module" class="module-content">
-    <div class="weekly-wrap">
-      <div class="weekly-hero"></div>
-      <div class="weekly-card">
-        <div class="weekly-head">
-          <div>
-            <h2 class="weekly-title" id="weekly-title"></h2>
-            <p class="weekly-range" id="weekly-range"></p>
-          </div>
-          <div class="weekly-actions">
-            <button type="button" class="primary-btn" id="weekly-export-btn"><span>导出本周海报</span></button>
-          </div>
-        </div>
-        <div class="weekly-legend" id="weekly-legend"></div>
-        <div class="weekly-grid" id="weekly-grid"></div>
-        <p class="weekly-empty" id="weekly-empty" style="display:none;"></p>
-      </div>
-      <span class="weekly-wm" aria-hidden="true">STELLAR ♡</span>
+  <section class="v2-section" id="weekly-section">
+    <div class="v2-section-head">
+      <h3 class="section-title section-title--icon" id="weekly-title"></h3>
+      <p class="v2-sub" id="weekly-range"></p>
     </div>
-  </div>
+    <div class="weekly-legend" id="weekly-legend"></div>
+    <div class="weekly-grid" id="weekly-grid"></div>
+    <p class="weekly-empty" id="weekly-empty" style="display:none;"></p>
+    <div class="weekly-foot">
+      <button type="button" class="text-btn" id="weekly-export-btn"><span>导出本周海报</span></button>
+    </div>
+  </section>
 
   <div id="weekly-poster-modal" class="modal-overlay" style="display:block;position:static;background:none;">
     <div class="modal-content weekly-poster-content" style="margin:0 auto;">
@@ -130,7 +122,7 @@ function findChrome() {
 
     const gridRows = await page.evaluate(() => window.__renderGrid());
     console.log('grid rows', gridRows);
-    const mod = await page.$('#weekly-module');
+    const mod = await page.$('#weekly-section');
     await mod.screenshot({ path: path.join(outDir, 'weekly_grid_selfcheck' + SUF + '.png') });
 
     const res = await page.evaluate(() => window.__renderPoster());

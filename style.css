@@ -5130,34 +5130,10 @@ a:hover { text-decoration: underline; }
 }
 
 /* ───────────────────────── 本周打卡模块（weekly） ───────────────────────── */
-.weekly-wrap {
-    position: relative; max-width: 760px; margin: 0 auto; overflow: hidden;
-    border-radius: 22px; padding: 0;
-    background: #F1E5D5;
-    box-shadow: 0 12px 36px rgba(20, 24, 50, .16);
-}
-.weekly-hero {
-    height: 300px; margin: 0;
-    background: url('assets/weekly/weekly-bg-c.png') top/cover no-repeat, #F1E5D5;
-    filter: saturate(1.02);
-}
-.weekly-card {
-    position: relative; z-index: 1; margin: -30px 16px 16px; border-radius: 18px; padding: 18px 18px 16px;
-    background: rgba(255, 255, 255, .82);
-    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-    box-shadow: 0 -6px 22px rgba(20, 24, 50, .12), 0 8px 26px rgba(20, 24, 50, .12);
-}
-.weekly-wm {
-    position: absolute; right: 14px; bottom: 12px; z-index: 2;
-    font-size: .62rem; font-weight: 800; letter-spacing: .05em; color: #fff;
-    background: rgba(176, 73, 106, .92); padding: 3px 9px; border-radius: 999px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .22); pointer-events: none;
-}
-.weekly-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
-.weekly-title { font-size: 1.25rem; font-weight: 800; color: var(--text); margin: 0; }
-.weekly-range { margin: 2px 0 0; font-size: .85rem; color: var(--text-2); font-weight: 600; }
-.weekly-actions { display: flex; gap: 8px; }
-.weekly-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 0 0 12px; padding: 8px 12px; background: rgba(255,255,255,.55); border: 1px solid rgba(108,92,231,.18); border-radius: var(--r-md); }
+/* 周表并入首页默认打卡区，沿用全站 v2-section 容器，不再叠加背景图 */
+.weekly-foot { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+/* 周表头部由 v2-section-head 提供，标题/区间直接写在 index.html */
+.weekly-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 0 0 12px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); }
 .wk-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--text-2); font-weight: 600; }
 .wk-dot { width: 14px; height: 14px; border-radius: 4px; display: inline-block; flex: 0 0 auto; }
 .wk-dot.is-checked { background: var(--brand); }
@@ -5211,9 +5187,7 @@ a:hover { text-decoration: underline; }
 .weekly-poster-tip { text-align: center; font-size: .78rem; color: var(--text-2); margin: 0 0 10px; }
 
 @media (max-width: 720px) {
-    .weekly-hero { height: 186px; }
-    .weekly-card { margin: -22px 10px 12px; padding: 15px 14px 14px; }
-    .weekly-title { font-size: 1.1rem; }
+    .weekly-foot { margin-top: 10px; }
 }
 
 @media (max-width: 520px) {
