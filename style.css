@@ -5158,12 +5158,22 @@ a:hover { text-decoration: underline; }
 .wk-task-name { font-size: .86rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .wk-cell { position: relative; aspect-ratio: 1 / 1; border-radius: 11px; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
-.wk-cell .wk-mark { width: 56%; aspect-ratio: 1 / 1; }
+.wk-cell .wk-mark { position: relative; width: 56%; aspect-ratio: 1 / 1; }
+/* 星形用双层裁剪：外层上色、内层填底色，露出描边（border+clip-path 会被裁掉，不可用） */
+.wk-cell.is-checked .wk-mark::before, .wk-cell.is-missed .wk-mark::before, .wk-cell.is-today .wk-mark::before,
+.wk-cell.is-checked .wk-mark::after, .wk-cell.is-missed .wk-mark::after, .wk-cell.is-today .wk-mark::after {
+    content: ''; position: absolute; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+.wk-cell.is-checked .wk-mark::before, .wk-cell.is-missed .wk-mark::before, .wk-cell.is-today .wk-mark::before { inset: 0; }
+.wk-cell.is-checked .wk-mark::after, .wk-cell.is-missed .wk-mark::after, .wk-cell.is-today .wk-mark::after { inset: 24%; }
 .wk-cell.is-checked { background: var(--brand-soft); border-color: transparent; }
-.wk-cell.is-checked .wk-mark { background: var(--brand); clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.wk-cell.is-checked .wk-mark::before { background: var(--brand); }
+.wk-cell.is-checked .wk-mark::after { background: var(--brand); }
 .wk-cell.is-today { border: 2px dashed var(--brand); }
-.wk-cell.is-today .wk-mark { background: transparent; border: 2px solid var(--brand); border-radius: 4px; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
-.wk-cell.is-missed .wk-mark { background: transparent; border: 2px solid var(--accent); clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.wk-cell.is-today .wk-mark::before { background: var(--brand); opacity: .5; }
+.wk-cell.is-today .wk-mark::after { background: var(--surface); }
+.wk-cell.is-missed .wk-mark::before { background: var(--accent); }
+.wk-cell.is-missed .wk-mark::after { background: var(--surface); }
 .wk-cell.is-future .wk-mark { background: var(--border); border-radius: 50%; width: 28%; }
 .wk-cell.is-before .wk-mark { background: #EDEEF3; border-radius: 50%; width: 30%; }
 .wk-cell.is-click { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
