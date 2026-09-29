@@ -2574,6 +2574,12 @@ document.addEventListener('click', (e) => {
     if (wrap && !wrap.contains(e.target)) closeUserMenu();
 });
 
+// 点弹窗遮罩（背景）即关闭任意 modal-overlay，避免「弹窗关不掉」
+document.addEventListener('click', (e) => {
+    const ov = (e.target && e.target.closest) ? e.target.closest('.modal-overlay') : null;
+    if (ov && e.target === ov) ov.style.display = 'none';
+});
+
 async function switchProfile(profileId) {
     if (profileId === selectedProfileId) return;
     try {
@@ -3846,7 +3852,7 @@ function renderHomeCheckin() {
             const done = !!w.today_checked;
             const checkinBtn = done
                 ? '<button type="button" class="v2-checkin-btn is-done" disabled><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkedIn')) + '</button>'
-                : '<button type="button" class="v2-checkin-btn" onclick="v2Checkin(' + w.id + ')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkin')) + ' +5</button>';
+                : '<button type="button" class="v2-checkin-btn" onclick="openCheckinConfirm(' + w.id + ')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkin')) + ' +5</button>';
             // 有漏卡才出现补卡入口，并把「哪一天」写进按钮文案（不用自己去日期控件里找）；
             // 若拿不到 per-目标 打卡数据（版本错配），退回不带日期的通用入口
             const dotsUsable = checkinDataHasWishId();
@@ -4305,6 +4311,28 @@ async function v2Checkin(id, date = null, note = '') {
 function closeRitualModal() {
     const m = document.getElementById('ritual-modal');
     if (m) m.style.display = 'none';
+}
+
+// ── 今日打卡前确认：避免误点直接记上，可取消 ──
+let checkinConfirmId = null;
+function openCheckinConfirm(id) {
+    const wishes = (v2Data && v2Data.wishes) || [];
+    const wish = wishes.find(w => String(w.id) === String(id));
+    checkinConfirmId = id;
+    const msgEl = document.getElementById('checkin-confirm-msg');
+    if (msgEl) msgEl.textContent = t('v2.checkinConfirmMsg', { name: (wish && wish.title) || '' });
+    const modal = document.getElementById('checkin-confirm-modal');
+    if (modal) modal.style.display = 'flex';
+}
+function closeCheckinConfirm() {
+    const modal = document.getElementById('checkin-confirm-modal');
+    if (modal) modal.style.display = 'none';
+    checkinConfirmId = null;
+}
+function confirmCheckinNow() {
+    const id = checkinConfirmId;
+    closeCheckinConfirm();
+    if (id) v2Checkin(id);
 }
 function showCheckinRitual(wish, res, isMakeup) {
     const m = document.getElementById('ritual-modal');
@@ -5198,7 +5226,7 @@ function renderWeeklyModule() {
             if (st === 'checked' || st === 'missed') { totalCount++; if (st === 'checked') doneCount++; }
             let cls = 'wk-cell is-' + st;
             let click = '';
-            if (st === 'today') { cls += ' is-click'; click = ' onclick="v2Checkin(\'' + w.id + '\')"'; }
+            if (st === 'today') { cls += ' is-click'; click = ' onclick="openCheckinConfirm(\'' + w.id + '\')"'; }
             else if (st === 'missed') { cls += ' is-click'; click = ' onclick="openMakeupCheckin(\'' + w.id + '\',\'' + key + '\')"'; }
             html += '<div class="' + cls + '"' + click + '><span class="wk-mark"></span></div>';
         }

@@ -3803,6 +3803,11 @@ a:hover { text-decoration: underline; }
 .ritual-pts, .celebrate-pts { font-size: var(--fs-sm); color: var(--text-2); margin-bottom: 10px; }
 .ritual-msg { font-size: var(--fs-sm); color: var(--muted); margin: 0 0 6px; }
 .ritual-content .modal-actions, .celebrate-content .modal-actions { justify-content: center; }
+/* 今日打卡确认弹窗 */
+.checkin-confirm-content { text-align: center; max-width: 360px; }
+.checkin-confirm-content h3 { margin: 0 0 10px; }
+.checkin-confirm-msg { font-size: var(--fs-base); color: var(--text-2); margin: 0 0 18px; word-break: break-word; }
+.checkin-confirm-content .modal-actions { justify-content: center; }
 /* 本周成长 */
 .weekly-card { margin-bottom: 20px; }
 .weekly-card .v2-section-head { margin-bottom: 10px; }
