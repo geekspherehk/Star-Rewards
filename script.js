@@ -3214,10 +3214,10 @@ function showModule(moduleId) {
     console.log('切换到模块:', moduleId);
 }
 
-// 悬浮按钮：回到首页「今日打卡」卡
+// 悬浮按钮：回到首页「本周打卡」区（唯一打卡入口）
 function quickCheckin() {
     showModule('points-module');
-    const el = document.getElementById('today-checkin');
+    const el = document.getElementById('weekly-section');
     if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -3718,7 +3718,6 @@ function renderV2All() {
     renderV2Indicators();
     renderV2Report();
     updateStreak();      // 打卡/补卡后立即刷新首页「连续打卡天数」（含 V2 checkins 口径）
-    renderHomeCheckin();
     renderAchStats();
     updateV2ModuleStat();
     renderActivationChecklist();
@@ -3810,77 +3809,6 @@ function shortDayLabel(key) {
 // 全部记录会被误判成「漏卡」——所以先探测，探测不到就退回旧的通用补卡入口。
 function checkinDataHasWishId() {
     return (Array.isArray(checkins) ? checkins : []).some(c => c && c.wish_id !== undefined && c.wish_id !== null && c.wish_id !== '');
-}
-
-// 点阵：今天只做状态提示（不用点击，避免误触加分）；漏掉的那天直接可点补卡
-function renderCheckinDots(wish) {
-    if (!checkinDataHasWishId()) return '';
-    const days = checkinLast7Days(wish);
-    const dots = days.map(d => {
-        const label = shortDayLabel(d.key);
-        let tip, onclick = '';
-        if (d.state === 'checked') tip = t('v2.dotChecked', { date: label });
-        else if (d.state === 'today') tip = t('v2.dotToday');
-        else if (d.state === 'missed') { tip = t('v2.dotMissed', { date: label }); onclick = ' onclick="openMakeupCheckin(' + wish.id + ',\'' + d.key + '\')"'; }
-        else tip = t('v2.dotBefore', { date: label });
-        const tipAttr = ' title="' + escapeHtml(tip) + '" aria-label="' + escapeHtml(tip) + '"';
-        return onclick
-            ? '<button type="button" class="ci-dot is-' + d.state + '"' + onclick + tipAttr + '></button>'
-            : '<span class="ci-dot is-' + d.state + '"' + tipAttr + '></span>';
-    }).join('');
-    return '<div class="ci-dots-row">' +
-        '<span class="ci-edge">' + escapeHtml(t('v2.days7Title')) + '</span>' +
-        '<div class="ci-dots" role="group" aria-label="' + escapeHtml(t('v2.days7Title')) + '">' + dots + '</div>' +
-        '<span class="ci-edge ci-edge-end">' + escapeHtml(t('v2.dayToday')) + '</span>' +
-        '</div>';
-}
-
-function renderHomeCheckin() {
-    const el = document.getElementById('today-checkin-list');
-    if (!el) return;
-    try {
-        const wishes = (v2Data && v2Data.wishes) || [];
-        const active = wishes.filter(w => w.status !== 'achieved' && w.wish_type !== 'experience');
-        if (!active.length) {
-            el.innerHTML = '<div class="today-checkin-empty"><span>' + escapeHtml(t('v2.emptyWishes')) + '</span>' +
-                '<button type="button" class="add-points-btn" onclick="showModule(\'gifts-module\')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>' + escapeHtml(t('home.setGoalCta')) + '</span></button></div>';
-            return;
-        }
-        const fallbackCat = (typeof V2_CATS !== 'undefined' && V2_CATS[0]) || { code: 'self_drive', short: '自驱' };
-        el.innerHTML = active.map(w => {
-            const c = (typeof V2_CATS !== 'undefined' && V2_CATS.find(x => x.code === w.category)) || fallbackCat;
-            const done = !!w.today_checked;
-            const checkinBtn = done
-                ? '<button type="button" class="v2-checkin-btn is-done" disabled><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkedIn')) + '</button>'
-                : '<button type="button" class="v2-checkin-btn" onclick="openCheckinConfirm(' + w.id + ')"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' + escapeHtml(t('v2.checkin')) + ' +5</button>';
-            // 有漏卡才出现补卡入口，并把「哪一天」写进按钮文案（不用自己去日期控件里找）；
-            // 若拿不到 per-目标 打卡数据（版本错配），退回不带日期的通用入口
-            const dotsUsable = checkinDataHasWishId();
-            const missed = dotsUsable ? checkinLast7Days(w).filter(d => d.state === 'missed') : [];
-            const lastMissed = missed.length ? missed[missed.length - 1].key : '';
-            const makeupLabel = dotsUsable ? t('v2.makeupOn', { date: shortDayLabel(lastMissed) }) : t('v2.makeup');
-            const showMakeup = !dotsUsable || missed.length > 0;
-            const missedBtn = showMakeup
-                ? '<button type="button" class="v2-makeup-btn tci-makeup" onclick="openMakeupCheckin(' + w.id + (lastMissed ? ',\'' + lastMissed + '\'' : '') + ')" title="' + escapeHtml(t('v2.makeupTip')) + '">' +
-                    '<svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>' +
-                    '<span class="tmi-text">' + escapeHtml(makeupLabel) + '</span></button>'
-                : '';
-            return '<div class="today-checkin-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
-                '<div class="tci-top">' +
-                    '<span class="tci-cat">' + escapeHtml(catShort(c.code)) + '</span>' +
-                    '<div class="tci-main">' +
-                        '<span class="tci-title">' + escapeHtml(w.title || '') + '</span>' +
-                        '<span class="tci-streak">' + escapeHtml(t('v2.streak', { n: w.streak || 0 })) + '</span>' +
-                    '</div>' +
-                '</div>' +
-                renderCheckinDots(w) +
-                '<div class="tci-actions">' + checkinBtn + missedBtn + '</div>' +
-            '</div>';
-        }).join('');
-    } catch (err) {
-        console.error('renderHomeCheckin 失败:', err);
-        el.innerHTML = '<div class="today-checkin-empty"><span>' + escapeHtml(t('common.error')) + '，请刷新重试</span></div>';
-    }
 }
 
 // ── 成长成就页：汇总统计条 ──
@@ -4665,7 +4593,7 @@ function actGo(step) {
         return;
     }
     if (step === 'checkin') {
-        const c = document.getElementById('today-checkin');
+        const c = document.getElementById('weekly-section');
         if (c) c.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
     }

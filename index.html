@@ -30,7 +30,7 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=103">
+    <link rel="stylesheet" href="style.css?v=104">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=32"></script>
@@ -163,13 +163,12 @@
                 <!-- 激活清单：新用户首启引导，4 步点亮成长之旅 -->
                 <div id="activation-checklist" class="activation-checklist" style="display:none;"></div>
 
-                <!-- 今日打卡：主操作前置，直接打卡 +5 分 -->
-                <div class="today-checkin" id="today-checkin">
+                <!-- 本周打卡：一周一格，点亮成长轨迹（周日起算，点格即可打卡/补卡）；同时是首页唯一的打卡入口 -->
+                <section class="v2-section" id="weekly-section">
                     <div class="v2-section-head">
-                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span data-i18n="home.todayCheckin">今日打卡</span></h3>
-                        <p class="v2-sub" data-i18n="home.todayCheckinSub">每天完成一个小目标 · 打卡一次 +5 分</p>
+                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="10"/><line x1="15" y1="4" x2="15" y2="10"/><line x1="3" y1="16" x2="21" y2="16"/></svg><span data-i18n="weekly.module">本周打卡</span></h3>
+                        <p class="v2-sub" id="weekly-range"></p>
                     </div>
-                    <div id="today-checkin-list" class="today-checkin-list"></div>
                     <div class="push-toggle-row" id="push-toggle-row" style="display:none;">
                         <div class="push-info">
                             <span class="push-title"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span data-i18n="v2.pushTitle">打卡提醒</span></span>
@@ -180,14 +179,6 @@
                             <span class="push-slider"></span>
                         </label>
                         <span class="push-state-label" id="push-toggle-label"></span>
-                    </div>
-                </div>
-
-                <!-- 本周打卡：一周一格，点亮成长轨迹（周日起算，点格即可打卡/补卡） -->
-                <section class="v2-section" id="weekly-section">
-                    <div class="v2-section-head">
-                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="10"/><line x1="15" y1="4" x2="15" y2="10"/><line x1="3" y1="16" x2="21" y2="16"/></svg><span data-i18n="weekly.module">本周打卡</span></h3>
-                        <p class="v2-sub" id="weekly-range"></p>
                     </div>
                     <div class="weekly-legend" id="weekly-legend"></div>
                     <div id="weekly-grid" class="weekly-grid"></div>
@@ -552,7 +543,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=119"></script>
+    <script defer src="script.js?v=120"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
