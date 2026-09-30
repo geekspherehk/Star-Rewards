@@ -5455,9 +5455,9 @@ function drawWeeklyPoster(cv, data) {
         ctx.font = '800 22px "PingFang SC",sans-serif';
         ctx.fillText(String(dayNum), gx + cellPad + 9, gy + cellPad + 27);
 
-        // 星章
-        const R = Math.min(27, colW * 0.27, rowH * 0.3);
-        const scx = gx + colW / 2, scy = gy + rowH / 2 + 17;
+        // 星章（尺寸收紧：留出上方日号与角标的空间，避免星角压住数字）
+        const R = Math.min(21, colW * 0.185, rowH * 0.23);
+        const scx = gx + colW / 2, scy = gy + rowH / 2 + 19;
         if (s.st === 'idle') {
             // 无星
         } else if (s.st === 'done') {

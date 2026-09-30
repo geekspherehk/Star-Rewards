@@ -96,6 +96,11 @@ const ts = Math.floor(Date.now() / 1000);
 
     // ---- puppeteer：转发 /api 到线上，带 token 渲染 ----
     const page = await browser.newPage();
+    // 绕过 service worker + HTTP 缓存，否则页面会拿到旧的 style.css/script.js（sw cache-first）
+    const cdp = await page.target().createCDPSession();
+    await cdp.send('Network.enable');
+    await cdp.send('Network.setBypassServiceWorker', { bypass: true });
+    await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
     await page.setViewport({ width: WIDTH, height: 1500, deviceScaleFactor: 2 });
     await page.setUserAgent(UA);
     page.on('console', m => { if (m.type() === 'error') console.log('PAGE-CONSOLE-ERR:', m.text().slice(0, 220)); });
@@ -179,6 +184,26 @@ const ts = Math.floor(Date.now() / 1000);
       });
       console.log('月历(mock):', JSON.stringify(mInfo));
     }
+
+    // CSS 探针：确认页面实际生效的 .mc-star 宽度（排查 sw/disk cache 拿旧样式）
+    console.log('CSS PROBE:', JSON.stringify(await page.evaluate(() => {
+      const el = document.querySelector('.mc-star');
+      const cell = el && el.closest('.mc-cell');
+      let ruleW = 'n/a';
+      try {
+        for (const ss of document.styleSheets) {
+          for (const r of ss.cssRules) {
+            if (r.selectorText === '.mc-star' && r.style && r.style.width) ruleW = r.style.width;
+          }
+        }
+      } catch (e) { ruleW = 'ERR:' + e.message; }
+      return {
+        starW: el ? getComputedStyle(el).width : null,
+        cellW: cell ? getComputedStyle(cell).width : null,
+        ruleW,
+        hrefs: [...document.styleSheets].map(s => s.href).filter(h => h && h.includes('style.css')),
+      };
+    })));
 
     await page.evaluate(() => {
       ['activation-progress-bar', 'welcome-banner', 'home-focus-banner', 'activation-checklist']

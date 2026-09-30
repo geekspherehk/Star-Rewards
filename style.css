@@ -5108,7 +5108,8 @@ a:hover { text-decoration: underline; }
 .mc-blank { visibility: hidden; }
 .mc-cell { position: relative; aspect-ratio: 1 / 1; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .mc-day { position: absolute; top: 6px; left: 8px; font-size: .68rem; font-weight: 800; color: var(--text-2); line-height: 1; }
-.mc-star { position: relative; width: 54%; aspect-ratio: 1 / 1; }
+/* 星章尺寸：留出四角给日号(左上)与进度角标(右下)，避免星角压住数字 */
+.mc-star { position: relative; width: 42%; aspect-ratio: 1 / 1; }
 /* 星章：双层 clip-path（外层色、内层高光/描边），filter 出投影制造立体感 */
 .mc-star::before, .mc-star::after { content: ''; position: absolute; inset: 0; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
 .mc-star::before { z-index: 1; }
@@ -5177,5 +5178,6 @@ a:hover { text-decoration: underline; }
 @media (max-width: 520px) {
     .mc-cell { border-radius: 10px; }
     .mc-day { top: 4px; left: 5px; font-size: .6rem; }
-    .mc-star { width: 50%; }
+    .mc-star { width: 40%; }
+    .mc-cell.is-part .mc-ratio { bottom: 4px; right: 5px; font-size: .5rem; }
 }
