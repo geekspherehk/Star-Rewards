@@ -5080,56 +5080,89 @@ a:hover { text-decoration: underline; }
     .bdg-ico, .bdg-art { width: 58px; height: 58px; }
 }
 
-/* ───────────────────────── 本周打卡模块（weekly） ───────────────────────── */
-/* 周表并入首页默认打卡区，沿用全站 v2-section 容器，不再叠加背景图 */
+/* ───────────────────────── 本月打卡模块（月历网格） ───────────────────────── */
+/* 月历并入首页默认打卡区，沿用全站 v2-section 容器，不再叠加背景图 */
 .weekly-foot { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
-/* 周表头部由 v2-section-head 提供，标题/区间直接写在 index.html */
 .weekly-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 0 0 12px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); }
-.wk-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--text-2); font-weight: 600; }
-.wk-dot { width: 14px; height: 14px; border-radius: 4px; display: inline-block; flex: 0 0 auto; }
-.wk-dot.is-checked { background: var(--brand); }
-.wk-dot.is-today { background: #fff; box-shadow: inset 0 0 0 2px var(--brand); }
-.wk-dot.is-missed { background: #fff; box-shadow: inset 0 0 0 2px var(--accent); }
-.wk-dot.is-future { background: var(--border); }
-
-.weekly-grid { display: flex; flex-direction: column; gap: 6px; }
-.wk-row { display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(7, minmax(0, 1fr)); align-items: center; gap: 6px; }
-.wk-head .wk-task-h { font-size: .8rem; font-weight: 700; color: var(--text-2); }
-.wk-day-h { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 0; border-radius: var(--r-sm); background: var(--surface); border: 1px solid var(--border); }
-.wk-day-h.is-today { background: var(--brand); border-color: var(--brand); }
-.wk-day-h.is-today .wk-dow, .wk-day-h.is-today .wk-date { color: #fff; }
-.wk-dow { font-size: .72rem; font-weight: 800; color: var(--text); line-height: 1.15; }
-.wk-date { font-size: .64rem; color: var(--text-2); line-height: 1.15; }
-
-.wk-task { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.wk-cat-ico { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; }
-.wk-cat-ico img { width: 100%; height: 100%; object-fit: contain; }
-.wk-task-name { font-size: .86rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.wk-cell { position: relative; aspect-ratio: 1 / 1; border-radius: 11px; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
-.wk-cell .wk-mark { position: relative; width: 56%; aspect-ratio: 1 / 1; }
-/* 星形用双层裁剪：外层上色、内层填底色，露出描边（border+clip-path 会被裁掉，不可用） */
-.wk-cell.is-checked .wk-mark::before, .wk-cell.is-missed .wk-mark::before, .wk-cell.is-today .wk-mark::before,
-.wk-cell.is-checked .wk-mark::after, .wk-cell.is-missed .wk-mark::after, .wk-cell.is-today .wk-mark::after {
-    content: ''; position: absolute; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+.wk-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--text-2); font-weight: 600; }
+/* 图例用小星章，与格子里的星章同款质感；今天仍用虚线圈表示 */
+.wk-dot { position: relative; width: 15px; height: 15px; display: inline-block; flex: 0 0 auto; }
+.wk-dot.is-done::before, .wk-dot.is-part::before, .wk-dot.is-miss::before,
+.wk-dot.is-done::after, .wk-dot.is-part::after, .wk-dot.is-miss::after {
+    content: ''; position: absolute; inset: 0;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
 }
-.wk-cell.is-checked .wk-mark::before, .wk-cell.is-missed .wk-mark::before, .wk-cell.is-today .wk-mark::before { inset: 0; }
-.wk-cell.is-checked .wk-mark::after, .wk-cell.is-missed .wk-mark::after, .wk-cell.is-today .wk-mark::after { inset: 24%; }
-.wk-cell.is-checked { background: var(--brand-soft); border-color: transparent; }
-.wk-cell.is-checked .wk-mark::before { background: var(--brand); }
-.wk-cell.is-checked .wk-mark::after { background: var(--brand); }
-.wk-cell.is-today { border: 2px dashed var(--brand); }
-.wk-cell.is-today .wk-mark::before { background: var(--brand); opacity: .5; }
-.wk-cell.is-today .wk-mark::after { background: var(--surface); }
-.wk-cell.is-missed .wk-mark::before { background: var(--accent); }
-.wk-cell.is-missed .wk-mark::after { background: var(--surface); }
-.wk-cell.is-future .wk-mark { background: var(--border); border-radius: 50%; width: 28%; }
-.wk-cell.is-before .wk-mark { background: #EDEEF3; border-radius: 50%; width: 30%; }
-.wk-cell.is-click { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
-.wk-cell.is-click:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(108, 92, 231, .18); }
-.wk-cell.is-click:active { transform: translateY(0); }
+.wk-dot.is-done::before { background: linear-gradient(155deg, #8C7BF6 0%, #6C5CE7 52%, #4B3FC4 100%); }
+.wk-dot.is-done::after { inset: 27%; background: radial-gradient(60% 60% at 38% 32%, rgba(255, 255, 255, .9), rgba(255, 255, 255, 0) 70%); }
+.wk-dot.is-part::before { background: linear-gradient(155deg, #8C7BF6, #6C5CE7); }
+.wk-dot.is-part::after { inset: 27%; background: var(--surface); }
+.wk-dot.is-miss::before { background: linear-gradient(155deg, #FFC36B, #F4A93C); }
+.wk-dot.is-miss::after { inset: 27%; background: var(--surface); }
+.wk-dot.is-today { border-radius: 5px; box-shadow: inset 0 0 0 2px var(--brand); }
+
+/* 7 列月历（周日→周六），一天一格，逐日累积整月 */
+.month-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+/* 星期头必须整行跨 7 列，否则只占第 1 格，会把后面所有日期整体挤偏一格 */
+.mc-head { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.mc-dow { text-align: center; font-size: .72rem; font-weight: 800; color: var(--text-2); padding-bottom: 2px; }
+.mc-blank { visibility: hidden; }
+.mc-cell { position: relative; aspect-ratio: 1 / 1; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.mc-day { position: absolute; top: 6px; left: 8px; font-size: .68rem; font-weight: 800; color: var(--text-2); line-height: 1; }
+.mc-star { position: relative; width: 54%; aspect-ratio: 1 / 1; }
+/* 星章：双层 clip-path（外层色、内层高光/描边），filter 出投影制造立体感 */
+.mc-star::before, .mc-star::after { content: ''; position: absolute; inset: 0; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.mc-star::before { z-index: 1; }
+.mc-star::after { z-index: 2; inset: 27%; }
+
+/* done：实心渐变星章 + 浅靛蓝底 */
+.mc-cell.is-done { background: rgba(108, 92, 231, .12); border-color: transparent; }
+.mc-cell.is-done .mc-day { color: var(--brand); }
+.mc-cell.is-done .mc-star::before { background: linear-gradient(155deg, #8C7BF6 0%, #6C5CE7 48%, #4B3FC4 100%); filter: drop-shadow(0 3px 4px rgba(76, 63, 196, .35)); }
+.mc-cell.is-done .mc-star::after { background: radial-gradient(60% 60% at 38% 32%, rgba(255, 255, 255, .85), rgba(255, 255, 255, 0) 70%); }
+
+/* part：空心靛蓝描边星 + 角标比例 */
+.mc-cell.is-part { background: rgba(108, 92, 231, .10); border-color: transparent; }
+.mc-cell.is-part .mc-day { color: var(--brand); }
+.mc-cell.is-part .mc-star::before { background: linear-gradient(155deg, #8C7BF6, #6C5CE7); }
+.mc-cell.is-part .mc-star::after { background: rgba(108, 92, 231, .10); }
+.mc-cell.is-part .mc-ratio { position: absolute; bottom: 6px; right: 8px; font-size: .58rem; font-weight: 800; color: var(--brand); line-height: 1; }
+
+/* open：今天待点亮，淡靛蓝空心星 */
+.mc-cell.is-open .mc-star::before { background: linear-gradient(155deg, #A99FF7, #8C7BF6); opacity: .5; }
+.mc-cell.is-open .mc-star::after { background: var(--surface); }
+.mc-cell.is-open .mc-day { color: var(--brand); }
+
+/* miss：琥珀空心星章 */
+.mc-cell.is-miss { background: rgba(244, 169, 60, .10); border-color: transparent; }
+.mc-cell.is-miss .mc-day { color: var(--accent); }
+.mc-cell.is-miss .mc-star::before { background: linear-gradient(155deg, #FFC36B, #F4A93C); }
+.mc-cell.is-miss .mc-star::after { background: var(--surface); }
+
+/* idle：未到日期或目标前，无星 */
+.mc-cell.is-idle { background: transparent; border-color: transparent; }
+
+/* today 高亮 */
+.mc-cell.is-today { border: 2px dashed var(--brand); }
+
+.mc-cell.is-click { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
+.mc-cell.is-click:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(108, 92, 231, .18); }
+.mc-cell.is-click:active { transform: translateY(0); }
 
 .weekly-empty { text-align: center; color: var(--text-2); padding: 28px 12px; font-size: .92rem; }
+
+/* 某天明细弹窗 */
+.day-detail-content { max-width: 380px; }
+.day-detail-content h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.day-detail-hint { font-size: .78rem; color: var(--text-2); margin: 0 0 10px; }
+.day-detail-list { display: flex; flex-direction: column; gap: 10px; }
+.dd-row { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); }
+.dd-row.is-done { background: rgba(108, 92, 231, .08); border-color: transparent; }
+.dd-name { font-size: .86rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dd-state { font-size: .74rem; font-weight: 800; }
+.dd-state.is-done { color: var(--brand); }
+.dd-state.is-expired { color: var(--text-2); }
+.dd-btn { padding: 6px 14px; font-size: .8rem; }
+.dd-empty { text-align: center; color: var(--text-2); padding: 18px 0; margin: 0; }
 
 /* 海报弹窗 */
 .weekly-poster-content { max-width: 420px; }
@@ -5142,8 +5175,7 @@ a:hover { text-decoration: underline; }
 }
 
 @media (max-width: 520px) {
-    .wk-row { grid-template-columns: minmax(0, 1.4fr) repeat(7, 30px); gap: 4px; }
-    .wk-cell { border-radius: 8px; }
-    .wk-task-name { font-size: .74rem; }
-    .wk-cat-ico { width: 24px; height: 24px; }
+    .mc-cell { border-radius: 10px; }
+    .mc-day { top: 4px; left: 5px; font-size: .6rem; }
+    .mc-star { width: 50%; }
 }

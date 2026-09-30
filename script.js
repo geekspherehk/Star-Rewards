@@ -5081,7 +5081,42 @@ function weeklyCheckedSet(wishId) {
     return s;
 }
 
-/* 站内周表网格（周日→周六，7 列） */
+/* 站内月历网格（本月 1 号→月末，周日→周六 7 列；打卡逐日累积，导出对应本月） */
+function monthlyDates() {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    const last = new Date(y, m + 1, 0).getDate();
+    const out = [];
+    for (let d = 1; d <= last; d++) out.push(new Date(y, m, d));
+    return out;
+}
+/* 某天适用的愿望：当天已创建且仍在进行中（与旧周表同口径） */
+function monthlyDayWishes(dt, wishes) {
+    const key = calendarDateKey(dt);
+    return wishes.filter(function (w) {
+        const s = w.created_at ? String(w.created_at).slice(0, 10) : '';
+        return !s || key >= s;
+    });
+}
+/* 某天状态：done 全部点亮 / part 部分点亮 / miss 漏卡 / open 今天待点亮 / idle 未到或目标前 */
+function monthlyDayStat(dt, wishes, todayKey, todayMid) {
+    const key = calendarDateKey(dt);
+    const app = monthlyDayWishes(dt, wishes);
+    const total = app.length;
+    let done = 0;
+    app.forEach(function (w) { if (weeklyCheckedSet(w.id).has(key)) done++; });
+    const isFuture = dt > todayMid;
+    const isToday = (key === todayKey);
+    let st;
+    if (!total) st = 'idle';
+    else if (done >= total) st = 'done';
+    else if (done > 0) st = 'part';
+    else if (isFuture) st = 'idle';
+    else if (isToday) st = 'open';
+    else st = 'miss';
+    return { key: key, total: total, done: done, isToday: isToday, isFuture: isFuture, st: st };
+}
+
 function renderWeeklyModule() {
     const grid = document.getElementById('weekly-grid');
     const legend = document.getElementById('weekly-legend');
@@ -5092,14 +5127,19 @@ function renderWeeklyModule() {
 
     const wishes = weeklyActiveWishes();
     const langEn = getLanguage() === 'en-US';
-    const days = weeklyWeekDates();
+    const days = monthlyDates();
     const todayKey = calendarDateKey(new Date());
-    const todayDow = new Date().getDay();
     const todayMid = new Date(todayKey + 'T00:00:00');
+    const dows = t('weekly.days') || [];
 
     if (rangeEl) {
-        const f = function (x) { return (x.getMonth() + 1) + (langEn ? '/' : '月') + x.getDate() + (langEn ? '' : '日'); };
-        rangeEl.textContent = f(days[0]) + (langEn ? ' – ' : ' — ') + f(days[6]);
+        const d0 = days[0];
+        if (langEn) {
+            const M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            rangeEl.textContent = M[d0.getMonth()] + ' ' + d0.getFullYear();
+        } else {
+            rangeEl.textContent = d0.getFullYear() + '年' + (d0.getMonth() + 1) + '月';
+        }
     }
     if (titleEl) {
         const prof = (typeof getSelectedProfile === 'function') ? getSelectedProfile() : null;
@@ -5111,8 +5151,8 @@ function renderWeeklyModule() {
         const mk = function (cls, label) {
             return '<span class="wk-legend-item"><span class="wk-dot is-' + cls + '"></span>' + escapeHtml(label) + '</span>';
         };
-        legend.innerHTML = mk('checked', t('weekly.legendChecked')) + mk('today', t('weekly.legendToday')) +
-            mk('missed', t('weekly.legendMissed')) + mk('future', t('weekly.legendFuture'));
+        legend.innerHTML = mk('done', t('weekly.legendChecked')) + mk('part', t('weekly.legendPart')) +
+            mk('miss', t('weekly.legendMissed')) + mk('today', t('weekly.legendToday'));
     }
 
     if (!wishes.length) {
@@ -5123,47 +5163,103 @@ function renderWeeklyModule() {
         return;
     } else if (emptyEl) { emptyEl.style.display = 'none'; }
 
-    const dayNames = t('weekly.days'); // array[7]
-    let html = '<div class="wk-row wk-head">';
-    html += '<div class="wk-task-h">' + escapeHtml(t('weekly.tasks')) + '</div>';
-    for (let d = 0; d < 7; d++) {
-        const dt = days[d];
-        const isToday = (d === todayDow);
-        html += '<div class="wk-day-h' + (isToday ? ' is-today' : '') + '"><span class="wk-dow">' +
-            escapeHtml(dayNames[d] || '') + '</span><span class="wk-date">' + dt.getDate() + '</span></div>';
-    }
+    let html = '<div class="mc-head">';
+    for (let d = 0; d < 7; d++) html += '<span class="mc-dow">' + escapeHtml(dows[d] || '') + '</span>';
     html += '</div>';
+    for (let i = 0; i < days[0].getDay(); i++) html += '<span class="mc-blank"></span>';
 
-    let doneCount = 0, totalCount = 0;
-    wishes.forEach(function (w) {
-        const code = w.category || 'self_drive';
-        const checked = weeklyCheckedSet(w.id);
-        const start = w.created_at ? String(w.created_at).slice(0, 10) : '';
-        html += '<div class="wk-row">';
-        html += '<div class="wk-task"><span class="wk-cat-ico"><img src="' + weeklyCatIconSrc(code) + '" alt=""></span>' +
-            '<span class="wk-task-name" title="' + escapeHtml(w.title || '') + '">' + escapeHtml(w.title || '') + '</span></div>';
-        for (let d = 0; d < 7; d++) {
-            const dt = days[d];
-            const key = calendarDateKey(dt);
-            let st;
-            if (checked.has(key)) st = 'checked';
-            else if (key === todayKey) st = 'today';
-            else if (dt > todayMid) st = 'future';
-            else if (start && key < start) st = 'before';
-            else st = 'missed';
-            if (st === 'checked' || st === 'missed') { totalCount++; if (st === 'checked') doneCount++; }
-            let cls = 'wk-cell is-' + st;
-            let click = '';
-            if (st === 'today') { cls += ' is-click'; click = ' onclick="openCheckinConfirm(\'' + w.id + '\')"'; }
-            else if (st === 'missed') { cls += ' is-click'; click = ' onclick="openMakeupCheckin(\'' + w.id + '\',\'' + key + '\')"'; }
-            html += '<div class="' + cls + '"' + click + '><span class="wk-mark"></span></div>';
-        }
-        html += '</div>';
+    let fullDays = 0, trackedDays = 0;
+    days.forEach(function (dt) {
+        const s = monthlyDayStat(dt, wishes, todayKey, todayMid);
+        if (s.total) { trackedDays++; if (s.st === 'done') fullDays++; }
+        let cls = 'mc-cell is-' + s.st;
+        if (s.isToday) cls += ' is-today';
+        const clickable = (s.total > 0 && !s.isFuture);
+        if (clickable) cls += ' is-click';
+        const click = clickable ? ' onclick="openDayDetail(\'' + s.key + '\')"' : '';
+        const star = (s.st === 'idle') ? '' : '<span class="mc-star"></span>';
+        const ratio = (s.st === 'part') ? '<span class="mc-ratio">' + s.done + '/' + s.total + '</span>' : '';
+        html += '<div class="' + cls + '"' + click + '>' +
+            '<span class="mc-day">' + dt.getDate() + '</span>' + star + ratio + '</div>';
     });
     grid.innerHTML = html;
 
     const stat = document.getElementById('stat-weekly');
-    if (stat) stat.textContent = doneCount + '/' + totalCount;
+    if (stat) stat.textContent = fullDays + '/' + trackedDays;
+}
+
+/* ── 某天明细弹窗：看清当天每个目标的状态，补卡窗口内可直接操作 ── */
+let dayDetailKey = '';
+function openDayDetail(key) {
+    dayDetailKey = key;
+    renderDayDetail();
+    const m = document.getElementById('day-detail-modal');
+    if (m) m.style.display = 'flex';
+}
+function closeDayDetail() {
+    const m = document.getElementById('day-detail-modal');
+    if (m) m.style.display = 'none';
+    dayDetailKey = '';
+}
+function renderDayDetail() {
+    const key = dayDetailKey;
+    if (!key) return;
+    const listEl = document.getElementById('day-detail-list');
+    const titleEl = document.getElementById('day-detail-title');
+    const hintEl = document.getElementById('day-detail-hint');
+    if (!listEl) return;
+
+    const langEn = getLanguage() === 'en-US';
+    const dt = new Date(key + 'T00:00:00');
+    const wishes = weeklyActiveWishes();
+    const todayKey = calendarDateKey(new Date());
+    const todayMid = new Date(todayKey + 'T00:00:00');
+    const isToday = (key === todayKey);
+    const past = Math.round((todayMid - dt) / 864e5);
+    const canAct = isToday || (past > 0 && past <= 6);   // 后端补卡窗口：今天及前 6 天
+
+    if (titleEl) {
+        if (langEn) {
+            const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const W = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            titleEl.textContent = W[dt.getDay()] + ', ' + M[dt.getMonth()] + ' ' + dt.getDate();
+        } else {
+            const W = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            titleEl.textContent = (dt.getMonth() + 1) + '月' + dt.getDate() + '日 ' + W[dt.getDay()];
+        }
+    }
+    if (hintEl) {
+        hintEl.textContent = t('weekly.dayHint');
+        hintEl.style.display = canAct ? 'none' : 'block';
+    }
+
+    const app = monthlyDayWishes(dt, wishes);
+    if (!app.length) {
+        listEl.innerHTML = '<p class="dd-empty">' + escapeHtml(t('weekly.dayEmpty')) + '</p>';
+        return;
+    }
+    listEl.innerHTML = app.map(function (w) {
+        const checked = weeklyCheckedSet(w.id).has(key);
+        const code = w.category || 'self_drive';
+        let right;
+        if (checked) {
+            right = '<span class="dd-state is-done">' + escapeHtml(t('weekly.dayDone')) + '</span>';
+        } else if (canAct) {
+            right = '<button type="button" class="primary-btn dd-btn" onclick="dayDetailCheckin(\'' + w.id + '\',\'' + key + '\')">' +
+                escapeHtml(isToday ? t('weekly.dayCheckin') : t('weekly.dayMakeup')) + '</button>';
+        } else {
+            right = '<span class="dd-state is-expired">' + escapeHtml(t('weekly.dayExpired')) + '</span>';
+        }
+        return '<div class="dd-row' + (checked ? ' is-done' : '') + '">' +
+            '<span class="wk-cat-ico"><img src="' + weeklyCatIconSrc(code) + '" alt=""></span>' +
+            '<span class="dd-name" title="' + escapeHtml(w.title || '') + '">' + escapeHtml(w.title || '') + '</span>' +
+            right + '</div>';
+    }).join('');
+}
+async function dayDetailCheckin(wishId, key) {
+    const isToday = (key === calendarDateKey(new Date()));
+    closeDayDetail();
+    await v2Checkin(wishId, isToday ? null : key);
 }
 
 /* ---------- 海报绘制工具 ---------- */
@@ -5206,32 +5302,31 @@ function _wk_dateShort(d, zh) {
 }
 
 /* 组装海报数据（真实打卡） */
+/* 组装海报数据（真实打卡 · 整月） */
 function weeklyPosterData(blank) {
     const langEn = getLanguage() === 'en-US';
-    const days = weeklyWeekDates();
+    const days = monthlyDates();
     const todayKey = calendarDateKey(new Date());
     const todayMid = new Date(todayKey + 'T00:00:00');
-    const wishes = blank ? [] : weeklyActiveWishes().slice(0, 7);
-    const rows = wishes.map(function (w) { return { code: w.category || 'self_drive', id: w.id, title: w.title || '', created_at: w.created_at }; });
-    const cellState = rows.map(function (w) {
-        const checked = weeklyCheckedSet(w.id);
-        const start = blank ? '' : (w.created_at ? String(w.created_at).slice(0, 10) : '');
-        return days.map(function (dt) {
-            const key = calendarDateKey(dt);
-            if (blank) return 'empty';
-            if (checked.has(key)) return 'done';
-            if (key === todayKey) return 'today';
-            if (dt > todayMid) return 'future';
-            if (start && key < start) return 'before';
-            return 'miss';
-        });
+    const wishes = blank ? [] : weeklyActiveWishes();
+    let fullDays = 0, trackedDays = 0;
+    const cells = days.map(function (dt) {
+        const s = blank
+            ? { key: calendarDateKey(dt), total: 0, done: 0, isToday: false, isFuture: false, st: 'open' }
+            : monthlyDayStat(dt, wishes, todayKey, todayMid);
+        if (s.total) { trackedDays++; if (s.st === 'done') fullDays++; }
+        return s;
     });
-    let done = 0, total = 0;
-    cellState.forEach(function (arr) { arr.forEach(function (st) { if (st === 'before' || st === 'future' || st === 'empty') return; total++; if (st === 'done') done++; }); });
-    return { langEn: langEn, days: days, todayDow: new Date().getDay(), rows: rows, cellState: cellState, done: done, total: total, blank: blank };
+    const M = days[0];
+    const monthLabel = langEn
+        ? (['January','February','March','April','May','June','July','August','September','October','November','December'][M.getMonth()] + ' ' + M.getFullYear())
+        : (M.getFullYear() + '\u5e74' + (M.getMonth() + 1) + '\u6708');
+    return { langEn: langEn, days: days, cells: cells, monthLabel: monthLabel, todayKey: todayKey, done: fullDays, total: trackedDays, blank: blank };
 }
 
+
 /* 主绘制：C 升级版底图（banner 版式） */
+/* 主绘制：月历版（整月打卡日历海报） */
 function drawWeeklyPoster(cv, data) {
     const W = 1024, H = 1536;
     const ctx = cv.getContext('2d');
@@ -5254,135 +5349,140 @@ function drawWeeklyPoster(cv, data) {
     };
 
     const cfg = {
-        titleMode: 'banner',
-        panel: { x: 78, y: 690, w: 866, h: 460, padTop: 56 },
-        header: { x: 256, y: 662, w: 528, h: 74 },
-        ribbons: { L: { cx: 200, cy: 350, w: 212, h: 104 }, R: { cx: 840, cy: 350, w: 212, h: 104 } },
-        tiles: { y: 1190, h: 190, w: 192, xs: [80, 304, 528, 752] },
-        strip: { x: 272, y: 1412, w: 480, h: 68 },
-        sticker: { x: 852, y: 1458, w: 162, h: 66 }
+        panel: { x: 70, y: 470, w: 884, h: 700, padX: 22, padTop: 56, headH: 46 },
+        ribbons: { L: { cx: 256, cy: 350, w: 372, h: 96 }, R: { cx: 786, cy: 350, w: 300, h: 96 } },
+        tiles: { y: 1212, h: 186, w: 192, xs: [80, 304, 528, 752] },
+        strip: { x: 272, y: 1432, w: 480, h: 64 },
+        sticker: { x: 852, y: 1468, w: 162, h: 64 }
     };
 
     const starColor = '#F7C948', starEdge = '#DFA318';
-    const name = data.blank ? (zh ? '＿＿' : '_ _') : (((typeof getSelectedProfile === 'function' && getSelectedProfile() && getSelectedProfile().name) || (zh ? '小朋友' : 'Kid')));
-    const todayDow = data.todayDow;
+    const name = data.blank ? (zh ? '\u3000\u3000' : '_ _') : (((typeof getSelectedProfile === 'function' && getSelectedProfile() && getSelectedProfile().name) || (zh ? '\u5c0f\u670b\u53cb' : 'Kid')));
 
     // 1. 底图
     const bg = _weeklyImgs.bg;
     if (bg) ctx.drawImage(bg, 0, 0, W, H); else { ctx.fillStyle = '#FBF1E4'; ctx.fillRect(0, 0, W, H); }
 
-    // 2. 标题头带 + 丝带
+    // 2. 标题
     ctx.textBaseline = 'alphabetic';
-    const HD = cfg.header;
     ctx.save();
     ctx.textAlign = 'center';
     ctx.fillStyle = '#B0496A';
-    let hfs = 34;
-    ctx.font = '700 ' + hfs + 'px "Arial Rounded MT Bold","PingFang SC",sans-serif';
-    hfs = _wk_fit(ctx, T.h1, HD.w - 56, hfs, 22);
-    ctx.fillText(T.h1, HD.x + HD.w / 2, HD.y + HD.h / 2 + hfs * 0.36);
+    ctx.font = '800 26px "Arial Rounded MT Bold","PingFang SC",sans-serif';
+    ctx.fillText(T.eyebrow, W / 2, 86);
+    let hfs = 52;
+    ctx.fillStyle = '#5B3A4A';
+    ctx.font = '800 ' + hfs + 'px "Arial Rounded MT Bold","PingFang SC",sans-serif';
+    hfs = _wk_fit(ctx, T.h1, 780, hfs, 30);
+    ctx.fillText(T.h1, W / 2, 156 + hfs * 0.36);
     ctx.restore();
 
+    // 3. 丝带：名字 + 月份
     if (cfg.ribbons) {
         const RL = cfg.ribbons.L, RR = cfg.ribbons.R;
         ctx.save();
         ctx.textAlign = 'center';
-        ctx.fillStyle = '#B9607A';
-        let nfs = 40;
-        ctx.font = '700 ' + nfs + 'px "Arial Rounded MT Bold","PingFang SC",sans-serif';
-        const nmTxt = data.blank ? (zh ? '＿＿' : '_ _') : name;
-        nfs = _wk_fit(ctx, nmTxt, RL.w - 54, nfs, 20);
+        // 左：名字
+        ctx.fillStyle = 'rgba(255,255,255,.85)'; _wk_rr(ctx, RL.cx - RL.w/2, RL.cy - RL.h/2, RL.w, RL.h, 26); ctx.fill();
+        ctx.strokeStyle = '#F2D8D0'; ctx.lineWidth = 1.8; _wk_rr(ctx, RL.cx - RL.w/2, RL.cy - RL.h/2, RL.w, RL.h, 26); ctx.stroke();
+        ctx.fillStyle = '#B0496A';
+        let nfs = 42; ctx.font = '800 ' + nfs + 'px "Arial Rounded MT Bold","PingFang SC",sans-serif';
+        const nmTxt = data.blank ? (zh ? '\u3000\u3000' : '_ _') : name;
+        nfs = _wk_fit(ctx, nmTxt, RL.w - 64, nfs, 20);
         ctx.fillText(nmTxt, RL.cx, RL.cy + nfs * 0.36);
+        // 右：月份
+        ctx.fillStyle = 'rgba(255,255,255,.85)'; _wk_rr(ctx, RR.cx - RR.w/2, RR.cy - RR.h/2, RR.w, RR.h, 26); ctx.fill();
+        ctx.strokeStyle = '#F2D8D0'; ctx.lineWidth = 1.8; _wk_rr(ctx, RR.cx - RR.w/2, RR.cy - RR.h/2, RR.w, RR.h, 26); ctx.stroke();
         ctx.fillStyle = '#A98A6B';
-        let dfs = 24;
-        ctx.font = '700 ' + dfs + 'px "Arial Rounded MT Bold","PingFang SC",sans-serif';
-        const dtTxt = data.blank ? '____ / ____' : _wk_dateShort(data.days[0], zh);
-        dfs = _wk_fit(ctx, dtTxt, RR.w - 48, dfs, 13);
+        let dfs = 36; ctx.font = '800 ' + dfs + 'px "Arial Rounded MT Bold","PingFang SC",sans-serif';
+        const dtTxt = data.monthLabel || '';
+        dfs = _wk_fit(ctx, dtTxt, RR.w - 54, dfs, 18);
         ctx.fillText(dtTxt, RR.cx, RR.cy + dfs * 0.36 + 2);
         ctx.restore();
     }
 
-    // 4. 面板
+    // 4. 月历面板
     const P = cfg.panel;
-    const padX = 24, padY = 22, padTop = (P.padTop == null ? padY : P.padTop);
-    const cx0 = P.x + padX, cy0 = P.y + padTop;
-    const cw = P.w - padX * 2, ch = P.h - padTop - padY;
-    const labelW = 262, headH = 58;
-    const colW = (cw - labelW) / 7;
-    const rowsTop = cy0 + headH;
-    const rowsH = ch - headH;
-    const n = data.rows.length;
-    const rowH = n > 0 ? Math.min(84, rowsH / n) : 0;
-    const usedH = rowH * n;
-    const startY = rowsTop + Math.max(0, (rowsH - usedH) / 2);
+    const px0 = P.x, py0 = P.y, pw = P.w, ph = P.h;
+    ctx.save(); _wk_shadow(ctx, 'rgba(120,90,60,.18)', 22, 8);
+    ctx.fillStyle = 'rgba(255,253,249,.93)'; _wk_rr(ctx, px0, py0, pw, ph, 36); ctx.fill(); _wk_noshadow(ctx); ctx.restore();
 
+    const padX = P.padX, padTop = P.padTop, headH = P.headH;
+    const cx0 = px0 + padX, cy0 = py0 + padTop;
+    const cw = pw - padX * 2, ch = ph - padTop - 24;
+    const colW = cw / 7;
+    const firstDow = data.days[0].getDay();
+    const rowsN = Math.ceil((firstDow + data.days.length) / 7);   // 按月份实际周数，避免底部留空
+    const rowH = (ch - headH) / rowsN;
+
+    // 星期头
     ctx.textAlign = 'center';
     for (let d = 0; d < 7; d++) {
-        const dcx = cx0 + labelW + colW * (d + 0.5);
+        const dcx = cx0 + colW * (d + 0.5);
         const dcy = cy0 + headH / 2 + 2;
-        const isToday = (d === todayDow) && !data.blank;
-        ctx.beginPath(); ctx.arc(dcx, dcy, 24, 0, Math.PI * 2);
-        ctx.fillStyle = isToday ? '#ED5B7C' : '#F6EFE5'; ctx.fill();
-        ctx.fillStyle = isToday ? '#fff' : '#8A7A68';
-        ctx.font = '700 22px "PingFang SC",sans-serif';
+        ctx.fillStyle = '#B5A491';
+        ctx.font = '800 24px "PingFang SC",sans-serif';
         ctx.fillText((T.days[d] || ''), dcx, dcy + 8);
     }
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#B5A491';
-    ctx.font = '700 20px "PingFang SC",sans-serif';
-    ctx.fillText(T.tasks, cx0 + 10, cy0 + headH / 2 + 7);
+    ctx.strokeStyle = 'rgba(215,198,178,.5)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(cx0, cy0 + headH); ctx.lineTo(cx0 + cw, cy0 + headH); ctx.stroke();
 
-    const chips = ['#DDF0E2', '#FCE1E8', '#E6E0F8', '#FCEFC7', '#D9E9F8', '#F6E1D8', '#E2EFD9'];
-    for (let i = 0; i < n; i++) {
-        const hyy = startY + i * rowH;
-        const chip = chips[i % chips.length];
-        ctx.fillStyle = 'rgba(255,255,255,0.72)';
-        _wk_rr(ctx, cx0, hyy + 5, cw, rowH - 10, 20); ctx.fill();
-        const chipW = labelW - 16, chipH = rowH - 22, chipX = cx0 + 8, chipY = hyy + 11;
-        ctx.fillStyle = chip; _wk_rr(ctx, chipX, chipY, chipW, chipH, 16); ctx.fill();
-        const isz = Math.min(46, rowH - 30);
-        ctx.fillStyle = 'rgba(255,255,255,.78)';
-        _wk_rr(ctx, chipX + 7, hyy + (rowH - isz - 12) / 2, isz + 12, isz + 12, 13); ctx.fill();
-        const ic = _weeklyImgs.icons[data.rows[i].code];
-        if (ic) ctx.drawImage(ic, chipX + 13, hyy + (rowH - isz) / 2, isz, isz);
+    const todayKey = data.todayKey || calendarDateKey(new Date());
+    const cellPad = 9;
+    for (let i = 0; i < rowsN * 7; i++) {
+        const r = Math.floor(i / 7), c = i % 7;
+        const gx = cx0 + colW * c, gy = cy0 + headH + rowH * r;
+        const dayNum = i - firstDow + 1;
+        if (dayNum < 1 || dayNum > data.days.length) continue;
+        const s = data.cells[dayNum - 1];
+        // 单元格底
+        let cellBg = 'rgba(247,243,237,.55)';
+        if (s.st === 'done') cellBg = 'rgba(108,92,231,.12)';
+        else if (s.st === 'part') cellBg = 'rgba(108,92,231,.08)';
+        else if (s.st === 'miss') cellBg = 'rgba(244,169,60,.13)';
+        else if (s.st === 'open') cellBg = 'rgba(108,92,231,.06)';
+        ctx.fillStyle = cellBg; _wk_rr(ctx, gx + cellPad, gy + cellPad, colW - cellPad*2, rowH - cellPad*2, 16); ctx.fill();
+
+        // 今天高亮环
+        if (s.isToday) {
+            ctx.strokeStyle = '#6C5CE7'; ctx.lineWidth = 3; ctx.setLineDash([7,6]);
+            _wk_rr(ctx, gx + cellPad, gy + cellPad, colW - cellPad*2, rowH - cellPad*2, 16); ctx.stroke(); ctx.setLineDash([]);
+        }
+
+        // 日号
         ctx.textAlign = 'left';
-        ctx.fillStyle = '#22306B';
-        let fs = Math.min(23, Math.max(16, rowH - 40));
-        const label = data.rows[i].title || '';
-        const tx0 = chipX + isz + 21;
-        ctx.font = '700 ' + fs + 'px "PingFang SC",sans-serif';
-        fs = _wk_fit(ctx, label, chipX + chipW - 14 - tx0, fs, 13);
-        ctx.fillText(label, tx0, hyy + rowH / 2 + fs * 0.36);
+        ctx.fillStyle = (s.st === 'idle') ? '#C9C2B8' : (s.st === 'miss' ? '#E0932A' : '#6C5CE7');
+        ctx.font = '800 22px "PingFang SC",sans-serif';
+        ctx.fillText(String(dayNum), gx + cellPad + 9, gy + cellPad + 27);
 
-        for (let d2 = 0; d2 < 7; d2++) {
-            const cxx = cx0 + labelW + colW * (d2 + 0.5);
-            const cyy = hyy + rowH / 2;
-            const st = data.cellState[i][d2];
-            const R = Math.min(21, rowH * 0.28);
-            ctx.strokeStyle = 'rgba(215,198,178,.55)'; ctx.lineWidth = 1.4;
-            ctx.beginPath();
-            ctx.moveTo(cx0 + labelW + colW * d2, hyy + 12);
-            ctx.lineTo(cx0 + labelW + colW * d2, hyy + rowH - 12);
-            ctx.stroke();
-            if (st === 'done') {
-                ctx.save(); _wk_shadow(ctx, _wk_hex(starEdge, .45), 10, 4);
-                _wk_star(ctx, cxx, cyy + 1, R, 0.46); ctx.fillStyle = starColor; ctx.fill(); _wk_noshadow(ctx);
-                ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 1.6; ctx.stroke();
-                ctx.beginPath(); ctx.ellipse(cxx - R * 0.28, cyy - R * 0.36, R * 0.26, R * 0.16, -0.5, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fill(); ctx.restore();
-            } else if (st === 'miss') {
-                _wk_star(ctx, cxx, cyy, R, 0.46); ctx.strokeStyle = '#E3C9A4'; ctx.lineWidth = 2.6; ctx.stroke();
-            } else if (st === 'today') {
-                _wk_rr(ctx, cxx - R - 5, cyy - R - 5, (R + 5) * 2, (R + 5) * 2, 12);
-                ctx.strokeStyle = '#ED5B7C'; ctx.lineWidth = 2.6; ctx.setLineDash([6, 5]); ctx.stroke(); ctx.setLineDash([]);
-                _wk_star(ctx, cxx, cyy, R * 0.86, 0.46); ctx.strokeStyle = '#F0B7C6'; ctx.lineWidth = 2.2; ctx.stroke();
-            } else if (st === 'future') {
-                ctx.beginPath(); ctx.arc(cxx, cyy, 3.2, 0, Math.PI * 2); ctx.fillStyle = '#EDE1D2'; ctx.fill();
-            } else if (st === 'before') {
-                ctx.beginPath(); ctx.arc(cxx, cyy, 4.5, 0, Math.PI * 2); ctx.fillStyle = '#E7E1D8'; ctx.fill();
-            } else {
-                _wk_star(ctx, cxx, cyy, R, 0.46); ctx.strokeStyle = '#EBD7BC'; ctx.lineWidth = 2.4; ctx.stroke();
-            }
+        // 星章
+        const R = Math.min(27, colW * 0.27, rowH * 0.3);
+        const scx = gx + colW / 2, scy = gy + rowH / 2 + 17;
+        if (s.st === 'idle') {
+            // 无星
+        } else if (s.st === 'done') {
+            ctx.save(); _wk_shadow(ctx, 'rgba(76,63,196,.4)', 8, 3);
+            const g = ctx.createLinearGradient(scx, scy - R, scx, scy + R);
+            g.addColorStop(0, '#8C7BF6'); g.addColorStop(.5, '#6C5CE7'); g.addColorStop(1, '#4B3FC4');
+            _wk_star(ctx, scx, scy, R, 0.46); ctx.fillStyle = g; ctx.fill(); _wk_noshadow(ctx);
+            ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 1.6; ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(scx - R*0.28, scy - R*0.36, R*0.26, R*0.16, -0.5, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255,255,255,.78)'; ctx.fill(); ctx.restore();
+        } else if (s.st === 'part') {
+            // 部分点亮：空心靛蓝星 + 进度角标（与站内一致）
+            ctx.save(); _wk_star(ctx, scx, scy, R, 0.46);
+            ctx.fillStyle = 'rgba(255,253,249,.96)'; ctx.fill();
+            ctx.strokeStyle = '#6C5CE7'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.stroke(); ctx.restore();
+            ctx.textAlign='right'; ctx.fillStyle='#6C5CE7'; ctx.font='800 16px "PingFang SC",sans-serif'; ctx.fillText(s.done+'/'+s.total, gx+colW-cellPad-8, gy+cellPad+25); ctx.textAlign='left';
+        } else if (s.st === 'open') {
+            ctx.save(); _wk_star(ctx, scx, scy, R*0.9, 0.46);
+            const g = ctx.createLinearGradient(scx, scy - R, scx, scy + R);
+            g.addColorStop(0, '#A99FF7'); g.addColorStop(1, '#8C7BF6'); ctx.fillStyle = g; ctx.globalAlpha = .55; ctx.fill(); ctx.globalAlpha = 1; ctx.restore();
+        } else if (s.st === 'miss') {
+            ctx.save(); _wk_star(ctx, scx, scy, R, 0.46);
+            const g = ctx.createLinearGradient(scx, scy - R, scx, scy + R);
+            g.addColorStop(0, '#FFC36B'); g.addColorStop(1, '#F4A93C'); ctx.fillStyle = g; ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
         }
     }
 
@@ -5393,7 +5493,7 @@ function drawWeeklyPoster(cv, data) {
     ctx.textAlign = 'center';
     for (let tt = 0; tt < 4; tt++) {
         const tX = T3.xs[tt];
-        const capH = 62;
+        const capH = 60;
         ctx.save(); _wk_shadow(ctx, 'rgba(120,90,60,.13)', 14, 5);
         ctx.fillStyle = '#FFFDF9'; _wk_rr(ctx, tX, tY, tW, tH, 26); ctx.fill(); _wk_noshadow(ctx); ctx.restore();
         ctx.fillStyle = capColors[tt]; ctx.save(); _wk_rr(ctx, tX, tY, tW, capH + 26, 26); ctx.clip(); ctx.fillRect(tX, tY, tW, capH); ctx.restore();
@@ -5407,9 +5507,9 @@ function drawWeeklyPoster(cv, data) {
             const rl = T.rewards[tt]; let rfs = 16;
             ctx.fillStyle = '#5E5148'; ctx.font = '700 ' + rfs + 'px "PingFang SC",sans-serif';
             rfs = _wk_fit(ctx, rl, tW - 24, rfs, 11);
-            ctx.fillText(rl, tX + tW / 2, tY + tH - 22);
+            ctx.fillText(rl, tX + tW / 2, tY + tH - 20);
         } else {
-            const box = 104, ox = tX + (tW - box) / 2, oy = tY + capH + 6;
+            const box = 100, ox = tX + (tW - box) / 2, oy = tY + capH + 6;
             try {
                 const url = 'https://stellar.gaocaihk.com';
                 const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
@@ -5421,7 +5521,7 @@ function drawWeeklyPoster(cv, data) {
                 ctx.strokeStyle = '#D9CDBE'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2; _wk_rr(ctx, ox, oy, box, box, 10); ctx.stroke(); ctx.setLineDash([]);
             }
             ctx.fillStyle = '#5E5148'; ctx.font = '700 14px "PingFang SC",sans-serif';
-            ctx.fillText(T.qr, tX + tW / 2, oy + box + 20);
+            ctx.fillText(T.qr, tX + tW / 2, oy + box + 18);
         }
     }
 
@@ -5431,7 +5531,7 @@ function drawWeeklyPoster(cv, data) {
     ctx.textAlign = 'center'; ctx.fillStyle = '#B9607A';
     ctx.font = '700 21px "Arial Rounded MT Bold","PingFang SC",sans-serif';
     if (ctx.letterSpacing !== undefined) ctx.letterSpacing = '1.5px';
-    ctx.fillText(T.brand + '  ·  stellar.gaocaihk.com', S.x + S.w / 2, scy + 8);
+    ctx.fillText(T.brand + '  \u00b7  stellar.gaocaihk.com', S.x + S.w / 2, scy + 8);
     if (ctx.letterSpacing !== undefined) ctx.letterSpacing = '0px';
     ctx.restore();
 
@@ -5443,8 +5543,9 @@ function drawWeeklyPoster(cv, data) {
     ctx.restore();
     ctx.textAlign = 'center'; ctx.fillStyle = '#C79AA6';
     ctx.font = '700 17px "Arial Rounded MT Bold","PingFang SC",sans-serif';
-    ctx.fillText('STELLAR ♡', C.x + C.w / 2, C.y + C.h / 2 + 6);
+    ctx.fillText('STELLAR \u2661', C.x + C.w / 2, C.y + C.h / 2 + 6);
 }
+
 
 /* ---------- 海报弹窗控制 ---------- */
 function openWeeklyPoster() {
@@ -5472,7 +5573,7 @@ function downloadWeeklyPoster() {
     cv.toBlob(function (blob) {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'stellar-weekly-' + calendarDateKey(weeklyWeekStart()) + '.png';
+        a.download = 'stellar-monthly-' + calendarDateKey(monthlyDates()[0]).slice(0, 7) + '.png';
         a.click();
         setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
     }, 'image/png');
@@ -5487,7 +5588,7 @@ function downloadWeeklyBlankPoster() {
         cv.toBlob(function (blob) {
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = 'stellar-weekly-blank.png';
+            a.download = 'stellar-monthly-blank.png';
             a.click();
             setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
         }, 'image/png');
