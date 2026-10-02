@@ -223,6 +223,14 @@
     }
   });
 
+  // 装 PWA 的前置：安卓 Chrome 只认「有 manifest + 有 Service Worker」的站点，
+  // 脚本地址必须与 pwa-manager.js 里的完全一致，否则同一 scope 会挂两个 SW 抢 fetch。
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js?v=147').catch(function (e) {
+      console.warn('kid SW 注册失败', e);
+    });
+  }
+
   boot().catch(function (e) {
     var m = e && e.message ? e.message : '打不开';
     // 旧平板：家长改过链接 → 清掉失效会话，回到"要新链接"的提示

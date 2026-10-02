@@ -1,5 +1,5 @@
 // Service Worker 文件
-const CACHE_NAME = 'star-rewards-v176';
+const CACHE_NAME = 'star-rewards-v177';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -42,7 +42,7 @@ const urlsToCache = [
   '/themes.js?v=1',
   '/theme-selector.html',
   '/kid.html',
-  '/manifest-kid.json',
+  // 注意：'/manifest-kid.json' 上面已经列过一次，cache.addAll 遇重复 request 会整体 reject，不能留两份
   '/assets/kid-icon-192.png',
   '/assets/kid-icon-512.png',
   '/pwa-styles.css?v=1',
@@ -89,21 +89,39 @@ self.addEventListener('activate', (event) => {
 
 // 拦截网络请求
 self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  // POST（提交奖励/打卡）绝不碰缓存，也不做 respondWith，直接走网络
+  if (req.method !== 'GET') return;
+
+  const accept = req.headers.get('accept') || '';
+  const isHtml = req.mode === 'navigate' || accept.includes('text/html');
+
+  // 页面一律 network-first：孩子平板装完一次之后，家长改的代码还得看得见，
+  // 否则娃那边永远停在装那一刻的旧页面（以前踩过 cache-first 的坑）。
+  if (isHtml) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          try {
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, res.clone())).catch(() => {});
+          } catch (e) { /* 缓存失败不影响页面本身 */ }
+          return res;
+        })
+        .catch(() => caches.match(req).then((r) => r || caches.match('/')))
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request)
+    caches.match(req)
       .then((response) => {
         // 缓存命中 - 返回响应
         if (response) {
           return response;
         }
-        
         // 缓存未命中 - 尝试从网络获取
-        return fetch(event.request).catch(error => {
+        return fetch(req).catch(error => {
           console.log('❌ 网络请求失败:', error);
-          // 如果是HTML页面，返回首页
-          if (event.request.headers.get('accept').includes('text/html')) {
-            return caches.match('/');
-          }
         });
       })
   );
