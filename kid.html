@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="今天">
 <meta name="description" content="孩子自己按一下，亮一朵花。">
-<link rel="stylesheet" href="style.css?v=107">
+<link rel="stylesheet" href="style.css?v=108">
 <style>
   /* 孩子端：只有「看得见 / 亮得了 / 换得出」。不催、不提醒、不留小红点。 */
   .kid-wrap{min-height:100vh;padding:14px 16px 26px;display:flex;flex-direction:column;gap:14px;background:var(--surface,#fff);color:var(--text,#1a1a1a)}
@@ -43,6 +43,8 @@
   .kid-msg.err{color:#D93025}
   .kid-empty{font-size:15px;opacity:.6}
   .kid-go{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:100vh;text-align:center;padding:24px}
+  /* 同类选择器会盖掉 [hidden] 的 display:none，不补这条「正在打开…」永远收不掉 */
+  .kid-go[hidden]{display:none}
   .kid-go .big{font-size:64px}
 </style>
 </head>

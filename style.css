@@ -5193,6 +5193,8 @@ a:hover { text-decoration: underline; }
 .rp-stat span { font-size: .74rem; font-weight: 700; opacity: .7; }
 
 .rp-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 14px; }
+/* 同类选择器会盖掉 [hidden] 的 display:none，月历靠 JS 控显隐必须补这条 */
+.rp-cal[hidden] { display: none; }
 .rp-calHead { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 2px; }
 .rp-calHead span { text-align: center; font-size: .68rem; font-weight: 800; opacity: .55; }
 .rp-day { aspect-ratio: 1 / 1; border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: .7rem; font-weight: 700; color: var(--text); }
