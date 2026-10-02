@@ -15,7 +15,7 @@
     <meta property="og:url" content="https://stellar.gaocaihk.com/login.html">
     <meta property="og:image" content="https://stellar.gaocaihk.com/og-image.png">
     <meta name="twitter:card" content="summary">
-    <link rel="stylesheet" href="style.css?v=106">
+    <link rel="stylesheet" href="style.css?v=107">
     <meta name="theme-color" content="#6C5CE7">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=32"></script>
@@ -85,6 +85,7 @@
                     <input type="email" id="login-email" data-i18n-placeholder="login.emailPlaceholder" placeholder="邮箱地址">
                     <input type="password" id="login-password" data-i18n-placeholder="login.passwordPlaceholder" placeholder="密码">
                     <p style="text-align:right; margin:-4px 0 10px; font-size:13px;"><a href="#" onclick="toggleAuthForm('forgot')" style="color:var(--brand,#6C5CE7); text-decoration:none;" data-i18n="login.forgotLink">忘记密码？</a></p>
+                    <label class="remember-row"><input type="checkbox" id="login-remember"> <span data-i18n="login.rememberMe">记住我（30 天内不用再登录）</span></label>
                     <button onclick="handleSignIn()" data-i18n="login.loginButton">登录</button>
                     <p id="login-hint" class="auth-hint" style="display:none;"><span data-i18n="common.authNoAccountHint">该邮箱尚未注册？</span> <a href="#" onclick="switchAuthTab('register');return false;" data-i18n="common.registerNow">立即注册</a></p>
                     <p><span data-i18n="common.noAccount">还没有账户？</span><a href="#" onclick="switchAuthTab('register')" data-i18n="common.registerNow">立即注册</a></p>

@@ -3058,12 +3058,194 @@ document.addEventListener('DOMContentLoaded', async function() {
         await initializeApp();
         initReminder();
         initGiftTemplates();
+        initKidSetup();
+        initReport();
     }
 });
 
 // ── 每日打卡提醒（本地通知，浏览器需保持打开）──
 const REMINDER_KEY = 'sr_reminder';
 let reminderTimer = null;
+
+// ── 给娃装大花页：家长一次性出链接，之后娃自己按（见 discussion.md 11.9）──
+function initKidSetup() {
+    const genEl = document.getElementById('ks-gen');
+    const urlEl = document.getElementById('ks-url');
+    const copyEl = document.getElementById('ks-copy');
+    const card = document.getElementById('kid-setup-card');
+    if (!card || !genEl || !urlEl || !copyEl) return;
+    if (!api.getToken()) { card.style.display = 'none'; return; }
+
+    function flash(el, text, ms) {
+        const old = el.textContent;
+        el.textContent = text;
+        setTimeout(function () { el.textContent = old; }, ms || 1600);
+    }
+
+    async function gen() {
+        genEl.disabled = true;
+        const oldText = genEl.textContent;
+        genEl.textContent = '生成中…';
+        try {
+            const r = await api.setupKidLink();
+            if (r && r.url) {
+                urlEl.value = r.url;
+                flash(copyEl, '有了，复制去发', 2000);
+            } else {
+                flash(genEl, '没生成出来，再点一次', 2000);
+            }
+        } catch (e) {
+            flash(genEl, '没生成出来，再点一次', 2000);
+        } finally {
+            genEl.disabled = false;
+            genEl.textContent = oldText;
+        }
+    }
+    genEl.addEventListener('click', gen);
+
+    copyEl.addEventListener('click', async function () {
+        if (!urlEl.value) {
+            // 没链接先生成一个，省得家长以为复制坏了
+            gen();
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(urlEl.value);
+            flash(copyEl, '已复制', 1500);
+        } catch (e) {
+            // 非安全上下文（http/局域网）裁切板不可用时退回选中
+            urlEl.focus();
+            urlEl.select();
+            try { document.execCommand('copy'); flash(copyEl, '已复制', 1500); }
+            catch (e2) { flash(copyEl, '请长按左边复制', 2200); }
+        }
+    });
+}
+
+// ── 成长月报：拿真实行为自动织，家长零记录（见 11.10）──
+const RP_WD = ['日', '一', '二', '三', '四', '五', '六'];
+
+function rpSetEmpty(el, text) {
+    if (!el) return;
+    el.textContent = text;
+    el.style.display = text ? '' : 'none';
+}
+
+function renderReport(r) {
+    const statsEl = document.getElementById('rp-stats');
+    const calEl = document.getElementById('rp-cal');
+    const wishesEl = document.getElementById('rp-wishes');
+    const redeemBlk = document.getElementById('rp-redeem-blk');
+    const redeemEl = document.getElementById('rp-redeemed');
+    const voiceBlk = document.getElementById('rp-voice-blk');
+    const voiceEl = document.getElementById('rp-voice');
+    const emptyEl = document.getElementById('rp-empty');
+    if (!r || !r.success) return;
+
+    const esc = (window.escapeHtml || function (s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    });
+
+    if (statsEl) {
+        statsEl.innerHTML =
+            '<div class="rp-stat"><b>' + (r.total_checkins || 0) + '</b><span>这个月自己按了</span></div>' +
+            '<div class="rp-stat"><b>' + (r.active_days || 0) + '</b><span>有星星的天</span></div>' +
+            '<div class="rp-stat"><b>' + ((r.redeemed || []).length) + '</b><span>换走的东西</span></div>';
+    }
+
+    // 月历：整月一格，有星星的填色。
+    // 只在本月才显示——首页打卡区已经是整月月历，同月再画一遍纯属重复；
+    // 翻到历史月（首页那个只跟到当月）才补上这一格格的画面。
+    if (calEl) {
+        const curMonth = r.month || new Date().toISOString().slice(0, 7);
+        calEl.hidden = (curMonth === new Date().toISOString().slice(0, 7));
+    }
+    if (calEl && !calEl.hidden) {
+        const month = r.month || new Date().toISOString().slice(0, 7);
+        const firstDow = new Date(month + '-01T00:00:00').getDay();
+        const lastDay = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate();
+        const byDay = {};
+        (r.days || []).forEach(function (d) { byDay[d.date] = d; });
+        let html = '<div class="rp-calHead">' + RP_WD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div>';
+        for (let i = 0; i < firstDow; i++) html += '<div class="rp-day off"></div>';
+        for (let d = 1; d <= lastDay; d++) {
+            const key = month + '-' + String(d).padStart(2, '0');
+            const hit = byDay[key];
+            html += '<div class="rp-day' + (hit ? ' on' : '') + '"><b>' + d + '</b>' +
+                (hit && hit.count > 1 ? '<i>×' + hit.count + '</i>' : '') + '</div>';
+        }
+        calEl.innerHTML = html;
+    }
+
+    if (wishesEl) {
+        wishesEl.innerHTML = (r.wishes || []).map(function (w) {
+            const tag = w.internalized
+                ? '<span class="rp-tag in">已经会了</span>'
+                : '<span class="rp-tag now">连着 ' + (w.streak_now || 0) + ' 天</span>';
+            return '<div class="rp-item"><span>' + esc(w.title) + '</span>' + tag + '</div>';
+        }).join('');
+    }
+
+    if (redeemBlk && redeemEl) {
+        const list = r.redeemed || [];
+        redeemBlk.hidden = list.length === 0;
+        redeemEl.innerHTML = list.map(function (g) {
+            return '<div class="rp-item"><span>' + esc(g.name) + '</span><span class="rp-tag now">-' + (g.points || 0) + '</span></div>';
+        }).join('');
+    }
+
+    if (voiceBlk && voiceEl) {
+        const list = r.voice || [];
+        voiceBlk.hidden = list.length === 0;
+        voiceEl.innerHTML = list.map(function (v) {
+            return '<div class="rp-quote">「' + esc(v.content) + '」<br><span style="opacity:.5;font-size:.72rem">' + esc(v.recorded_on || '') + '</span></div>';
+        }).join('');
+    }
+
+    rpSetEmpty(emptyEl, (r.total_checkins || 0) === 0 ? '这个月还没有星星，下个月再看' : '');
+}
+
+async function loadReport(month) {
+    const emptyEl = document.getElementById('rp-empty');
+    rpSetEmpty(emptyEl, '在织这个月…');
+    try {
+        const r = await api.getMonthlyReport(month);
+        renderReport(r);
+    } catch (e) {
+        rpSetEmpty(emptyEl, '这个月还没织出来');
+    }
+}
+
+async function initReport() {
+    const section = document.getElementById('report-section');
+    if (!section) return;
+    if (!api.getToken()) { section.style.display = 'none'; return; }
+    const monthEl = document.getElementById('rp-month');
+    if (!monthEl) return;
+    const prevEl = document.getElementById('rp-prev');
+    const nextEl = document.getElementById('rp-next');
+
+    function shiftMonth(base, delta) {
+        const p = (base || new Date().toISOString().slice(0, 7)).split('-');
+        const d = new Date(Number(p[0]), Number(p[1]) - 1 + delta, 1);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+    function pick(value) {
+        if (!value) return;
+        monthEl.value = value;
+        loadReport(value);
+    }
+
+    monthEl.value = new Date().toISOString().slice(0, 7);
+    // 只读 + 左右箭头翻月：Safari/iOS 不支持 <input type="month">，
+    // 别让家长对着一个没日历框干瞪眼
+    if (prevEl) prevEl.addEventListener('click', function () { pick(shiftMonth(monthEl.value, -1)); });
+    if (nextEl) nextEl.addEventListener('click', function () { pick(shiftMonth(monthEl.value, 1)); });
+    monthEl.addEventListener('change', function () { loadReport(monthEl.value); });
+    await loadReport(monthEl.value);
+}
 
 function initReminder() {
     const timeInput = document.getElementById('reminder-time');

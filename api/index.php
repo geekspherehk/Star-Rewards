@@ -13,7 +13,9 @@ define('TRACK_ALLOWED_EVENTS', [
     'push_subscription',
     // 补齐前端实际在打、但此前被后端静默拒绝（400 Invalid event）的事件
     'onboarding_dismiss', 'open_help', 'quick_add_behavior', 'wish_achieved', 'wish_celebrate',
-    'push_invite_accept', 'push_invite_dismiss', 'register_with_invite', 'view_landing'
+    'push_invite_accept', 'push_invite_dismiss', 'register_with_invite', 'view_landing',
+    // 孩子端（kid 页）行为埋点：用来回答「娃会不会自己打开页面」（决定是否做 v2 语音）
+    'kid_page_open', 'kid_checkin', 'kid_redeem'
 ]);
 
 // ── V2 全人版：8 大素养维度（与 behaviors.dimension / wishes.category 共用） ──
@@ -100,14 +102,19 @@ function base64url_decode($data) {
     return base64_decode(strtr($data, '-_', '+/'));
 }
 
-function generateToken($userId, $email) {
+// $ttl 秒；$extra 附加 claims（孩子端用 kid:1 + profile_id + kid_token_version）。
+// 现有调用点全部走默认 TOKEN_TTL，行为不变。
+function generateToken($userId, $email, $ttl = null, $extra = []) {
     $header = ['alg' => 'HS256', 'typ' => 'JWT'];
     $payload = [
         'user_id' => (int)$userId,
         'email' => $email,
         'iat' => time(),
-        'exp' => time() + TOKEN_TTL
+        'exp' => time() + (is_null($ttl) ? TOKEN_TTL : (int)$ttl)
     ];
+    if (is_array($extra) && $extra) {
+        $payload = array_merge($payload, $extra);
+    }
     $headerEncoded = base64url_encode(json_encode($header));
     $payloadEncoded = base64url_encode(json_encode($payload));
     $signature = base64url_encode(hash_hmac('sha256', "$headerEncoded.$payloadEncoded", TOKEN_SECRET, true));
@@ -131,10 +138,52 @@ function verifyToken($token) {
     if (isset($payload['exp']) && $payload['exp'] < time()) {
         return null;
     }
-    if (!isset($payload['user_id']) || !isset($payload['email'])) {
+    // 只校 user_id：孩子端 token 刻意不带家长 email（PII 最小化），
+    // 且全站没有任何地方读 payload['email']，放宽后行为不变。
+    if (!isset($payload['user_id'])) {
         return null;
     }
     return $payload;
+}
+
+// ── 孩子端（kid token）辅助 ──
+// 孩子会话 = 独立低权限凭证，不是家长 session 的拷贝（见 discussion.md 11.7）。
+// 白名单之外的 action 一律 403，娃连家长设置、月报、成员管理都碰不到。
+define('KID_TOKEN_TTL', 10 * 365 * 24 * 3600); // 实质不过期，失效靠家长主动作废旧票
+define('PARENT_TOKEN_TTL_LONG', 30 * 24 * 3600); // 家长「记住我」：一个月翻一次月报，别死在登录页
+function kidAllowedActions() {
+    return ['redeem_kid_link', 'kid_status', 'kid_checkin', 'kid_redeem', 'kid_say'];
+}
+function kidTokenVersion($pdo, $userId) {
+    $stmt = $pdo->prepare('SELECT kid_token_version FROM users WHERE id = ? LIMIT 1');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+    return $row ? (int)$row['kid_token_version'] : null;
+}
+// 解析 kid token 并作废旧票校验；返回 ['user_id'=>..,'profile_id'=>..]
+function requireKid($pdo) {
+    $headers = function_exists('getallheaders') ? getallheaders() : [];
+    $authHeader = '';
+    foreach ($headers as $key => $value) {
+        if (strcasecmp($key, 'Authorization') === 0) { $authHeader = $value; break; }
+    }
+    if (strpos($authHeader, 'Bearer ') !== 0) sendError('Unauthorized', 401);
+    $payload = verifyToken(substr($authHeader, 7));
+    if (!$payload) sendError('Invalid or expired token', 401);
+    if (empty($payload['kid'])) sendError('Not a kid token', 403);
+
+    $userId = (int)$payload['user_id'];
+    $ver = kidTokenVersion($pdo, $userId);
+    if ($ver === null) sendError('Account not found', 403);
+    // 家长点「重新生成链接」→ version+1 → 旧平板当场失效
+    if ((int)$payload['kid_token_version'] !== $ver) sendError('This device has been reset. Please ask a grown-up to re-open the link.', 403);
+
+    $profileId = (int)$payload['profile_id'];
+    $stmt = $pdo->prepare('SELECT id, family_id FROM profiles WHERE id = ? AND user_id = ? LIMIT 1');
+    $stmt->execute([$profileId, $userId]);
+    $profile = $stmt->fetch();
+    if (!$profile) sendError('Profile not found', 404);
+    return ['user_id' => $userId, 'profile_id' => $profileId, 'family_id' => (int)$profile['family_id'], 'kid_token_version' => $ver];
 }
 
 function getRequestData() {
@@ -357,7 +406,47 @@ try {
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $data = getRequestData();
 
+// ── 权限分叉（孩子端白名单）──
+// 带 kid:1 的 token 只能打 kid_* / redeem_kid_link 这几个 action，其余一律 403。
+// 只读 token 前缀即可，不做完整鉴权，避免把「验签失败」变成 401 覆盖掉真正的 403。
+if ($action !== '' && !in_array($action, kidAllowedActions(), true)) {
+    $khdr = function_exists('getallheaders') ? getallheaders() : [];
+    foreach ($khdr as $k => $v) {
+        if (strcasecmp($k, 'Authorization') !== 0) continue;
+        if (strpos((string)$v, 'Bearer ') !== 0) break;
+        $p = verifyToken(substr((string)$v, 7));
+        if ($p && !empty($p['kid'])) {
+            sendError('Kid accounts can only access the kid page', 403);
+        }
+        break;
+    }
+}
+
 switch ($action) {
+    // ── 孩子端一次性长链接（见 discussion.md 11.9）──
+    case 'setup_kid_link':
+        handleSetupKidLink($pdo, $data);
+        break;
+    case 'redeem_kid_link':
+        handleRedeemKidLink($pdo, $data);
+        break;
+    // ── 孩子端低权限三接口 ──
+    case 'kid_status':
+        handleKidStatus($pdo, $data);
+        break;
+    case 'kid_checkin':
+        handleKidCheckin($pdo, $data);
+        break;
+    case 'kid_redeem':
+        handleKidRedeem($pdo, $data);
+        break;
+    case 'kid_say':
+        handleKidSay($pdo, $data);
+        break;
+    // ── 家长端月报（v1 的桥）──
+    case 'monthly_report':
+        handleMonthlyReport($pdo, $data);
+        break;
     case 'bootstrap':
         handleBootstrap($pdo, $data);
         break;
@@ -664,7 +753,10 @@ function handleLogin($pdo, $data) {
             sendError('Invalid email or password', 401);
         }
 
-        $token = generateToken((int)$user['id'], $user['email']);
+        // 「记住我」：家长一个月翻一次月报，别死在登录页（默认仍是 TOKEN_TTL）
+        $remember = !empty($data['remember']) && (int)$data['remember'] === 1;
+        $tokenTtl = $remember ? PARENT_TOKEN_TTL_LONG : null;
+        $token = generateToken((int)$user['id'], $user['email'], $tokenTtl);
         $stmt = $pdo->prepare('SELECT id, name, avatar, color, current_points, total_points FROM profiles WHERE user_id = ? ORDER BY id ASC');
         $stmt->execute([(int)$user['id']]);
         $profiles = $stmt->fetchAll();
@@ -677,7 +769,7 @@ function handleLogin($pdo, $data) {
             'user_id' => (int)$user['id'],
             'email' => $user['email'],
             'email_verified' => (bool)$user['email_verified'],
-            'expires_in' => TOKEN_TTL,
+            'expires_in' => $tokenTtl ? PARENT_TOKEN_TTL_LONG : TOKEN_TTL,
             'profiles' => $profiles,
             'selected_profile_id' => $selected
         ]);
@@ -1332,12 +1424,9 @@ function handleAddGift($pdo, $data) {
     }
 }
 
-function handleRedeemGift($pdo, $data) {
-    $userId = getUserId();
-    $familyId = requireFamilyMember($pdo, $userId);
-    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
-    $giftId = isset($data['gift_id']) ? (int)$data['gift_id'] : 0;
-
+// 兑换主体（家长端与孩子端共用）。孩子端直接复用这一条链路：
+// 它本来就「没有家长确认」这一步，所以把入口抬到大花页即可，不需要新接口逻辑。
+function redeemGiftFor($pdo, $userId, $familyId, $profileId, $giftId) {
     if ($giftId <= 0) sendError('Invalid gift id', 400);
 
     try {
@@ -1414,6 +1503,14 @@ function handleRedeemGift($pdo, $data) {
         }
         sendError('Failed to redeem gift', 500, $e->getMessage());
     }
+}
+
+function handleRedeemGift($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    $giftId = isset($data['gift_id']) ? (int)$data['gift_id'] : 0;
+    redeemGiftFor($pdo, $userId, $familyId, $profileId, $giftId);
 }
 
 function handleGetRedeemedGifts($pdo, $data) {
@@ -2476,6 +2573,12 @@ function handleAddCheckin($pdo, $data) {
     $userId = getUserId();
     $familyId = requireFamilyMember($pdo, $userId);
     $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    addCheckinFor($pdo, $userId, $familyId, $profileId, $data, 'add_checkin');
+}
+
+// 打卡主体（家长端与孩子端共用）。唯一键 uniq_wish_date 天然保证「一天一亮」。
+// 孩子端走同一条链路，行为与家长端完全一致，不用另写一份容易跑偏的副本。
+function addCheckinFor($pdo, $userId, $familyId, $profileId, $data, $event = 'add_checkin') {
     $wishId = (int)($data['wish_id'] ?? 0);
     if ($wishId <= 0) sendError('Wish id required', 400);
 
@@ -2516,7 +2619,7 @@ function handleAddCheckin($pdo, $data) {
     v2ComputeBadges($pdo, $familyId, $profileId, $userId);
     $profileRow = v2FetchProfilePoints($pdo, $profileId);
 
-    trackEvent($pdo, $userId, 'add_checkin', ['profile_id' => $profileId, 'wish_id' => $wishId, 'internalized' => $internalized]);
+    trackEvent($pdo, $userId, $event, ['profile_id' => $profileId, 'wish_id' => $wishId, 'internalized' => $internalized]);
     sendJson([
         'success' => true, 'streak' => $info['streak'], 'stage' => $info['stage'], 'internalized' => $internalized,
         'points_awarded' => $checkinPoints, 'current_points' => $profileRow['current_points'], 'total_points' => $profileRow['total_points']
@@ -2630,4 +2733,233 @@ function handleSendAllDailyReminders($pdo, $data) {
     }
     $sent = wp_remindAll($pdo);
     sendJson(['success' => true, 'sent' => $sent]);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  孩子端（kid page）+ 家长月报  —— 见 discussion.md 11.9 / 11.10 / 11.11
+//  设计底线：娃永远不输密码/不登录；家长零操作；留声绝不给星星。
+// ══════════════════════════════════════════════════════════════════
+
+// 一次性长链接：家长态，生成新票（同时作废旧票）
+function handleSetupKidLink($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+    if (!$profileId) sendError('请先创建一个孩子档案', 400);
+
+    try {
+        $pdo->beginTransaction();
+        // 作废旧票：同一账号最多保留 1 张有效（重新生成 = 旧平板当场打不开）
+        $stmt = $pdo->prepare("UPDATE kid_links SET status = 'revoked', consumed_at = NOW()
+            WHERE family_id = ? AND status = 'active'");
+        $stmt->execute([$familyId]);
+
+        $raw = random_bytes(32);
+        $code = bin2hex($raw); // 64 hex chars ≈ 256bit，穷举不可行
+        $stmt = $pdo->prepare("INSERT INTO kid_links (family_id, profile_id, user_id, token_hash, status, created_at)
+            VALUES (?, ?, ?, ?, 'active', NOW())");
+        $stmt->execute([$familyId, $profileId, $userId, hash('sha256', $code)]);
+
+        // 版本号 +1 → 历史 kid token 全部失效（共享平板丢了的唯一处理动作）
+        $stmt = $pdo->prepare('UPDATE users SET kid_token_version = kid_token_version + 1 WHERE id = ?');
+        $stmt->execute([$userId]);
+
+        $pdo->commit();
+        sendJson([
+            'success' => true,
+            'url' => rtrim(SITE_BASE_URL, '/') . '/kid.html?k=' . $code,
+            'code' => $code,
+            'profile_id' => (int)$profileId
+        ]);
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        sendError('Failed to create kid link', 500, $e->getMessage());
+    }
+}
+
+// 免登录：长链接换孩子会话（一次性票，换完立刻作废）
+function handleRedeemKidLink($pdo, $data) {
+    $code = trim((string)($_GET['k'] ?? $data['k'] ?? ''));
+    if ($code === '' || !preg_match('/^[a-f0-9]{64}$/', $code)) {
+        sendError('This link is not valid. Ask a grown-up for a fresh one.', 403);
+    }
+    try {
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare("SELECT id, family_id, profile_id FROM kid_links
+            WHERE token_hash = ? AND status = 'active' LIMIT 1 FOR UPDATE");
+        $stmt->execute([hash('sha256', $code)]);
+        $link = $stmt->fetch();
+        if (!$link) {
+            $pdo->rollBack();
+            sendError('This link is not valid. Ask a grown-up for a fresh one.', 403);
+        }
+
+        // 取该 profile 属主（家长）的 id 与 kid_token_version 一起签发
+        $stmt = $pdo->prepare('SELECT u.id AS user_id, u.kid_token_version FROM profiles p
+            JOIN users u ON u.id = p.user_id
+            WHERE p.id = ? AND p.family_id = ? LIMIT 1');
+        $stmt->execute([$link['profile_id'], $link['family_id']]);
+        $userRow = $stmt->fetch();
+        if (!$userRow) {
+            $pdo->rollBack();
+            sendError('This link is not valid.', 403);
+        }
+
+        // 一次性：消费掉（票只在换会话那一瞬间有效）
+        $stmt = $pdo->prepare("UPDATE kid_links SET status = 'consumed', consumed_at = NOW() WHERE id = ?");
+        $stmt->execute([$link['id']]);
+        $pdo->commit();
+
+        // 低权限、实质不过期（失效靠家长主动作废，见 11.7）
+        $token = generateToken(
+            (int)$userRow['user_id'],
+            '',
+            KID_TOKEN_TTL,
+            ['kid' => 1, 'profile_id' => (int)$link['profile_id'], 'kid_token_version' => (int)$userRow['kid_token_version']]
+        );
+        sendJson(['success' => true, 'token' => $token]);
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        sendError('Failed to activate the kid page', 500, $e->getMessage());
+    }
+}
+
+// 娃的"今天"：今日可打卡的花、已亮没亮、还差几颗、能换什么
+function handleKidStatus($pdo, $data) {
+    $kid = requireKid($pdo);
+    $today = date('Y-m-d');
+    try {
+        $stmt = $pdo->prepare('SELECT current_points, total_points, name FROM profiles WHERE id = ? LIMIT 1');
+        $stmt->execute([$kid['profile_id']]);
+        $profile = $stmt->fetch();
+
+        $stmt = $pdo->prepare("SELECT id, title, wish_type, persistence_days, category, stars FROM wishes
+            WHERE family_id = ? AND profile_id = ? AND status = 'active' ORDER BY id ASC");
+        $stmt->execute([$kid['family_id'], $kid['profile_id']]);
+        $wishes = $stmt->fetchAll();
+
+        $stmt = $pdo->prepare('SELECT wish_id FROM checkins WHERE profile_id = ? AND checkin_date = ?');
+        $stmt->execute([$kid['profile_id'], $today]);
+        $doneWishIds = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+
+        $flowers = [];
+        foreach ($wishes as $w) {
+            $flowers[] = [
+                'wish_id' => (int)$w['id'],
+                'title' => $w['title'],
+                'wish_type' => $w['wish_type'],
+                'done' => in_array((int)$w['id'], $doneWishIds, true),
+                'streak' => v2WishStreakInfo($pdo, (int)$w['id'])['streak']
+            ];
+        }
+
+        $stmt = $pdo->prepare('SELECT id, name, points, image_url FROM gifts
+            WHERE family_id = ? AND profile_id = ? ORDER BY points ASC LIMIT 20');
+        $stmt->execute([$kid['family_id'], $kid['profile_id']]);
+        $gifts = $stmt->fetchAll();
+
+        sendJson([
+            'success' => true,
+            'today' => $today,
+            'child_name' => $profile['name'] ?? '',
+            'current_points' => (int)($profile['current_points'] ?? 0),
+            'total_points' => (int)($profile['total_points'] ?? 0),
+            'flowers' => $flowers,
+            'gifts' => $gifts
+        ]);
+    } catch (Exception $e) {
+        sendError('Failed to load today', 500, $e->getMessage());
+    }
+}
+
+// 娃按花打卡（+5 分与家长端同一条链路；uniq_wish_date 保证一天一亮）
+function handleKidCheckin($pdo, $data) {
+    $kid = requireKid($pdo);
+    addCheckinFor($pdo, $kid['user_id'], $kid['family_id'], $kid['profile_id'], $data, 'kid_checkin');
+}
+
+// 娃自己发起兑换（本来就无家长确认环节，抬入口即可）
+function handleKidRedeem($pdo, $data) {
+    $kid = requireKid($pdo);
+    $giftId = (int)($data['gift_id'] ?? 0);
+    redeemGiftFor($pdo, $kid['user_id'], $kid['family_id'], $kid['profile_id'], $giftId);
+}
+
+// 「说一句」：只落文字，绝不给星星（给了就变回贿赂机，见 11.11 红线）
+function handleKidSay($pdo, $data) {
+    $kid = requireKid($pdo);
+    $content = trim((string)($data['content'] ?? ''));
+    if ($content === '') sendError('说点什么吧', 400);
+    if (mb_strlen($content) > 200) sendError('太长了，短一点', 400);
+    try {
+        $stmt = $pdo->prepare('INSERT INTO child_voice (family_id, profile_id, user_id, content, recorded_on) VALUES (?, ?, ?, ?, CURDATE())');
+        $stmt->execute([$kid['family_id'], $kid['profile_id'], $kid['user_id'], $content]);
+        sendJson(['success' => true, 'id' => (int)$pdo->lastInsertId()], 201);
+    } catch (Exception $e) {
+        sendError('Failed to save', 500, $e->getMessage());
+    }
+}
+
+// 家长月报（v1 的桥）：用真实行为数据自动织，家长零记录
+function handleMonthlyReport($pdo, $data) {
+    $userId = getUserId();
+    $familyId = requireFamilyMember($pdo, $userId);
+    $profileId = resolveProfileId($pdo, $familyId, $userId, $data);
+
+    $month = preg_match('/^\d{4}-\d{2}$/', (string)($data['month'] ?? '')) ? $data['month'] : date('Y-m');
+    $from = $month . '-01';
+    $to = date('Y-m-t', strtotime($from));
+
+    try {
+        $stmt = $pdo->prepare("SELECT c.checkin_date, c.wish_id, w.title AS wish_title, c.note
+            FROM checkins c LEFT JOIN wishes w ON w.id = c.wish_id
+            WHERE c.family_id = ? AND c.profile_id = ? AND c.checkin_date BETWEEN ? AND ? ORDER BY c.checkin_date ASC");
+        $stmt->execute([$familyId, $profileId, $from, $to]);
+        $checkins = $stmt->fetchAll();
+
+        $stmt = $pdo->prepare('SELECT id, title, wish_type, persistence_days, status FROM wishes
+            WHERE family_id = ? AND profile_id = ? ORDER BY id ASC');
+        $stmt->execute([$familyId, $profileId]);
+        $wishes = $stmt->fetchAll();
+        foreach ($wishes as &$w) {
+            $info = v2WishStreakInfo($pdo, (int)$w['id']);
+            $w['streak_now'] = $info['streak'];
+            $w['stage'] = $info['stage'];
+            $w['internalized'] = $info['streak'] >= max(1, (int)$w['persistence_days']);
+        }
+        unset($w);
+
+        $stmt = $pdo->prepare('SELECT id, name, points, redeem_date FROM redeemed_gifts
+            WHERE family_id = ? AND profile_id = ? AND redeem_date BETWEEN ? AND ? ORDER BY redeem_date ASC');
+        $stmt->execute([$familyId, $profileId, $from, $to]);
+        $redeemed = $stmt->fetchAll();
+
+        $stmt = $pdo->prepare('SELECT content, recorded_on FROM child_voice
+            WHERE family_id = ? AND profile_id = ? AND recorded_on BETWEEN ? AND ? ORDER BY recorded_on DESC LIMIT 50');
+        $stmt->execute([$familyId, $profileId, $from, $to]);
+        $voice = $stmt->fetchAll();
+
+        // 按天聚合（前端直接画日历格）
+        $byDay = [];
+        foreach ($checkins as $c) {
+            $d = $c['checkin_date'];
+            if (!isset($byDay[$d])) $byDay[$d] = ['date' => $d, 'count' => 0, 'titles' => []];
+            $byDay[$d]['count']++;
+            if ($c['wish_title']) $byDay[$d]['titles'][] = $c['wish_title'];
+        }
+
+        sendJson([
+            'success' => true,
+            'month' => $month,
+            'profile_id' => (int)$profileId,
+            'days' => array_values($byDay),
+            'total_checkins' => count($checkins),
+            'active_days' => count($byDay),
+            'wishes' => $wishes,
+            'redeemed' => $redeemed,
+            'voice' => $voice
+        ]);
+    } catch (Exception $e) {
+        sendError('Failed to build report', 500, $e->getMessage());
+    }
 }

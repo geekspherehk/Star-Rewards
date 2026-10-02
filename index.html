@@ -30,7 +30,7 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=106">
+    <link rel="stylesheet" href="style.css?v=107">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=32"></script>
@@ -188,6 +188,34 @@
                     </div>
                 </section>
 
+                <!-- 成长月报：系统拿真实行为自己织，家长零记录（见 discussion.md 11.10） -->
+                <section class="v2-section" id="report-section">
+                    <div class="v2-section-head">
+                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span>成长月报</span></h3>
+                        <p class="v2-sub">这个月他自己按出来的，我不用记一句</p>
+                    </div>
+                    <div class="rp-bar">
+                        <button type="button" class="rp-nav" id="rp-prev" aria-label="上个月">‹</button>
+                        <input type="month" id="rp-month" class="rp-month" aria-label="月份" readonly>
+                        <button type="button" class="rp-nav" id="rp-next" aria-label="下个月">›</button>
+                    </div>
+                    <div class="rp-stats" id="rp-stats"></div>
+                    <div class="rp-cal" id="rp-cal"></div>
+                    <div class="rp-blk">
+                        <div class="rp-sep">这个月的花</div>
+                        <div class="rp-list" id="rp-wishes"></div>
+                    </div>
+                    <div class="rp-blk" id="rp-redeem-blk" hidden>
+                        <div class="rp-sep">他换走的</div>
+                        <div class="rp-list" id="rp-redeemed"></div>
+                    </div>
+                    <div class="rp-blk" id="rp-voice-blk" hidden>
+                        <div class="rp-sep">他自己说的</div>
+                        <div class="rp-voice" id="rp-voice"></div>
+                    </div>
+                    <p class="rp-empty" id="rp-empty" style="display:none;"></p>
+                </section>
+
                 <div class="points-display">
                     <div class="points-card">
                         <div class="points-value" id="current-points">0</div>
@@ -201,6 +229,20 @@
                         <div class="points-value" id="streak-count">0</div>
                         <div class="points-label" data-i18n="home.streakDays">连续打卡天数</div>
                     </div>
+                </div>
+
+                <!-- 给娃装大花页：一次设置一个链接，之后娃自己按，家长退出日常操作（见 11.9） -->
+                <div class="v2-section" id="kid-setup-card">
+                    <div class="v2-section-head">
+                        <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4.4 0 8-3.4 8-7.6C20 8.6 16.9 5.5 12 2 7.1 5.5 4 8.6 4 13.4 4 17.6 7.6 21 12 21z"/><circle cx="12" cy="13.5" r="3.2"/></svg><span>给娃装一个大花按钮</span></h3>
+                        <p class="v2-sub">平板上多一个图标，他自己按；我回到「看」，不再天天记</p>
+                    </div>
+                    <div class="ks-row">
+                        <button type="button" class="ks-gen" id="ks-gen">生成一个链接</button>
+                        <input type="text" id="ks-url" class="ks-url" readonly placeholder="点上面生成一个，发给娃的平板">
+                        <button type="button" class="ks-copy" id="ks-copy">复制</button>
+                    </div>
+                    <p class="ks-hint">链接只能开一次，开过就作废；换平板或丢了，再生成一个，旧的那台立刻打不开。</p>
                 </div>
 
                 <!-- 行为记录：临时加分入口（紧跟打卡，扫一眼就能用） -->
@@ -543,7 +585,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=122"></script>
+    <script defer src="script.js?v=123"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {

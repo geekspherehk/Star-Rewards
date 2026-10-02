@@ -25,9 +25,9 @@ async function signUp(email, password, inviteCode, consent) {
     return result;
 }
 
-async function signIn(email, password) {
+async function signIn(email, password, remember = false) {
     if (!email || !password) throw new Error(t('common.enterEmailAndPassword'));    console.log('SignIn: 调用API登录...');
-    const result = await api.login(email, password);
+    const result = await api.login(email, password, remember);
     console.log('SignIn: API响应:', result);
     return { user: { id: result.user_id, email: result.email }, session: { access_token: result.token } };
 }
@@ -183,7 +183,8 @@ async function handleSignIn() {
     }
     try {
         console.log('调用API登录接口...');
-        let data = await signIn(email, password);
+        const rememberEl = document.getElementById('login-remember');
+        let data = await signIn(email, password, !!(rememberEl && rememberEl.checked));
         track('login');
         console.log('登录成功，返回数据:', data);
         document.getElementById('login-email').value = '';

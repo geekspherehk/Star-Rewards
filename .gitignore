@@ -62,3 +62,8 @@ shots/
 backups/
 prototypes/ai-assets/
 weekly_selfcheck.html
+
+# 家长留言监听的运行时状态（不入库）
+watch_discussion.py
+watch_discussion.pending
+.watch_discussion.state

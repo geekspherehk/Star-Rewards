@@ -5181,3 +5181,49 @@ a:hover { text-decoration: underline; }
     .mc-star { width: 40%; }
     .mc-cell.is-part .mc-ratio { bottom: 4px; right: 5px; font-size: .5rem; }
 }
+
+/* ── 成长月报（家长端，系统自动织）── rp- 前缀 ── */
+.rp-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.rp-month { flex: 0 0 auto; width: 9.5rem; padding: 8px 10px; font-size: .88rem; font-weight: 700; border: 2px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); }
+.rp-nav { width: 34px; height: 34px; padding: 0; font-size: 1.1rem; line-height: 1; font-weight: 800; border: 2px solid var(--border); border-radius: 50%; background: var(--surface); color: var(--brand); flex: 0 0 auto; }
+.rp-nav:active { background: var(--brand); color: #fff; border-color: var(--brand); }
+.rp-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.rp-stat { flex: 1 1 120px; min-width: 110px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); }
+.rp-stat b { display: block; font-size: 1.4rem; line-height: 1.2; color: var(--brand); }
+.rp-stat span { font-size: .74rem; font-weight: 700; opacity: .7; }
+
+.rp-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 14px; }
+.rp-calHead { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 2px; }
+.rp-calHead span { text-align: center; font-size: .68rem; font-weight: 800; opacity: .55; }
+.rp-day { aspect-ratio: 1 / 1; border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: .7rem; font-weight: 700; color: var(--text); }
+.rp-day.on { border-color: var(--brand); background: var(--brand); color: #fff; }
+.rp-day.on b { font-size: .8rem; }
+.rp-day i { font-style: normal; font-size: .56rem; opacity: .8; }
+.rp-day.off { opacity: .35; }
+
+.rp-blk { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.rp-sep { font-size: .78rem; font-weight: 800; opacity: .55; margin-bottom: 6px; }
+.rp-list { display: flex; flex-direction: column; gap: 6px; }
+.rp-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--border); font-size: .85rem; font-weight: 700; }
+.rp-item .rp-tag { margin-left: auto; font-size: .72rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+.rp-item .rp-tag.in { color: var(--brand); background: rgba(76, 111, 255, .12); }
+.rp-item .rp-tag.now { color: var(--accent); background: rgba(240, 165, 0, .14); }
+.rp-voice { display: flex; flex-direction: column; gap: 6px; }
+.rp-quote { padding: 8px 12px; border-left: 3px solid var(--brand); border-radius: 8px; background: var(--surface); font-size: .88rem; }
+.rp-empty { text-align: center; font-size: .85rem; opacity: .55; margin: 8px 0; }
+
+/* ── 给娃装大花页（家长端）── ks- 前缀 ── */
+.ks-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ks-gen { width: auto; padding: 10px 16px; font-size: .9rem; font-weight: 800; border: 0; border-radius: 14px; background: var(--brand); color: #fff; }
+.ks-url { flex: 1 1 260px; min-width: 200px; padding: 10px 12px; font-size: .8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 2px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); }
+.ks-copy { width: auto; padding: 10px 16px; font-size: .9rem; font-weight: 800; border: 2px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); }
+.ks-hint { margin: 8px 0 0; font-size: .78rem; line-height: 1.5; opacity: .6; }
+
+@media (max-width: 520px) {
+    .rp-day { border-radius: 8px; }
+    .rp-quote { font-size: .84rem; }
+}
+
+/* 登录页「记住我」 */
+.remember-row { display: flex; align-items: center; gap: 8px; margin: -6px 0 10px; font-size: 13px; font-weight: 700; opacity: .78; cursor: pointer; }
+.remember-row input { width: auto; }

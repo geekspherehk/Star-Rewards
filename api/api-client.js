@@ -160,8 +160,8 @@ class ApiClient {
         return result;
     }
 
-    async login(email, password) {
-        const result = await this.request('login', { email, password });
+    async login(email, password, remember = false) {
+        const result = await this.request('login', { email, password, remember: remember ? 1 : 0 });
         if (result.token) {
             this.setToken(result.token, result.expires_in);
             localStorage.setItem(USER_ID_KEY, String(result.user_id));
@@ -452,6 +452,17 @@ class ApiClient {
 
     async resendConfirmation(email) {
         return { success: true, message: 'Email confirmation is not required in this version' };
+    }
+
+    // ── 孩子端大花页（kid.html）──────────────────────────────────
+    // 家长「给孩子装大花页」：生成（或重新生成）一次性长链接，旧链接当场作废。
+    async setupKidLink() {
+        return await this.request('setup_kid_link', { profile_id: this.selectedProfileId });
+    }
+
+    // 系统自动织的成长月报（v1 的桥，家长零操作）
+    async getMonthlyReport(month = null) {
+        return await this.request('monthly_report', { month, profile_id: this.selectedProfileId });
     }
 }
 

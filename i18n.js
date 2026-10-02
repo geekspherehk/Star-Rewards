@@ -38,6 +38,7 @@ const translations = {
             resetDone: '密码已重置，请用新密码登录。',
             resetMismatch: '两次输入的密码不一致',
             resetInvalid: '重置链接无效或已过期，请重新申请。',
+            rememberMe: '记住我（30 天内不用再登录）',
             backToLogin: '返回登录'
         },
         home: {
@@ -1130,6 +1131,7 @@ const translations = {
             resetDone: 'Password updated. Please log in with your new password.',
             resetMismatch: 'Passwords do not match',
             resetInvalid: 'Reset link is invalid or expired. Please request a new one.',
+            rememberMe: 'Remember me (stay signed in for 30 days)',
             backToLogin: 'Back to Login'
         },
         home: {

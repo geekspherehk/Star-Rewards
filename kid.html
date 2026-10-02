@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>今天能亮哪一朵</title>
+<link rel="manifest" href="manifest-kid.json">
+<meta name="theme-color" content="#4C6FFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="今天">
+<meta name="description" content="孩子自己按一下，亮一朵花。">
+<link rel="stylesheet" href="style.css?v=107">
+<style>
+  /* 孩子端：只有「看得见 / 亮得了 / 换得出」。不催、不提醒、不留小红点。 */
+  .kid-wrap{min-height:100vh;padding:14px 16px 26px;display:flex;flex-direction:column;gap:14px;background:var(--surface,#fff);color:var(--text,#1a1a1a)}
+  .kid-title{font-size:20px;font-weight:800;display:flex;align-items:center;gap:8px}
+  .kid-points{margin-left:auto;font-size:15px;font-weight:700;color:var(--accent,#F0A500)}
+  .kid-grid{display:flex;flex-wrap:wrap;gap:12px}
+  .kid-flower{flex:1 1 44%;min-width:150px;aspect-ratio:1/1;border:3px solid var(--border,#E4E7EC);border-radius:26px;
+    background:var(--surface,#fff);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease, border-color .2s ease}
+  .kid-flower:active{transform:scale(.96)}
+  .kid-flower .glyph{font-size:52px;line-height:1}
+  .kid-flower .lbl{font-size:15px;font-weight:700;padding:0 6px;text-align:center}
+  .kid-flower.lit{border-color:var(--brand,#4C6FFF);background:linear-gradient(160deg,#EDF2FF,#F7F9FF)}
+  .kid-flower.lit .glyph{filter:drop-shadow(0 2px 4px rgba(76,111,255,.35))}
+  .kid-flower .tick{position:absolute}
+  .kid-flower{position:relative}
+  .kid-flower.lit::after{content:"✓";position:absolute;top:8px;right:12px;font-size:20px;font-weight:900;color:var(--brand,#4C6FFF)}
+  .kid-sep{font-size:14px;font-weight:700;opacity:.55;margin-top:2px}
+  .kid-gift{flex:1 1 46%;min-width:160px;display:flex;align-items:center;gap:10px;padding:14px;border:3px solid var(--border,#E4E7EC);
+    border-radius:20px;background:var(--surface,#fff);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .kid-gift:active{transform:scale(.97)}
+  .kid-gift .gname{font-size:15px;font-weight:700;flex:1}
+  .kid-gift .gpts{font-size:14px;font-weight:800;color:var(--accent,#F0A500)}
+  .kid-gift[disabled]{opacity:.45}
+  .kid-note{display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:10px;border-top:1px solid var(--border,#E4E7EC)}
+  .kid-note input{flex:1;font-size:16px;padding:10px 12px;border-radius:14px;border:2px solid var(--border,#E4E7EC);background:var(--surface,#fff)}
+  .kid-note button{width:auto;padding:10px 16px;border-radius:14px;border:0;background:var(--brand,#4C6FFF);color:#fff;font-weight:800;font-size:15px}
+  .kid-msg{font-size:14px;font-weight:700;min-height:20px}
+  .kid-msg.ok{color:var(--brand,#4C6FFF)}
+  .kid-msg.err{color:#D93025}
+  .kid-empty{font-size:15px;opacity:.6}
+  .kid-go{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:100vh;text-align:center;padding:24px}
+  .kid-go .big{font-size:64px}
+</style>
+</head>
+<body>
+<div id="app" class="kid-wrap" hidden>
+  <div class="kid-title"><span id="childName">今天</span><span class="kid-points">⭐ <span id="points">0</span></span></div>
+  <div id="flowers" class="kid-grid"></div>
+  <div id="giftsWrap" hidden>
+    <div class="kid-sep">我能换</div>
+    <div id="gifts" class="kid-grid"></div>
+  </div>
+  <div class="kid-note">
+    <span id="micIcon" style="font-size:22px">🎙️</span>
+    <input id="say" type="text" inputmode="text" placeholder="想说啥就说一句" autocomplete="off">
+    <button id="sayBtn" type="button">存下</button>
+  </div>
+  <div id="msg" class="kid-msg"></div>
+</div>
+
+<div id="boot" class="kid-go">
+  <div class="big">🌸</div>
+  <div id="bootMsg" style="font-size:17px;font-weight:700">正在打开…</div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var TOKEN_KEY = 'kid_token';
+  var token = localStorage.getItem(TOKEN_KEY) || '';
+  var params = new URLSearchParams(location.search);
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function say(msg, ok) {
+    var el = document.getElementById('msg');
+    el.textContent = msg || '';
+    el.className = 'kid-msg ' + (ok ? 'ok' : 'err');
+  }
+  async function call(action, payload) {
+    var res = await fetch('api/index.php?action=' + encodeURIComponent(action), {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}),
+      body: JSON.stringify(payload || {})
+    });
+    var json = null;
+    try { json = await res.json(); } catch (e) {}
+    if (!res.ok) {
+      var err = new Error((json && json.error) || ('HTTP ' + res.status));
+      err.code = res.status;
+      throw err;
+    }
+    return json;
+  }
+
+  var GLYPHS = ['🌸', '🌞', '🎒', '🪥', '🧸', '🚿', '🍚', '👟', '📚', '🧹', '🌙', '⚽'];
+
+  async function boot() {
+    // 1) 还没换过会话：地址带一次性长链接 → 换回孩子会话
+    if (!token) {
+      var code = params.get('k') || '';
+      if (!code) {
+        document.getElementById('bootMsg').textContent = '这个页面要先让大人给一次链接。';
+        return;
+      }
+      var r = await call('redeem_kid_link', { k: code });
+      if (!r || !r.token) throw new Error('链接无效');
+      token = r.token;
+      localStorage.setItem(TOKEN_KEY, token);
+      // 把一次性码从地址里抹掉，避免留在历史记录里
+      try {
+        history.replaceState(null, '', location.pathname);
+      } catch (e) {}
+    }
+    await load();
+  }
+
+  async function load() {
+    var data = await call('kid_status', {});
+    if (!data || !data.success) throw new Error('加载失败');
+    document.getElementById('childName').textContent = '今天能亮哪一朵';
+    document.getElementById('points').textContent = data.current_points;
+
+    var wrap = document.getElementById('flowers');
+    if (!data.flowers || !data.flowers.length) {
+      wrap.innerHTML = '<div class="kid-empty">还没有可以亮的花</div>';
+    } else {
+      wrap.innerHTML = data.flowers.map(function (f, i) {
+        return '<button type="button" class="kid-flower' + (f.done ? ' lit' : '') + '" data-id="' + f.wish_id + '">' +
+          '<span class="glyph">' + GLYPHS[i % GLYPHS.length] + '</span>' +
+          '<span class="lbl">' + esc(f.title) + '</span></button>';
+      }).join('');
+      Array.prototype.forEach.call(document.querySelectorAll('.kid-flower'), function (el) {
+        el.addEventListener('click', function () { onFlower(el); });
+      });
+    }
+
+    if (data.gifts && data.gifts.length) {
+      document.getElementById('giftsWrap').hidden = false;
+      document.getElementById('gifts').innerHTML = data.gifts.map(function (g) {
+        var afford = data.current_points >= g.points;
+        return '<button type="button" class="kid-gift" data-id="' + g.id + '"' + (afford ? '' : ' disabled') + '>' +
+          '<span class="gname">' + esc(g.name) + '</span><span class="gpts">⭐' + g.points + '</span></button>';
+      }).join('');
+      Array.prototype.forEach.call(document.querySelectorAll('.kid-gift'), function (el) {
+        el.addEventListener('click', function () { onGift(el); });
+      });
+    }
+    document.getElementById('app').hidden = false;
+    document.getElementById('boot').hidden = true;
+  }
+
+  async function onFlower(el) {
+    if (el.classList.contains('lit')) return; // 一天只亮一次
+    try {
+      var r = await call('kid_checkin', { wish_id: parseInt(el.dataset.id, 10) });
+      el.classList.add('lit');
+      document.getElementById('points').textContent = r.current_points;
+      say('亮了！继续', true);
+    } catch (e) {
+      // 重复/失败都不打断：娃只当这一下没按成
+      say(e.message || '没亮成', false);
+    }
+  }
+
+  async function onGift(el) {
+    if (el.disabled) return;
+    try {
+      var r = await call('kid_redeem', { gift_id: parseInt(el.dataset.id, 10) });
+      document.getElementById('points').textContent = r.current_points;
+      say('换好啦：' + r.redeemed_gift.name, true);
+    } catch (e) {
+      say(e.message || '没换成', false);
+    }
+  }
+
+  document.getElementById('sayBtn').addEventListener('click', async function () {
+    var input = document.getElementById('say');
+    var text = (input.value || '').trim();
+    if (!text) return;
+    try {
+      await call('kid_say', { content: text });
+      input.value = '';
+      say('存下啦', true);
+    } catch (e) {
+      say(e.message || '没存成', false);
+    }
+  });
+
+  boot().catch(function (e) {
+    var m = e && e.message ? e.message : '打不开';
+    // 旧平板：家长改过链接 → 清掉失效会话，回到"要新链接"的提示
+    if (e.code === 403 || /reset|not valid/i.test(m)) {
+      localStorage.removeItem(TOKEN_KEY);
+      document.getElementById('bootMsg').textContent = '这台设备已经不能用了，让大人再给一次新链接。';
+    } else {
+      document.getElementById('bootMsg').textContent = m;
+    }
+  });
+})();
+</script>
+</body>
+</html>
