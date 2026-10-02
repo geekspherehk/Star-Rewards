@@ -21,13 +21,17 @@
     background:var(--surface,#fff);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
     cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease, border-color .2s ease}
   .kid-flower:active{transform:scale(.96)}
-  .kid-flower .glyph{font-size:52px;line-height:1}
+  /* 图标用现成贴纸（256×256 带圆角底），不用 emoji：🪥 牙刷是 Unicode 13，老 Android 会出豆腐块 */
+  .kid-flower .glyph{width:58px;height:58px;border-radius:16px;overflow:hidden;background:var(--surface,#fff)}
+  .kid-flower .glyph img{width:100%;height:100%;display:block}
   .kid-flower .lbl{font-size:15px;font-weight:700;padding:0 6px;text-align:center}
   .kid-flower.lit{border-color:var(--brand,#4C6FFF);background:linear-gradient(160deg,#EDF2FF,#F7F9FF)}
-  .kid-flower.lit .glyph{filter:drop-shadow(0 2px 4px rgba(76,111,255,.35))}
-  .kid-flower .tick{position:absolute}
+  .kid-flower.lit .glyph{box-shadow:0 2px 6px rgba(76,111,255,.3)}
   .kid-flower{position:relative}
-  .kid-flower.lit::after{content:"✓";position:absolute;top:8px;right:12px;font-size:20px;font-weight:900;color:var(--brand,#4C6FFF)}
+  .kid-flower.lit::after{content:"";position:absolute;top:9px;right:11px;width:20px;height:20px;
+    background:var(--brand,#4C6FFF);border-radius:50%;
+    -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>") center/contain no-repeat;
+    mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>") center/contain no-repeat}
   .kid-sep{font-size:14px;font-weight:700;opacity:.55;margin-top:2px}
   .kid-gift{flex:1 1 46%;min-width:160px;display:flex;align-items:center;gap:10px;padding:14px;border:3px solid var(--border,#E4E7EC);
     border-radius:20px;background:var(--surface,#fff);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -38,14 +42,16 @@
   .kid-note{display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:10px;border-top:1px solid var(--border,#E4E7EC)}
   .kid-note input{flex:1;font-size:16px;padding:10px 12px;border-radius:14px;border:2px solid var(--border,#E4E7EC);background:var(--surface,#fff)}
   .kid-note button{width:auto;padding:10px 16px;border-radius:14px;border:0;background:var(--brand,#4C6FFF);color:#fff;font-weight:800;font-size:15px}
-  .kid-msg{font-size:14px;font-weight:700;min-height:20px}
+  /* 反馈语要贴着输入框（gap:14px 会把提示甩到远处） */
+  .kid-msg{font-size:14px;font-weight:700;min-height:20px;margin-top:-7px}
   .kid-msg.ok{color:var(--brand,#4C6FFF)}
   .kid-msg.err{color:#D93025}
   .kid-empty{font-size:15px;opacity:.6}
   .kid-go{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:100vh;text-align:center;padding:24px}
   /* 同类选择器会盖掉 [hidden] 的 display:none，不补这条「正在打开…」永远收不掉 */
   .kid-go[hidden]{display:none}
-  .kid-go .big{font-size:64px}
+  .kid-go .big svg{width:76px;height:76px;color:var(--accent,#F0A500)}
+  .kid-note .mic{flex:none;display:flex;color:var(--brand,#4C6FFF)}
 </style>
 </head>
 <body>
@@ -57,7 +63,12 @@
     <div id="gifts" class="kid-grid"></div>
   </div>
   <div class="kid-note">
-    <span id="micIcon" style="font-size:22px">🎙️</span>
+    <span class="mic" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <rect x="9" y="2" width="6" height="11" rx="3"></rect>
+        <path d="M5 10a7 7 0 0 0 14 0M12 17v5M8.5 22h7"></path>
+      </svg>
+    </span>
     <input id="say" type="text" inputmode="text" placeholder="想说啥就说一句" autocomplete="off">
     <button id="sayBtn" type="button">存下</button>
   </div>
@@ -65,7 +76,17 @@
 </div>
 
 <div id="boot" class="kid-go">
-  <div class="big">🌸</div>
+  <div class="big">
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <g stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+        <path d="M32 32c0-9 6-16 13-16 4 0 6 3 6 7 0 5-5 9-11 9"></path>
+        <path d="M32 32c0-9-6-16-13-16-4 0-6 3-6 7 0 5 5 9 11 9"></path>
+        <path d="M32 32c9 0 16 6 16 13 0 4-3 6-7 6-5 0-9-5-9-11"></path>
+        <path d="M32 32c9 0 16-6 16-13 0-4-3-6-7-6-5 0-9 5-9 11"></path>
+      </g>
+      <circle cx="32" cy="32" r="6" fill="currentColor"></circle>
+    </svg>
+  </div>
   <div id="bootMsg" style="font-size:17px;font-weight:700">正在打开…</div>
 </div>
 
@@ -102,7 +123,10 @@
     return json;
   }
 
-  var GLYPHS = ['🌸', '🌞', '🎒', '🪥', '🧸', '🚿', '🍚', '👟', '📚', '🧹', '🌙', '⚽'];
+  var ICONS = ['assets/weekly/icon-brush.png', 'assets/weekly/icon-bag.png',
+    'assets/weekly/icon-water.png', 'assets/weekly/icon-moon.png',
+    'assets/weekly/icon-ball.png', 'assets/weekly/icon-book.png',
+    'assets/weekly/icon-heart.png', 'assets/weekly/icon-plant.png'];
 
   async function boot() {
     // 1) 还没换过会话：地址带一次性长链接 → 换回孩子会话
@@ -135,8 +159,9 @@
       wrap.innerHTML = '<div class="kid-empty">还没有可以亮的花</div>';
     } else {
       wrap.innerHTML = data.flowers.map(function (f, i) {
+        var ic = ICONS[i % ICONS.length];
         return '<button type="button" class="kid-flower' + (f.done ? ' lit' : '') + '" data-id="' + f.wish_id + '">' +
-          '<span class="glyph">' + GLYPHS[i % GLYPHS.length] + '</span>' +
+          '<span class="glyph"><img src="' + ic + '" alt="" loading="lazy"></span>' +
           '<span class="lbl">' + esc(f.title) + '</span></button>';
       }).join('');
       Array.prototype.forEach.call(document.querySelectorAll('.kid-flower'), function (el) {
@@ -178,6 +203,8 @@
       var r = await call('kid_redeem', { gift_id: parseInt(el.dataset.id, 10) });
       document.getElementById('points').textContent = r.current_points;
       say('换好啦：' + r.redeemed_gift.name, true);
+      // 点数变了，「换得起 / 还差几颗」要跟着重算
+      await load();
     } catch (e) {
       say(e.message || '没换成', false);
     }

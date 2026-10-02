@@ -1,5 +1,5 @@
 // Service Worker 文件
-const CACHE_NAME = 'star-rewards-v175';
+const CACHE_NAME = 'star-rewards-v176';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -20,6 +20,16 @@ const urlsToCache = [
   '/assets/weekly/icon-cat-resilience.png?v=1',
   '/assets/weekly/icon-cat-health.png?v=1',
   '/assets/weekly/icon-cat-aesthetics.png?v=1',
+  // 孩子端大花页的花卡贴纸（不用 emoji：刷牙 🪥 是 Unicode 13，老 Android 出豆腐块）
+  '/assets/weekly/icon-brush.png?v=1',
+  '/assets/weekly/icon-bag.png?v=1',
+  '/assets/weekly/icon-water.png?v=1',
+  '/assets/weekly/icon-moon.png?v=1',
+  '/assets/weekly/icon-ball.png?v=1',
+  '/assets/weekly/icon-book.png?v=1',
+  '/assets/weekly/icon-heart.png?v=1',
+  '/assets/weekly/icon-plant.png?v=1',
+  '/manifest-kid.json',
   '/login.html',
   '/style.css?v=108',
   '/script.js?v=123',
