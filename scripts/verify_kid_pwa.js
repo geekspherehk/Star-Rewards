@@ -66,6 +66,32 @@ const bad = (m, x) => { fail++; console.log('  ✘ ' + m + (x ? ' → ' + x : ''
   }
 
   await page.screenshot({ path: require('path').join(__dirname, '..', 'shots', 'live-kid-pwa.png') });
+
+  // 预缓存完整性：cache.addAll 遇「重复 request」会整体 reject，
+  // 之前 /manifest-kid.json 写了两行，整个安装期 Promise 挂掉、旧缓存还不会被清。必须实证。
+  console.log('\n== B. 预缓存完整性（sw.js addAll）==');
+  const p2 = await browser.newPage();
+  await p2.goto(R + '/index.html', { waitUntil: 'load', timeout: 45000 });
+  await p2.evaluate(() => navigator.serviceWorker.ready.then(() => true)).catch(() => {});
+  let cache = null;
+  for (let i = 0; i < 12 && !cache; i++) {
+    cache = await p2.evaluate(async () => {
+      const here = (await caches.keys()).find(n => n === 'star-rewards-v177');
+      if (!here) return null;
+      const c = await caches.open(here);
+      const keys = (await c.keys()).map(r => new URL(r.url).pathname);
+      const need = ['/kid.html', '/manifest-kid.json', '/index.html', '/style.css',
+        '/script.js', '/assets/kid-icon-512.png', '/api/api-client.js', '/login.html'];
+      return { total: keys.length, missing: need.filter(n => keys.indexOf(n) < 0) };
+    });
+    if (!cache) await sleep(2000);
+  }
+  if (!cache) { bad('star-rewards-v177 缓存没建起来'); }
+  else {
+    cache.total >= 40 ? ok(`缓存已装 ${cache.total} 个条目`) : bad('缓存条目偏少', cache.total);
+    cache.missing.length === 0 ? ok('关键资源都在（kid.html / manifest / 图标 / api-client）') : bad('缓存缺资源', cache.missing.join(', '));
+  }
+  try { await p2.close(); } catch (e) {}
   await browser.close();
   console.log(`\n结果: ${pass} 通过 / ${fail} 失败`);
   process.exit(fail ? 1 : 0);
