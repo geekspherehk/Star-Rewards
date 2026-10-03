@@ -1,5 +1,5 @@
 // Service Worker 文件
-const CACHE_NAME = 'star-rewards-v177';
+const CACHE_NAME = 'star-rewards-v178';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -107,7 +107,10 @@ self.addEventListener('fetch', (event) => {
           } catch (e) { /* 缓存失败不影响页面本身 */ }
           return res;
         })
-        .catch(() => caches.match(req).then((r) => r || caches.match('/')))
+        // 离线兜底：先还自己，再还孩子端；只有孩子端也没缓存才退首页。
+        // 以前无脑兜 '/' —— 娃从桌面图标点开一断网就看到家长端登录页，家长以为「装坏了」。
+        .catch(() => caches.match(req)
+          .then((r) => r || caches.match('/kid.html') || caches.match('/')))
     );
     return;
   }

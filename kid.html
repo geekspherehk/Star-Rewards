@@ -10,6 +10,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="今天">
 <meta name="description" content="孩子自己按一下，亮一朵花。">
+<!-- 图标：PWA 装桌面走 manifest，但「Chrome 添加到主屏幕」的老路径和 iOS 只认下面这两个 link。
+     缺了它们 Chrome 会给一个默认小地球，家长在桌面根本认不出这是那个 app（2026-10-03 踩的） -->
+<link rel="icon" type="image/png" href="assets/kid-icon-192.png">
+<link rel="apple-touch-icon" href="assets/kid-icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="assets/kid-icon-512.png">
 <link rel="stylesheet" href="style.css?v=108">
 <style>
   /* 孩子端：只有「看得见 / 亮得了 / 换得出」。不催、不提醒、不留小红点。 */
