@@ -52,6 +52,12 @@
   .kid-go[hidden]{display:none}
   .kid-go .big svg{width:76px;height:76px;color:var(--accent,#F0A500)}
   .kid-note .mic{flex:none;display:flex;color:var(--brand,#4C6FFF)}
+  /* 装桌面图标的引导：只在第一次拿链接那一下出现，装好自动收掉 */
+  .kid-help{margin-top:10px;padding:12px 14px;border:2px dashed var(--border,#E4E7EC);border-radius:18px;background:var(--surface,#fff);text-align:left}
+  .kid-help h4{margin:0 0 6px;font-size:14px;font-weight:800}
+  .kid-help ol{margin:0;padding-left:18px;font-size:13px;line-height:1.65;opacity:.8}
+  .kid-install{width:auto;margin-top:10px;padding:9px 18px;border:0;border-radius:14px;background:var(--brand,#4C6FFF);color:#fff;font-weight:800;font-size:15px}
+  .kid-install[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -73,6 +79,15 @@
     <button id="sayBtn" type="button">存下</button>
   </div>
   <div id="msg" class="kid-msg"></div>
+  <div id="kidHelp" class="kid-help" hidden>
+    <h4>把这个变成平板桌面上的一个图标</h4>
+    <button type="button" class="kid-install" id="kidInstall" hidden>装到桌面</button>
+    <ol id="kidHelpSteps">
+      <li>点右上角 ⋮ →「安装应用」；装完 ⋮ →「应用」里能看到「今天」，就说明装上了</li>
+      <li>桌面还找不到：长按桌面空白处 →「添加到主屏幕」，补一个短图标（这条一定有）</li>
+      <li>小米 / 华为 / OPPO：图标可能先落在「应用抽屉」，上滑翻一翻；再不行就用手机<b>自带浏览器</b>打开这个链接 → 菜单 →「添加到桌面」</li>
+    </ol>
+  </div>
 </div>
 
 <div id="boot" class="kid-go">
@@ -129,6 +144,11 @@
     'assets/weekly/icon-heart.png', 'assets/weekly/icon-plant.png'];
 
   async function boot() {
+    // 还没换过会话 + 地址带着一次性长链接 = 家长正在娃平板上第一次打开，
+    // 这时才该教怎么装图标；之后娃自己按，不摆说明书。
+    if (params.get('k') && !isRunningAsApp()) {
+      if (help) help.hidden = false;
+    }
     // 1) 还没换过会话：地址带一次性长链接 → 换回孩子会话
     if (!token) {
       var code = params.get('k') || '';
@@ -222,6 +242,43 @@
       say(e.message || '没存成', false);
     }
   });
+
+  // 装桌面图标：Chrome 会给 beforeinstallprompt，能直接一键装（比家长自己找菜单稳）。
+  // 「安装应用」点了却桌面上没有图标 → 是启动器的事，页面里给指路，不装糊涂。
+  var deferredPrompt = null;
+  var help = document.getElementById('kidHelp');
+  var installBtn = document.getElementById('kidInstall');
+
+  // 从桌面图标进来 → standalone；这时别再摆一张「怎么装」的卡给孩子看
+  function isRunningAsApp() {
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+    if (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) return true;
+    return !!navigator.standalone;
+  }
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (installBtn) installBtn.hidden = false;
+  });
+  window.addEventListener('appinstalled', function () {
+    deferredPrompt = null;
+    if (installBtn) installBtn.hidden = true;
+    var steps = document.getElementById('kidHelpSteps');
+    if (steps) steps.innerHTML = '<li>装好啦。桌面上会有个「今天」的图标，点开就是全屏的花卡。</li>';
+  });
+  if (installBtn) {
+    installBtn.addEventListener('click', async function () {
+      if (!deferredPrompt) return;
+      installBtn.hidden = true;
+      deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      if (choice && choice.outcome !== 'accepted') {
+        installBtn.hidden = false; // 娃/家长取消了，还在这一页，别装作没发生
+      }
+    });
+  }
 
   // 装 PWA 的前置：安卓 Chrome 只认「有 manifest + 有 Service Worker」的站点，
   // 脚本地址必须与 pwa-manager.js 里的完全一致，否则同一 scope 会挂两个 SW 抢 fetch。
