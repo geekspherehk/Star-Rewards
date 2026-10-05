@@ -3826,9 +3826,7 @@ const V2_BADGE_SVGS = {
 
 
 let v2Data = null;          // get_v2_overview 缓存
-let pendingFocus = null;    // 用户点选花瓣后、尚未「确认设为本月主打」前的待定焦点
 let v2PrevUnlocked = null;  // 徽章解锁状态（用于「新徽章」提示）
-let v2CoveredCount = 0;
 
 // 注：CSS 变量名使用连字符（--cat-self-drive），而 DB 里的 category code 用下划线（self_drive），
 // 因此在生成 var() 引用时把下划线转成连字符，避免 var(--cat-self_drive) 失效导致色块变透明
@@ -3889,11 +3887,7 @@ async function loadV2Data(forceCheckins = false) {
 function renderV2All() {
     if (!v2Data) return;
     renderQuickBehaviorCat();
-    renderV2Flower();
-    renderV2Legend();
-    renderFocusConfirmBar();
-    renderV2Suggestions();
-    renderHomeFocusBanner();
+    renderQuickBehaviorSuggest();
     renderV2Wishes();
     renderV2WishTemplates();
     renderV2Badges();
@@ -3912,9 +3906,54 @@ function renderQuickBehaviorCat() {
     if (!sel) return;
     if (sel.children.length) return;  // 只渲染一次
     sel.innerHTML = V2_CATS.map(c =>
-        '<option value="' + c.code + '">' + escapeHtml(catShort(c.code)) + ' · ' + escapeHtml(t('v2.badge.' + c.code)) + '</option>'
+        '<option value="' + c.code + '"' + (c.code === 'self_drive' ? ' selected' : '') + '>' + escapeHtml(catShort(c.code)) + ' · ' + escapeHtml(t('v2.badge.' + c.code)) + '</option>'
     ).join('');
+    // 方向只留在 Submit 的隐含字段里，界面上看不见（用户不需要懂 8 个方向，点推荐即可）
 }
+// ── 「记一笔」下面的一行推荐：挑孩子最近练得少的方向，给 3 件今天就能记的事。
+//    推荐口径全在代码里跑，界面上只出现「今天可以记这些」+ 三个行为名，不出现任何方向/素养字样。
+function renderQuickBehaviorSuggest() {
+    const el = document.getElementById('qb-suggest');
+    if (!el || !v2Data) return;
+    const lang = (typeof translations !== 'undefined') ? translations[currentLanguage] : null;
+    const pool = (lang && lang.goalTemplates && lang.goalTemplates.list) || {};
+    const covMap = v2Data.coverage || {};
+    const picks = [];
+    const seen = {};
+    const weak = V2_CATS.map(c => {
+        const cov = covMap[c.code] || {};
+        return { code: c.code, score: (cov.behaviors || 0) + (cov.wishes_achieved || 0) * 3 };
+    }).sort((a, b) => a.score - b.score);
+    // 先挑最近练得少的方向，再补满；每条都记住它背后的方向（内部字段，界面不出现）
+    let codeOf = {};
+    weak.concat(V2_CATS).forEach(w => ((pool[w.code] || []).forEach(g => {
+        if (picks.length >= 3 || seen[g.name]) return;
+        seen[g.name] = 1;
+        codeOf[g.name] = w.code;
+        picks.push(g);
+    })));
+    if (!picks.length) { el.innerHTML = ''; el._picks = null; return; }
+    el._picks = picks.map(g => ({ name: g.name || '', code: codeOf[g.name] || 'self_drive' }));
+    el._names = el._picks.map(p => p.name);
+    let html = '<span class="qbs-label">' + escapeHtml(t('home.qbSuggest')) + '</span><div class="qbs-list">';
+    picks.forEach((g, i) => {
+        html += '<button type="button" class="qbs-chip" onclick="fillQuickBehavior(' + i + ')">' + escapeHtml(g.name || '') + '</button>';
+    });
+    el.innerHTML = html + '</div>';
+}
+
+function fillQuickBehavior(idx) {
+    const descEl = document.getElementById('qb-desc');
+    const holder = document.getElementById('qb-suggest');
+    if (!descEl || !holder || !Array.isArray(holder._names)) return;
+    const pick = holder._picks[idx];
+    if (!pick || !pick.name) return;
+    descEl.value = pick.name;
+    const catEl = document.getElementById('qb-cat');
+    if (catEl) catEl.value = pick.code;   // 方向只写进隐藏字段，界面不显示
+    descEl.focus();
+}
+
 function qbStep(delta) {
     const el = document.getElementById('qb-pts');
     if (!el) return;
@@ -4002,13 +4041,11 @@ function renderAchStats() {
     const checkinDays = wishes.reduce((s, w) => s + (w.streak || 0), 0);
     const badges = v2Data.badges || {};
     const badgeCount = Object.values(badges).filter(b => b && b.unlocked).length;
-    const cov = Object.values((v2Data.coverage || {})).filter(c => c && c.active).length;
     const unit = getLanguage() === 'en' ? ' goals' : ' 个目标';
     el.innerHTML =
         '<div class="ach-stat"><span class="as-val">' + achievedGoals + '</span><span class="as-label">' + escapeHtml(t('ach.statGoals')) + '</span></div>' +
         '<div class="ach-stat"><span class="as-val">' + checkinDays + '</span><span class="as-label">' + escapeHtml(t('ach.statCheckins')) + '</span></div>' +
-        '<div class="ach-stat"><span class="as-val">' + badgeCount + '/' + Object.keys(badges).length + '</span><span class="as-label">' + escapeHtml(t('ach.statBadges')) + '</span></div>' +
-        '<div class="ach-stat"><span class="as-val">' + cov + '/8</span><span class="as-label">' + escapeHtml(t('ach.statRose')) + '</span></div>';
+        '<div class="ach-stat"><span class="as-val">' + badgeCount + '/' + Object.keys(badges).length + '</span><span class="as-label">' + escapeHtml(t('ach.statBadges')) + '</span></div>';
     renderWeeklyReport();
 }
 
@@ -4038,253 +4075,33 @@ function renderWeeklyReport() {
         '<div class="ws-stat ws-stat--closest"><span class="ws-value">' + escapeHtml(monKey.slice(5)) + '~' + escapeHtml(sunKey.slice(5)) + '</span><span class="ws-label">' + escapeHtml(t('v2.weeklyRange')) + '</span></div>';
 }
 
-// ── 全人玫瑰：8 瓣覆盖 + 全能小星星进度 ──
-// ── 全人玫瑰：8 瓣圆形环（对应八瓣玫瑰理论），中心显示覆盖数 ──
-// 素养积累分：行为记录 ×1 + 达成愿望 ×3（持续积累，不是一次性点亮）
-function v2CatScore(cov) {
-    if (!cov) return 0;
-    return (cov.behaviors || 0) + (cov.wishes_achieved || 0) * 3;
-}
-// 水平分级：0 未开始 / 1 萌芽 / 2 成长 / 3 绽放
-function v2CatLevel(cov) {
-    const s = v2CatScore(cov);
-    if (s <= 0) return 0;
-    if (s <= 3) return 1;
-    if (s <= 7) return 2;
-    return 3;
-}
-
-// 单瓣水滴形（尖端贴近花心 100,90，向外延伸至 y≈8），径向排列成玫瑰
-// 参数化花瓣（局部坐标：基部 (0,2)，尖端 (0,-len)）——花瓣长度直接编码该素养的成长量
-function v2PetalPath(len, w) {
-    const b = Math.max(6, w);
-    return 'M 0 2 C ' + (-b) + ' ' + (-len * 0.28).toFixed(1) + ', ' + (-b) + ' ' + (-len * 0.78).toFixed(1) + ', 0 ' + (-len).toFixed(1) +
-           ' C ' + b + ' ' + (-len * 0.78).toFixed(1) + ', ' + b + ' ' + (-len * 0.28).toFixed(1) + ', 0 2 Z';
-}
-
-function renderV2Flower() {
-    const el = document.getElementById('v2-flower');
-    if (!el || !v2Data) return;
-    const covMap = v2Data.coverage || {};
-    v2CoveredCount = 0;
-    const N = V2_CATS.length;                 // 8
-    const cx = 125, cy = 125;                 // viewBox -48..298 横向加宽，左右长标签不裁切
-    const LMIN = 30, LMAX = 88;               // 花瓣长度范围（0 分也有小芽，满分接近标签圈）
-    const raw = V2_CATS.map(c => v2CatScore(covMap[c.code] || {}));
-    const maxRaw = Math.max(8, ...raw);
-    const vals = raw.map(x => Math.round(x / maxRaw * 100));
-
-    // 真·玫瑰图：每瓣长度 = 该素养成长量；颜色 = 素养专属色；无雷达网格/轴线/圆点
-    let petals = '';
-    V2_CATS.forEach((c, i) => {
-        const ang = i * 45;
-        const cov = covMap[c.code] || { behaviors: 0, wishes_achieved: 0 };
-        const score = v2CatScore(cov);
-        if (score > 0) v2CoveredCount++;
-        const val = vals[i];
-        const len = LMIN + (LMAX - LMIN) * val / 100;
-        const w = 13 + 17 * val / 100;
-        const labelRot = ang <= 180 ? ang : ang - 360;   // 标签始终正立
-        const isFocus = (v2Data && v2Data.focus === c.code);
-        const isPending = (pendingFocus === c.code);
-        const tip = -(len + 7);
-        const focusMark = isFocus
-            ? '<g class="petal-focus-mark" transform="translate(0 ' + tip.toFixed(1) + ')">' +
-              '<circle r="10" class="petal-focus-ring"/>' +
-              '<path class="petal-focus-star" d="M0 -4.6 L1.16 -1.6 L4.38 -1.42 L1.87 0.6 L2.7 3.72 L0 1.96 L-2.7 3.72 L-1.87 0.6 L-4.38 -1.42 L-1.16 -1.6 Z"/>' +
-              '</g>'
-            : '';
-        const pendingMark = isPending
-            ? '<g transform="translate(0 ' + tip.toFixed(1) + ')"><circle r="10" class="petal-pending-ring"/></g>'
-            : '';
-        petals +=
-            '<g class="petal-g' + (isFocus ? ' is-focus' : '') + (isPending ? ' is-pending' : '') + '"' +
-                ' style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '"' +
-                ' data-code="' + c.code + '" onclick="v2SelectPetal(\'' + c.code + '\')"' +
-                ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();v2SelectPetal(\'' + c.code + '\');}"' +
-                ' role="button" tabindex="0"' +
-                ' transform="translate(' + cx + ' ' + cy + ') rotate(' + ang + ')"' +
-                ' title="' + escapeHtml(catShort(c.code)) + ' · ' + escapeHtml(t('v2.badge.' + c.code)) + (isFocus ? ' · ' + escapeHtml(t('v2.focusLabel')) : '') + '">' +
-                '<path class="petal-bg" d="' + v2PetalPath(len, w) + '"/>' +
-                pendingMark +
-                focusMark +
-            '</g>' +
-            '<g class="petal-label" style="--pc:' + v2CatVar(c.code) + '" transform="rotate(' + ang + ' ' + cx + ' ' + cy + ') translate(' + cx + ' ' + (cy - 104) + ') rotate(' + (-labelRot) + ')">' +
-                '<text class="petal-label-txt" text-anchor="middle" dy="4">' + escapeHtml(catShort(c.code) + ' · ' + t('v2.badge.' + c.code)) + '</text>' +
-            '</g>';
-    });
-
-    el.innerHTML =
-        '<svg class="v2-flower-svg" viewBox="-48 0 346 250" role="img" aria-label="' + escapeHtml(t('v2.flowerTitle')) + '">' +
-            '<circle class="rose-halo" cx="' + cx + '" cy="' + cy + '" r="94"/>' +
-            '<g class="rose-petals">' + petals + '</g>' +
-            '<g class="flower-center">' +
-                '<circle cx="' + cx + '" cy="' + cy + '" r="17"/>' +
-                '<text x="' + cx + '" y="' + cy + '" text-anchor="middle" dy="4">' + v2CoveredCount + '/8</text>' +
-            '</g>' +
-        '</svg>';
-
-    const fill = document.getElementById('v2-ar-fill');
-    if (fill) fill.style.width = (v2CoveredCount / 8 * 100) + '%';
-    const cnt = document.getElementById('v2-ar-count');
-    if (cnt) cnt.textContent = v2CoveredCount + '/8';
-
-    // 强弱总结（最强 3 + 最弱 2）
-    const ranked = V2_CATS.map((c, i) => ({ code: c.code, short: catShort(c.code), v: vals[i] }))
-        .sort((a, b) => b.v - a.v);
-    const top = ranked.slice(0, 3).filter(x => x.v > 0);
-    const bottom = ranked.slice(-2).filter(x => x.v < 100);
-    const sumEl = document.getElementById('v2-flower-summary');
-    if (sumEl) {
-        if (!top.length) {
-            sumEl.innerHTML = '<div class="sum-card sum-card--empty">' + escapeHtml(t('v2.flowerEmpty')) + '</div>';
-        } else {
-            const nameSpans = list => list.map(x =>
-                '<b class="sum-name" style="color:' + v2CatVar(x.code) + '">' + escapeHtml(x.short) + '</b>'
-            ).join('<span class="sum-sep">' + (getLanguage() === 'en' ? ', ' : '、') + '</span>');
-            sumEl.innerHTML =
-                '<div class="sum-card sum-card--strong"><span class="sum-kicker">' + escapeHtml(t('v2.sumStrong')) + '</span><span class="sum-names">' + nameSpans(top) + '</span></div>' +
-                (bottom.length ? '<div class="sum-card sum-card--weak"><span class="sum-kicker">' + escapeHtml(t('v2.sumWeak')) + '</span><span class="sum-names">' + nameSpans(bottom) + '</span></div>' : '');
-        }
-    }
-}
-
-// ── 素养图鉴（JS 渲染，名称与花瓣标签一致：二字素养名 + 小名） ──
-function renderV2Legend() {
-    const el = document.getElementById('v2-legend');
-    if (!el) return;
-    el.innerHTML = V2_CATS.map(c =>
-        '<div class="v2-legend-row" style="--pc:' + v2CatVar(c.code) + ';--pc-soft:' + v2CatSoftVar(c.code) + '">' +
-            '<span class="v2-legend-dot"></span>' +
-            '<span class="v2-legend-name"><b>' + escapeHtml(catShort(c.code)) + '</b> ' + escapeHtml(t('v2.badge.' + c.code)) + '</span>' +
-            '<span class="v2-legend-desc">' + escapeHtml(t('v2.badgeDesc.' + c.code)) + '</span>' +
-        '</div>'
-    ).join('');
-}
-
-async function v2SetFocus(code) {
-    try {
-        await api.setMonthlyFocus(code);
-        if (v2Data) v2Data.focus = code;
-        pendingFocus = null;
-        renderV2Flower();
-        renderV2Suggestions();
-        renderHomeFocusBanner();
-        renderFocusConfirmBar();
-        renderV2WishTemplates();
-        showTemporaryMessage(t('v2.focusSetDone'), 'success');
-    } catch (e) {
-        showTemporaryMessage((e && (e.error || e.message)) || t('common.error'), 'error');
-    }
-}
-
-// ── 点选花瓣 → 待定（不直接设定），下方出现「设为本月主打」确认条 ──
-function v2SelectPetal(code) {
-    if (!v2Data) return;
-    pendingFocus = code;
-    renderV2Flower();
-    renderFocusConfirmBar();
-}
-
-function v2ConfirmFocus() {
-    if (!pendingFocus) return;
-    v2SetFocus(pendingFocus);
-}
-
-function v2CancelFocus() {
-    pendingFocus = null;
-    renderV2Flower();
-    renderFocusConfirmBar();
-}
-
-// 花朵下方的确认条：显示当前待定选择，需用户点「设为本月主打」才生效
-function renderFocusConfirmBar() {
-    const el = document.getElementById('focus-confirm-bar');
-    if (!el) return;
-    if (!pendingFocus) { el.style.display = 'none'; el.innerHTML = ''; return; }
-    const c = V2_CATS.find(x => x.code === pendingFocus);
-    if (!c) { el.style.display = 'none'; el.innerHTML = ''; return; }
-    const isCurrent = v2Data && v2Data.focus === pendingFocus;
-    el.style.display = '';
-    el.style.setProperty('--pc', v2CatVar(pendingFocus));
-    el.innerHTML =
-        '<span class="fcb-label">' + escapeHtml(t('v2.focusPending', { name: t('v2.badge.' + c.code) })) + '</span>' +
-        (isCurrent
-            ? '<span class="fcb-current">' + escapeHtml(t('v2.focusAlready')) + '</span>'
-            : '<button type="button" class="fcb-btn" onclick="v2ConfirmFocus()">' + escapeHtml(t('v2.focusSet')) + '</button>') +
-        '<button type="button" class="fcb-cancel" onclick="v2CancelFocus()">' + escapeHtml(t('common.cancel')) + '</button>';
-}
-
-// ── 右侧成长建议：只保留「本月主打」横幅（跨页回声）；副推列表已移除，
-//    改由成长之花花瓣点选设定，避免「本月主打下面列一堆」的啰嗦感 ──
-function renderV2Suggestions() {
-    const el = document.getElementById('v2-suggest');
-    if (!el || !v2Data) return;
-    try {
-        const focusCode = v2Data.focus;
-        const c = focusCode ? V2_CATS.find(x => x.code === focusCode) : null;
-        if (!c) {
-            el.innerHTML =
-                '<div class="v2-suggest-card is-compact">' +
-                    '<div class="v2-suggest-banner" style="--pc:' + v2CatVar('planning') + '">' +
-                        '<span class="v2-sb-ico">🎯</span>' +
-                        '<span class="v2-sb-label">' + escapeHtml(t('v2.focusLabel')) + '</span>' +
-                        '<span class="v2-sb-none">' + escapeHtml(t('v2.focusNone')) + '</span>' +
-                    '</div>' +
-                '</div>';
-            return;
-        }
-        el.innerHTML =
-            '<div class="v2-suggest-card is-compact has-focus">' +
-                '<div class="v2-suggest-banner" style="--pc:' + v2CatVar(c.code) + '">' +
-                    '<span class="v2-sb-ico">🎯</span>' +
-                    '<span class="v2-sb-label">' + escapeHtml(t('v2.focusLabel')) + '</span>' +
-                    '<span class="v2-sb-name">' + escapeHtml(catShort(c.code) + ' · ' + t('v2.badge.' + c.code)) + '</span>' +
-                '</div>' +
-                '<p class="v2-suggest-hint">' + escapeHtml(t('v2.focusChangeHint')) + '</p>' +
-            '</div>';
-    } catch (e) {
-        console.warn('renderV2Suggestions 渲染失败:', e);
-        el.innerHTML = '';
-    }
-}
-
-// ── 首页「本月主打」小条：让 focus 在首页也可见，形成跨页回声 ──
-function renderHomeFocusBanner() {
-    const el = document.getElementById('home-focus-banner');
-    if (!el) return;
-    if (!v2Data || !v2Data.focus) { el.style.display = 'none'; return; }
-    const c = V2_CATS.find(x => x.code === v2Data.focus);
-    if (!c) { el.style.display = 'none'; return; }
-    el.style.display = '';
-    el.style.setProperty('--pc', v2CatVar(c.code));
-    el.innerHTML =
-        '<span class="hfb-ico">🎯</span>' +
-        '<span class="hfb-label">' + escapeHtml(t('v2.focusLabel')) + '</span>' +
-        '<span class="hfb-name">' + escapeHtml(t('v2.badge.' + c.code)) + '</span>' +
-        '<button type="button" class="hfb-go" onclick="showModule(\'achievements-module\')">' + escapeHtml(t('v2.focusGo')) + '</button>';
-}
-
-// ── 成长目标：按本月主打推荐目标模板，点一下填好表单 ──
+// ── 成长目标：推荐目标模板，点一下填好表单 ──
+// 推荐口径（哪个方向多练一点）留在代码里算，界面只给「推荐目标」三个可点的名字
 function renderV2WishTemplates() {
     const el = document.getElementById('v2-wish-templates');
     if (!el) return;
-    if (!v2Data || !v2Data.focus) {
-        el.innerHTML = '<p class="v2-wt-hint">' + escapeHtml(t('goalTemplates.noFocus')) + '</p>';
-        return;
-    }
-    const focusCode = v2Data.focus;
-    const focusName = t('v2.badge.' + focusCode);
-    const list = ((typeof translations !== 'undefined') && translations[currentLanguage]
-        && translations[currentLanguage].goalTemplates
-        && translations[currentLanguage].goalTemplates.list
-        && translations[currentLanguage].goalTemplates.list[focusCode]) || [];
+    if (!v2Data) { el.innerHTML = ''; return; }
+    const lang = (typeof translations !== 'undefined') ? translations[currentLanguage] : null;
+    const pool = (lang && lang.goalTemplates && lang.goalTemplates.list) || {};
+    // 方向强度：行为记录 ×1 + 达成愿望 ×3；挑最薄弱的 3 个方向（界面上不出现方向名）
+    const rank = V2_CATS.map(c => {
+        const cov = (v2Data.coverage || {})[c.code] || {};
+        return { code: c.code, score: (cov.behaviors || 0) + (cov.wishes_achieved || 0) * 3 };
+    }).sort((a, b) => a.score - b.score).slice(0, 3).map(x => x.code);
+    const seen = {};
+    const list = [];
+    const push = code => ((pool[code] || []).forEach(g => {
+        if (seen[g.name]) return;
+        seen[g.name] = 1;
+        if (list.length < 3) list.push(g);
+    }));
+    rank.forEach(push);
+    V2_CATS.forEach(c => push(c.code));   // 兜底：模板池里再补到 3 个
     if (!list.length) { el.innerHTML = ''; return; }
     let html =
         '<div class="v2-wt-head">' +
             '<span class="v2-wt-ico">💡</span>' +
             '<span class="v2-wt-title">' + escapeHtml(t('goalTemplates.title')) + '</span>' +
-            '<span class="v2-wt-cat" style="--pc:' + v2CatVar(focusCode) + '">' + escapeHtml(focusName) + '</span>' +
         '</div>' +
         '<p class="v2-wt-sub">' + escapeHtml(t('goalTemplates.hint')) + '</p>' +
         '<div class="v2-wt-list">';
@@ -4941,17 +4758,6 @@ function toggleV2Advanced() {
     const btn = document.getElementById('v2-adv-toggle');
     if (btn) btn.textContent = t(willOpen ? 'v2.advToggleHide' : 'v2.advToggle');
 }
-// 素养图鉴：8 大方向含义展开/收起（首页成长总览）
-function toggleV2Legend() {
-    const el = document.getElementById('v2-legend');
-    if (!el) return;
-    const willOpen = el.hasAttribute('hidden');
-    if (willOpen) el.removeAttribute('hidden');
-    else el.setAttribute('hidden', '');
-    const chev = document.getElementById('v2-legend-chev');
-    if (chev) chev.textContent = willOpen ? '▾' : '▸';
-}
-
 async function addV2Wish() {
     const titleEl = document.getElementById('v2-wish-name');
     const title = titleEl.value.trim();
