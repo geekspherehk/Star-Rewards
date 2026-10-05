@@ -218,7 +218,7 @@ const translations = {
             eduViewAllTitle: '育儿指南合集',
             eduViewAllSub: '6 篇方法论 · 免费模板',
             home: '首页',
-            homeDesc: '今日打卡 · 积分',
+            homeDesc: '一天一格，点亮成长',
             todayCheckin: '今日打卡',
             todayCheckinSub: '每天完成一个小目标 · 打卡一次 +5 分',
             setGoalCta: '去设置目标',
@@ -1043,7 +1043,7 @@ const translations = {
             suggestEmpty: '先记录几件小事，再生成专属建议'
         },
         weekly: {
-            module: '本月打卡',
+            module: '打卡',
             moduleDesc: '一天一格，点亮成长轨迹',
             title: '本月，{name} 要点亮 ✨',
             tasks: '成长愿望',
@@ -2135,7 +2135,7 @@ const translations = {
             suggestEmpty: 'Record a few small wins first to unlock tailored tips'
         },
         weekly: {
-            module: 'This Month',
+            module: 'Check-ins',
             moduleDesc: 'One square a day, light up the journey',
             title: 'This month, {name} will shine ✨',
             tasks: 'Goals',

@@ -3510,7 +3510,7 @@ function renderPushToggle() {
     const el = document.getElementById('push-toggle-row');
     if (!el) return;
     if (!pushSupported()) { el.style.display = 'none'; return; }
-    el.style.display = 'flex';
+    el.style.display = '';
     const label = document.getElementById('push-toggle-label');
     if (label) label.textContent = t(pushState() ? 'v2.pushOn' : 'v2.pushOff');
     const box = document.getElementById('push-toggle');
@@ -4806,7 +4806,10 @@ async function maybeShowStatsNav() {
             statsNavAllowed = false;
         }
     }
-    card.style.display = statsNavAllowed ? '' : 'none';
+    // 首页简化：看板入口只留在「更多」抽屉里（原导航卡不再占首页）
+    const hs = document.getElementById('hs-stats');
+    if (hs) hs.style.display = statsNavAllowed ? '' : 'none';
+    card.style.display = 'none';
     // 非站长：若当前正停在看板模块，退回首页，避免停留在无权限页面
     if (!statsNavAllowed) {
         const mod = document.getElementById('stats-module');
@@ -5775,4 +5778,96 @@ function downloadWeeklyBlankPoster() {
             setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
         }, 'image/png');
     });
+}
+
+/* ===== 首页简化（2026-10-05）：默认只显示打卡，其余收进「更多」抽屉 ===== */
+/* home-extra 区块靠 CSS 隐藏；这里只负责「谁把它打开」 */
+function showHomeExtra(id) {
+    var el = id ? document.getElementById(id) : null;
+    if (!el) return false;
+    el.classList.remove('home-extra');
+    el.style.display = '';
+    if (el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
+}
+function openHomeMore(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    var mask = document.getElementById('home-more-mask');
+    var sheet = document.getElementById('home-more-sheet');
+    if (!mask || !sheet) return;
+    mask.style.display = 'block';
+    sheet.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+function closeHomeMore() {
+    var mask = document.getElementById('home-more-mask');
+    var sheet = document.getElementById('home-more-sheet');
+    if (mask) mask.style.display = 'none';
+    if (sheet) sheet.style.display = 'none';
+    document.body.style.overflow = '';
+}
+function initHomeSimplify() {
+    var mask = document.getElementById('home-more-mask');
+    var sheet = document.getElementById('home-more-sheet');
+    var closeBtn = document.getElementById('hs-close');
+    if (mask) mask.onclick = closeHomeMore;
+    if (closeBtn) closeBtn.onclick = closeHomeMore;
+
+    if (sheet) {
+        sheet.addEventListener('click', function (e) {
+            var item = e.target.closest ? e.target.closest('.hs-item') : null;
+            if (!item) return;
+            closeHomeMore();
+            var mod = item.getAttribute('data-module');
+            if (mod) { showModule(mod); return; }
+            var act = item.getAttribute('data-act');
+            if (act === 'poster') { openPosterModal(); return; }
+            if (act === 'export') { exportData(); return; }
+            if (act === 'activation') {
+                showHomeExtra('activation-progress-bar');
+                showHomeExtra('activation-checklist');
+                return;
+            }
+            var tgt = item.getAttribute('data-target');
+            if (tgt) showHomeExtra(tgt);
+        });
+    }
+
+    var btnBehavior = document.getElementById('hq-behavior');
+    if (btnBehavior) {
+        btnBehavior.onclick = function () {
+            var card = document.getElementById('quick-behavior-card');
+            if (!card) return;
+            // 已经在展开：再点一次收回去（不显示时 CSS 收，显示时手动收）
+            if (!card.classList.contains('home-extra')) {
+                card.classList.add('home-extra');
+                card.style.display = 'none';
+                return;
+            }
+            card.classList.remove('home-extra');
+            card.style.display = '';
+            if (card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            var inp = document.getElementById('qb-desc');
+            if (inp) setTimeout(function () { try { inp.focus(); } catch (err) {} }, 320);
+        };
+    }
+
+    var btnReport = document.getElementById('hq-report');
+    if (btnReport) {
+        btnReport.onclick = function () {
+            showHomeExtra('report-section');
+            if (typeof loadReport === 'function') { try { loadReport(); } catch (err) {} }
+        };
+    }
+
+    var btnMore = document.getElementById('hq-more');
+    if (btnMore) btnMore.onclick = function (e) { openHomeMore(e); };
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeHomeMore();
+    });
+}
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initHomeSimplify);
+    else initHomeSimplify();
 }

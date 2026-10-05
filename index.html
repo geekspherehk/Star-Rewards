@@ -30,12 +30,12 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=108">
+    <link rel="stylesheet" href="style.css?v=109">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=33"></script>
     <!-- 多语言支持 -->
-    <script defer src="i18n.js?v=91"></script>
+    <script defer src="i18n.js?v=92"></script>
     <script defer src="utils.js?v=1"></script>
     <script defer src="pwa-manager.js?v=3"></script>
     <script defer src="themes.js?v=1"></script>
@@ -105,27 +105,32 @@
     <main class="container">
         <h1 class="sr-only">Star Rewards 儿童积分奖励系统</h1>
 
-        <!-- 功能模块导航（紧凑三入口） -->
+        <!-- 功能模块导航：只留「打卡」一个入口，其余收进「更多」（首页要一进来就能点亮格子） -->
         <div class="module-cards">
-            <div class="module-card active" onclick="showModule('points-module')">
+            <div class="module-card module-card--checkin active" onclick="showModule('points-module')">
                 <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
-                <h3 data-i18n="home.home">首页</h3>
-                <p data-i18n="home.homeDesc">今日打卡 · 积分</p>
+                <h3 data-i18n="weekly.module">打卡</h3>
+                <p data-i18n="home.homeDesc">一天一格，点亮成长</p>
                 <div class="module-stat" id="stat-points"></div>
             </div>
-            <div class="module-card" onclick="showModule('gifts-module')">
+            <div class="module-card module-card--more" onclick="openHomeMore(event)">
+                <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></span>
+                <h3>更多</h3>
+                <p>月报 · 目标 · 成就 · 设置</p>
+            </div>
+            <div class="module-card home-navcard" onclick="showModule('gifts-module')">
                 <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
                 <h3 data-i18n="goals.module">目标</h3>
                 <p data-i18n="goals.moduleDesc">成长目标 + 礼物兑换</p>
                 <div class="module-stat" id="stat-gifts"></div>
             </div>
-            <div class="module-card" onclick="showModule('achievements-module')">
+            <div class="module-card home-navcard" onclick="showModule('achievements-module')">
                 <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></span>
                 <h3 data-i18n="ach.module">成长成就</h3>
                 <p data-i18n="ach.moduleDesc">徽章 · 统计 · 故事</p>
                 <div class="module-stat" id="stat-ach"></div>
             </div>
-            <div class="module-card" id="stats-nav-card" style="display:none;" onclick="showModule('stats-module')">
+            <div class="module-card home-navcard" id="stats-nav-card" style="display:none;" onclick="showModule('stats-module')">
                 <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg></span>
                 <h3 data-i18n="home.statsTitle">成长数据看板</h3>
                 <p data-i18n="home.statsSub">站长视角 · 全站活跃与留存</p>
@@ -148,10 +153,10 @@
                 </div>
 
                 <!-- 首页「本月主打」小条：focus 在首页也可见，与成长总览呼应 -->
-                <div id="home-focus-banner" class="home-focus-banner" style="display:none;"></div>
+                <div id="home-focus-banner" class="home-focus-banner home-extra" style="display:none;"></div>
 
                 <!-- 激活进度条：首页 sticky 任务栏，未完成时跟随滚动，完成后消失（与下方清单联动） -->
-                <div id="activation-progress-bar" class="activation-progress-bar" style="display:none;" onclick="scrollToActivationChecklist()">
+                <div id="activation-progress-bar" class="activation-progress-bar home-extra" style="display:none;" onclick="scrollToActivationChecklist()">
                     <div class="apb-text">
                         <span class="apb-eyebrow" data-i18n="home.actProgressEyebrow">你的成长之旅</span>
                         <span class="apb-status"><b id="apb-done">0</b><span class="apb-sep">/</span><span class="apb-total">4</span><span class="apb-suffix" data-i18n="home.actProgressDoneSuffix">步已完成</span></span>
@@ -161,15 +166,60 @@
                 </div>
 
                 <!-- 激活清单：新用户首启引导，4 步点亮成长之旅 -->
-                <div id="activation-checklist" class="activation-checklist" style="display:none;"></div>
+                <div id="activation-checklist" class="activation-checklist home-extra" style="display:none;"></div>
 
                 <!-- 本周打卡：一周一格，点亮成长轨迹（周日起算，点格即可打卡/补卡）；同时是首页唯一的打卡入口 -->
+                <!-- 一进来先看到三个数，再点亮格子 -->
+                <div class="points-display" id="points-display">
+                    <div class="points-card">
+                        <div class="points-value" id="current-points">0</div>
+                        <div class="points-label" data-i18n="home.currentPoints">当前积分</div>
+                    </div>
+                    <div class="points-card">
+                        <div class="points-value" id="total-points">0</div>
+                        <div class="points-label" data-i18n="home.totalPoints">累计获得积分</div>
+                    </div>
+                    <div class="points-card streak-card">
+                        <div class="points-value" id="streak-count">0</div>
+                        <div class="points-label" data-i18n="home.streakDays">连续打卡天数</div>
+                    </div>
+                </div>
+
                 <section class="v2-section" id="weekly-section">
                     <div class="v2-section-head">
                         <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="10"/><line x1="15" y1="4" x2="15" y2="10"/><line x1="3" y1="16" x2="21" y2="16"/></svg><span data-i18n="weekly.module">本周打卡</span></h3>
                         <p class="v2-sub" id="weekly-range"></p>
                     </div>
-                    <div class="push-toggle-row" id="push-toggle-row" style="display:none;">
+                    <div class="weekly-legend" id="weekly-legend"></div>
+                    <div id="weekly-grid" class="month-cal"></div>
+                    <p class="weekly-empty" id="weekly-empty" style="display:none;"></p>
+                    <div class="weekly-foot">
+                        <button type="button" class="text-btn" onclick="openWeeklyPoster()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span data-i18n="weekly.exportPoster">导出本月海报</span></button>
+                    </div>
+                </section>
+
+                <!-- 首页只留三个出口：记一笔 / 看月报 / 更多；其余区块默认不渲染 -->
+                <div class="home-quick" id="home-quick">
+                    <button type="button" class="hq-btn" id="hq-behavior"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>记一笔</span></button>
+                    <button type="button" class="hq-btn" id="hq-report"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg><span>成长月报</span></button>
+                    <button type="button" class="hq-btn hq-btn--more" id="hq-more"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>更多</span></button>
+                </div>
+
+                <!-- 打卡提醒软引导（首次打卡后出现一次，可关闭）：留在本页流里，别浮在按钮上面 -->
+                <div class="push-invite home-extra" id="push-invite" style="display:none;">
+                    <div class="push-invite-text">
+                        <b id="push-invite-title"></b>
+                        <span id="push-invite-desc"></span>
+                    </div>
+                    <div class="push-invite-actions">
+                        <button type="button" class="primary-btn pi-on" id="push-invite-on"></button>
+                        <button type="button" class="ghost-btn pi-later" id="push-invite-later"></button>
+                    </div>
+                </div>
+
+                <!-- 打卡提醒：收进「更多」，默认不占首页 -->
+                <section class="v2-section home-extra" id="push-toggle-row" style="display:none;">
+                    <div class="push-toggle-row" >
                         <div class="push-info">
                             <span class="push-title"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span data-i18n="v2.pushTitle">打卡提醒</span></span>
                             <span class="push-sub" data-i18n="v2.pushSub">每天未打卡时推送提醒（iOS 需先安装到主屏幕）</span>
@@ -180,16 +230,10 @@
                         </label>
                         <span class="push-state-label" id="push-toggle-label"></span>
                     </div>
-                    <div class="weekly-legend" id="weekly-legend"></div>
-                    <div id="weekly-grid" class="month-cal"></div>
-                    <p class="weekly-empty" id="weekly-empty" style="display:none;"></p>
-                    <div class="weekly-foot">
-                        <button type="button" class="text-btn" onclick="openWeeklyPoster()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span data-i18n="weekly.exportPoster">导出本周海报</span></button>
-                    </div>
                 </section>
 
                 <!-- 成长月报：系统拿真实行为自己织，家长零记录（见 discussion.md 11.10） -->
-                <section class="v2-section" id="report-section">
+                <section class="v2-section home-extra" id="report-section" style="display:none;">
                     <div class="v2-section-head">
                         <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span>成长月报</span></h3>
                         <p class="v2-sub">这个月他自己按出来的，我不用记一句</p>
@@ -216,23 +260,8 @@
                     <p class="rp-empty" id="rp-empty" style="display:none;"></p>
                 </section>
 
-                <div class="points-display">
-                    <div class="points-card">
-                        <div class="points-value" id="current-points">0</div>
-                        <div class="points-label" data-i18n="home.currentPoints">当前积分</div>
-                    </div>
-                    <div class="points-card">
-                        <div class="points-value" id="total-points">0</div>
-                        <div class="points-label" data-i18n="home.totalPoints">累计获得积分</div>
-                    </div>
-                    <div class="points-card streak-card">
-                        <div class="points-value" id="streak-count">0</div>
-                        <div class="points-label" data-i18n="home.streakDays">连续打卡天数</div>
-                    </div>
-                </div>
-
                 <!-- 给娃装大花页：一次设置一个链接，之后娃自己按，家长退出日常操作（见 11.9） -->
-                <div class="v2-section" id="kid-setup-card">
+                <div class="v2-section home-extra" id="kid-setup-card" style="display:none;">
                     <div class="v2-section-head">
                         <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4.4 0 8-3.4 8-7.6C20 8.6 16.9 5.5 12 2 7.1 5.5 4 8.6 4 13.4 4 17.6 7.6 21 12 21z"/><circle cx="12" cy="13.5" r="3.2"/></svg><span>给娃装一个大花按钮</span></h3>
                         <p class="v2-sub">平板上多一个图标，他自己按；我回到「看」，不再天天记</p>
@@ -247,7 +276,7 @@
                 </div>
 
                 <!-- 行为记录：临时加分入口（紧跟打卡，扫一眼就能用） -->
-                <div class="v2-section" id="quick-behavior-card">
+                <div class="v2-section home-extra" id="quick-behavior-card" style="display:none;">
                     <div class="v2-section-head">
                         <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4 2 7-6.5-4-6.5 4 2-7L2 9h7z"/></svg><span data-i18n="home.recordBehavior">记录一次行为</span></h3>
                         <p class="v2-sub" data-i18n="home.recordBehaviorSub">孩子做了一件值得鼓励的事 · 立刻记一笔</p>
@@ -265,7 +294,7 @@
                 </div>
 
                     <!-- 教育专栏：家长可读的方法论 / 案例文章 -->
-                <section class="edu-column" id="edu-column">
+                <section class="edu-column home-extra" id="edu-column" style="display:none;">
                     <div class="v2-section-head">
                         <h3 class="section-title section-title--icon"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span data-i18n="home.eduColumnTitle">教育专栏</span></h3>
                         <p class="v2-sub" data-i18n="home.eduColumnSub">育儿方法论 · 真实案例 · 每天 5 分钟</p>
@@ -273,16 +302,12 @@
                     <div class="edu-cards" id="edu-cards"><!-- renderEduColumn() 填充 --></div>
                 </section>
 
-                <div class="reminder-bar" id="reminder-bar">
+                <div class="reminder-bar home-extra" id="reminder-bar" style="display:none;">
                     <span class="reminder-label"><svg class="reminder-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span data-i18n="home.reminderLabel">每日打卡提醒</span></span>
                     <input type="time" id="reminder-time" value="19:00">
                     <button type="button" id="reminder-toggle" class="reminder-toggle" onclick="toggleReminder()"><span data-i18n="home.reminderEnable">开启提醒</span></button>
                 </div>
 
-                <div class="export-bar">
-                    <button type="button" class="poster-btn" onclick="openPosterModal()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span data-i18n="home.sharePoster">分享海报</span></button>
-                    <button type="button" class="export-btn" onclick="exportData()"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span data-i18n="home.exportData">导出数据</span></button>
-                </div>
             </div>
 
             <!-- 目标模块：成长目标（设置/打卡/撤卡）+ 奖励目标（兑换愿望） -->
@@ -586,7 +611,7 @@
         }
     </script>
     <script defer src="qrcode-generator.js?v=1"></script>
-    <script defer src="script.js?v=123"></script>
+    <script defer src="script.js?v=124"></script>
     <script>
         // 确保script.js加载完成后再执行初始化
         window.addEventListener('load', function() {
@@ -801,17 +826,30 @@
         </div>
     </div>
 
-    <!-- 打卡提醒软引导（首次打卡后出现一次，可关闭） -->
-    <div id="push-invite" class="push-invite" style="display:none;">
-        <div class="push-invite-text">
-            <b id="push-invite-title"></b>
-            <span id="push-invite-desc"></span>
+    <!-- 更多：首页之外的东西都收在这里，保持一进来就能点亮格子 -->
+    <div id="home-more-mask" class="home-sheet-mask" style="display:none;"></div>
+    <div id="home-more-sheet" class="home-sheet" style="display:none;" role="dialog" aria-label="更多">
+        <span class="hs-grip"></span>
+        <div class="hs-head">
+            <b>更多</b>
+            <button type="button" class="hs-close" id="hs-close">收起</button>
         </div>
-        <div class="push-invite-actions">
-            <button type="button" class="primary-btn pi-on" id="push-invite-on"></button>
-            <button type="button" class="ghost-btn pi-later" id="push-invite-later"></button>
+        <div class="hs-list">
+            <button type="button" class="hs-item" data-target="report-section"><b>成长月报</b><span>这个月他自己按出来的</span></button>
+            <button type="button" class="hs-item" data-target="quick-behavior-card"><b>记一笔</b><span>临时加一次行为</span></button>
+            <button type="button" class="hs-item" data-target="push-toggle-row"><b>打卡提醒</b><span>没打卡时推一下</span></button>
+            <button type="button" class="hs-item" data-target="kid-setup-card"><b>给娃装大花</b><span>孩子自己按的那个入口</span></button>
+            <button type="button" class="hs-item" data-target="reminder-bar"><b>每日提醒时间</b><span>改成几点提醒</span></button>
+            <button type="button" class="hs-item" data-target="edu-column"><b>教育专栏</b><span>育儿方法与真实案例</span></button>
+            <button type="button" class="hs-item" data-act="poster"><b>分享海报</b><span>把这一页做成图</span></button>
+            <button type="button" class="hs-item" data-act="export"><b>导出数据</b><span>把记录导成文件</span></button>
+            <button type="button" class="hs-item" data-module="gifts-module"><b>目标</b><span>成长目标 + 礼物兑换</span></button>
+            <button type="button" class="hs-item" data-module="achievements-module"><b>成长成就</b><span>徽章 · 统计 · 故事</span></button>
+            <button type="button" class="hs-item" data-act="activation"><b>新手激活</b><span>4 步把旅程点亮</span></button>
+            <button type="button" class="hs-item" data-module="stats-module" id="hs-stats"><b>成长数据看板</b><span>全站活跃与留存</span></button>
         </div>
     </div>
+
 
     <!-- 首次登录引导弹窗 -->
     <div id="onboarding-modal" class="modal-overlay onboarding-modal" style="display:none;">
