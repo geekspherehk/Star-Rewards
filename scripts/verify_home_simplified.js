@@ -76,7 +76,9 @@ async function setupDemo() {
       localStorage.setItem('user_email', em);
     } catch (e) {}
   }, demo.token, demo.userId, demo.email);
-  await page.goto(R + '/index.html', { waitUntil: 'networkidle2', timeout: 45000 });
+  // 2026-10-06 起已登录访问 /index.html 会默认跳大花页（kid.html），
+  // 验收管理端必须显式带 ?manage=1 才停在这页
+  await page.goto(R + '/index.html?manage=1', { waitUntil: 'networkidle2', timeout: 45000 });
   await sleep(2000);
 
   // 首启引导是全屏遮罩，会挡住真实点击

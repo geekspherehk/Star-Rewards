@@ -161,7 +161,12 @@ function kidTokenVersion($pdo, $userId) {
     return $row ? (int)$row['kid_token_version'] : null;
 }
 // 解析 kid token 并作废旧票校验；返回 ['user_id'=>..,'profile_id'=>..]
-function requireKid($pdo) {
+// 2026-10-06 起：大花页是「所有人的首页」，家长用自己的登录 token 也进来按花，
+// 所以这里除 kid token 外也放行家长 token —— 但只能操作自己家庭的数据（family_id 由
+// token 里的 user_id 反查），权限并不比家长在 index.html 上多一分。
+// kid 白名单之外的 action 仍然 403：那条限制只针对 kid token（见 dispatch 顶部），
+// 家长走 getUserId 常规路径，不受影响。
+function requireKid($pdo, $data = []) {
     $headers = function_exists('getallheaders') ? getallheaders() : [];
     $authHeader = '';
     foreach ($headers as $key => $value) {
@@ -170,9 +175,25 @@ function requireKid($pdo) {
     if (strpos($authHeader, 'Bearer ') !== 0) sendError('Unauthorized', 401);
     $payload = verifyToken(substr($authHeader, 7));
     if (!$payload) sendError('Invalid or expired token', 401);
-    if (empty($payload['kid'])) sendError('Not a kid token', 403);
 
-    $userId = (int)$payload['user_id'];
+    $userId = (int)($payload['user_id'] ?? 0);
+    if ($userId <= 0) sendError('Not a kid token', 403);
+
+    if (empty($payload['kid'])) {
+        // 家长本人：档案按「当前选中的孩子」解析，多孩家庭跟家长端看到的一致
+        $familyId = getFamilyIdOfUser($pdo, $userId);
+        if (!$familyId) sendError('Family not found', 403);
+        $profileId = resolveProfileId($pdo, $familyId, $userId, is_array($data) ? $data : []);
+        if (!$profileId) sendError('Profile not found', 404);
+        return [
+            'user_id' => $userId,
+            'profile_id' => (int)$profileId,
+            'family_id' => (int)$familyId,
+            'kid_token_version' => null,
+            'as_parent' => true,
+        ];
+    }
+
     $ver = kidTokenVersion($pdo, $userId);
     if ($ver === null) sendError('Account not found', 403);
     // 家长点「重新生成链接」→ version+1 → 旧平板当场失效
@@ -183,7 +204,7 @@ function requireKid($pdo) {
     $stmt->execute([$profileId, $userId]);
     $profile = $stmt->fetch();
     if (!$profile) sendError('Profile not found', 404);
-    return ['user_id' => $userId, 'profile_id' => $profileId, 'family_id' => (int)$profile['family_id'], 'kid_token_version' => $ver];
+    return ['user_id' => $userId, 'profile_id' => $profileId, 'family_id' => (int)$profile['family_id'], 'kid_token_version' => $ver, 'as_parent' => false];
 }
 
 function getRequestData() {
@@ -2826,7 +2847,7 @@ function handleRedeemKidLink($pdo, $data) {
 
 // 娃的"今天"：今日可打卡的花、已亮没亮、还差几颗、能换什么
 function handleKidStatus($pdo, $data) {
-    $kid = requireKid($pdo);
+    $kid = requireKid($pdo, $data);
     $today = date('Y-m-d');
     try {
         $stmt = $pdo->prepare('SELECT current_points, total_points, name FROM profiles WHERE id = ? LIMIT 1');
@@ -2874,20 +2895,20 @@ function handleKidStatus($pdo, $data) {
 
 // 娃按花打卡（+5 分与家长端同一条链路；uniq_wish_date 保证一天一亮）
 function handleKidCheckin($pdo, $data) {
-    $kid = requireKid($pdo);
+    $kid = requireKid($pdo, $data);
     addCheckinFor($pdo, $kid['user_id'], $kid['family_id'], $kid['profile_id'], $data, 'kid_checkin');
 }
 
 // 娃自己发起兑换（本来就无家长确认环节，抬入口即可）
 function handleKidRedeem($pdo, $data) {
-    $kid = requireKid($pdo);
+    $kid = requireKid($pdo, $data);
     $giftId = (int)($data['gift_id'] ?? 0);
     redeemGiftFor($pdo, $kid['user_id'], $kid['family_id'], $kid['profile_id'], $giftId);
 }
 
 // 「说一句」：只落文字，绝不给星星（给了就变回贿赂机，见 11.11 红线）
 function handleKidSay($pdo, $data) {
-    $kid = requireKid($pdo);
+    $kid = requireKid($pdo, $data);
     $content = trim((string)($data['content'] ?? ''));
     if ($content === '') sendError('说点什么吧', 400);
     if (mb_strlen($content) > 200) sendError('太长了，短一点', 400);

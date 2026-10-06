@@ -63,6 +63,12 @@
   .kid-help ol{margin:0;padding-left:18px;font-size:13px;line-height:1.65;opacity:.8}
   .kid-install{width:auto;margin-top:10px;padding:9px 18px;border:0;border-radius:14px;background:var(--brand,#4C6FFF);color:#fff;font-weight:800;font-size:15px}
   .kid-install[hidden]{display:none}
+  /* 家长入口：只有家长自己登录时才出现，孩子平板上看不到这一行 */
+  .kid-parentbar{display:flex;justify-content:flex-end}
+  .kid-parentbar[hidden]{display:none}
+  .kid-parent{width:auto;padding:9px 16px;border:2px solid var(--border,#E4E7EC);border-radius:14px;
+    background:var(--surface,#fff);color:var(--text,#1a1a1a);font-weight:800;font-size:14px}
+  .kid-login{width:auto;margin-top:12px;padding:10px 20px;border:0;border-radius:14px;background:var(--brand,#4C6FFF);color:#fff;font-weight:800;font-size:15px}
 </style>
 </head>
 <body>
@@ -84,6 +90,9 @@
     <button id="sayBtn" type="button">存下</button>
   </div>
   <div id="msg" class="kid-msg"></div>
+  <div id="parentBar" class="kid-parentbar" hidden>
+    <button type="button" class="kid-parent" id="kidParent">家长管理 · 记一笔、目标、月报</button>
+  </div>
   <div id="kidHelp" class="kid-help" hidden>
     <h4>把这个变成平板桌面上的一个图标</h4>
     <button type="button" class="kid-install" id="kidInstall" hidden>装到桌面</button>
@@ -114,7 +123,9 @@
 (function () {
   'use strict';
   var TOKEN_KEY = 'kid_token';
+  var PARENT_KEY = 'auth_token';
   var token = localStorage.getItem(TOKEN_KEY) || '';
+  var isParent = false;          // 家长自己也用这个页面（2026-10-06：大花页是所有人的首页）
   var params = new URLSearchParams(location.search);
 
   function esc(s) {
@@ -154,13 +165,10 @@
     if (params.get('k') && !isRunningAsApp()) {
       if (help) help.hidden = false;
     }
-    // 1) 还没换过会话：地址带一次性长链接 → 换回孩子会话
-    if (!token) {
-      var code = params.get('k') || '';
-      if (!code) {
-        document.getElementById('bootMsg').textContent = '这个页面要先让大人给一次链接。';
-        return;
-      }
+    // 身份优先级：地址带长链接（孩子平板）→ 家长已登录 → 设备上已有的孩子会话
+    var code = params.get('k') || '';
+    var parentToken = localStorage.getItem(PARENT_KEY) || '';
+    if (code) {
       var r = await call('redeem_kid_link', { k: code });
       if (!r || !r.token) throw new Error('链接无效');
       token = r.token;
@@ -169,8 +177,26 @@
       try {
         history.replaceState(null, '', location.pathname);
       } catch (e) {}
+    } else if (parentToken) {
+      token = parentToken;
+      isParent = true;
+    } else if (!token) {
+      showLoginNeeded();
+      return;
     }
     await load();
+  }
+
+  // 谁都没有身份：家长自己敲域名进来时给一条去登录的路（孩子平板没这情况，家长会发链接）
+  function showLoginNeeded() {
+    var boot_ = document.getElementById('boot');
+    document.getElementById('bootMsg').textContent = '请大人先登录一次';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'kid-login';
+    btn.textContent = '去登录';
+    btn.addEventListener('click', function () { location.href = 'login.html'; });
+    boot_.appendChild(btn);
   }
 
   async function load() {
@@ -207,6 +233,11 @@
     }
     document.getElementById('app').hidden = false;
     document.getElementById('boot').hidden = true;
+    // 家长自己进来时，底部给一条回管理端的路；孩子平板上不出现
+    if (isParent) {
+      var pb = document.getElementById('parentBar');
+      if (pb) pb.hidden = false;
+    }
   }
 
   async function onFlower(el) {
@@ -247,6 +278,12 @@
       say(e.message || '没存成', false);
     }
   });
+
+  // 家长回管理端：带 manage=1，index.html 才不把登录用户再送回大花页
+  var parentBtn = document.getElementById('kidParent');
+  if (parentBtn) {
+    parentBtn.addEventListener('click', function () { location.href = 'index.html?manage=1'; });
+  }
 
   // 装桌面图标：Chrome 会给 beforeinstallprompt，能直接一键装（比家长自己找菜单稳）。
   // 「安装应用」点了却桌面上没有图标 → 是启动器的事，页面里给指路，不装糊涂。
@@ -296,9 +333,15 @@
   boot().catch(function (e) {
     var m = e && e.message ? e.message : '打不开';
     // 旧平板：家长改过链接 → 清掉失效会话，回到"要新链接"的提示
-    if (e.code === 403 || /reset|not valid/i.test(m)) {
-      localStorage.removeItem(TOKEN_KEY);
-      document.getElementById('bootMsg').textContent = '这台设备已经不能用了，让大人再给一次新链接。';
+    // 家长登录过期也一样：把过期凭证清掉，给一条去登录的路
+    if (e.code === 403 || e.code === 401 || /reset|not valid/i.test(m)) {
+      if (isParent) {
+        localStorage.removeItem(PARENT_KEY);
+        showLoginNeeded();
+      } else {
+        localStorage.removeItem(TOKEN_KEY);
+        document.getElementById('bootMsg').textContent = '这台设备已经不能用了，让大人再给一次新链接。';
+      }
     } else {
       document.getElementById('bootMsg').textContent = m;
     }

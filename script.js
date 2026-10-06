@@ -2373,6 +2373,14 @@ async function initializeApp() {
             return;
         }
         
+        // 2026-10-06：大花页（kid.html）成了所有人的首页 —— 家长打开网站默认也先进那里，
+        // 从大花页点「家长管理」会带 ?manage=1 回来，只有那时才留在这页做管理。
+        if (!(new URLSearchParams(window.location.search).get('manage'))) {
+            console.log('Script.js: 已登录 → 默认进大花页 kid.html');
+            window.location.replace('kid.html');
+            return;
+        }
+
         const email = localStorage.getItem('user_email');
         currentUser = { email: email, id: localStorage.getItem('user_id') };
         console.log('Script.js: 用户已登录:', email);
