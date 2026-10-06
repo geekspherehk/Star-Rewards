@@ -116,8 +116,9 @@ async function setupDemo() {
     const cs = [...document.querySelectorAll('.module-card')].filter((c) => getComputedStyle(c).display !== 'none');
     return cs.map((c) => (c.querySelector('h3') || {}).textContent || '?');
   });
-  cardVisible.length === 2 && cardVisible.includes('打卡') && cardVisible.includes('更多')
-    ? ok('导航只剩「打卡 + 更多」: ' + cardVisible.join(' / '))
+  // 导航现在是三张：今天（大花页出口）/ 打卡 / 更多
+  cardVisible.length === 3 && cardVisible.includes('今天') && cardVisible.includes('打卡') && cardVisible.includes('更多')
+    ? ok('导航是「今天 + 打卡 + 更多」: ' + cardVisible.join(' / '))
     : bad('导航卡片不对', JSON.stringify(cardVisible));
   await page.screenshot({ path: path.join(OUT, 'home-simplified-390.png'), fullPage: true });
 

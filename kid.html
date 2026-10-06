@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>今天能亮哪一朵</title>
+<title>今天</title>
 <link rel="manifest" href="manifest-kid.json">
 <meta name="theme-color" content="#4C6FFF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="今天">
-<meta name="description" content="孩子自己按一下，亮一朵花。">
+<meta name="description" content="今天做了哪几件事，点一下就记下来。">
 <!-- 图标：PWA 装桌面走 manifest，但「Chrome 添加到主屏幕」的老路径和 iOS 只认下面这两个 link。
      缺了它们 Chrome 会给一个默认小地球，家长在桌面根本认不出这是那个 app（2026-10-03 踩的） -->
 <link rel="icon" type="image/png" href="assets/kid-icon-192.png">
@@ -38,6 +38,7 @@
     -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>") center/contain no-repeat;
     mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>") center/contain no-repeat}
   .kid-sep{font-size:14px;font-weight:700;opacity:.55;margin-top:2px}
+  .kid-sep--today{margin-top:0}
   .kid-gift{flex:1 1 46%;min-width:160px;display:flex;align-items:center;gap:10px;padding:14px;border:3px solid var(--border,#E4E7EC);
     border-radius:20px;background:var(--surface,#fff);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
   .kid-gift:active{transform:scale(.97)}
@@ -64,16 +65,26 @@
   .kid-install{width:auto;margin-top:10px;padding:9px 18px;border:0;border-radius:14px;background:var(--brand,#4C6FFF);color:#fff;font-weight:800;font-size:15px}
   .kid-install[hidden]{display:none}
   /* 家长入口：只有家长自己登录时才出现，孩子平板上看不到这一行 */
-  .kid-parentbar{display:flex;justify-content:flex-end}
+  .kid-parentbar{display:flex;justify-content:space-between;gap:10px}
   .kid-parentbar[hidden]{display:none}
   .kid-parent{width:auto;padding:9px 16px;border:2px solid var(--border,#E4E7EC);border-radius:14px;
     background:var(--surface,#fff);color:var(--text,#1a1a1a);font-weight:800;font-size:14px}
+  /* 家长在大花页直接记一笔：跟管理首页同规则（默认 3 分，1–20 可调） */
+  .kid-quick{display:flex;align-items:center;gap:8px}
+  .kid-quick[hidden]{display:none}
+  .kid-quick input{flex:1;min-width:0;padding:10px 12px;border:2px solid var(--border,#E4E7EC);border-radius:14px;background:var(--surface,#fff);font-size:15px}
+  .kid-quick .qa-pts{display:flex;align-items:center;gap:2px;flex:none}
+  .kid-quick .qa-pts button{width:30px;height:34px;border:2px solid var(--border,#E4E7EC);background:var(--surface,#fff);
+    border-radius:10px;font-size:17px;font-weight:800;color:var(--text,#1a1a1a)}
+  .kid-quick .qa-pts b{min-width:24px;text-align:center;font-size:15px}
+  .kid-quick .qa-save{width:auto;padding:10px 16px;border:0;border-radius:14px;background:var(--brand,#4C6FFF);color:#fff;font-weight:800;font-size:15px}
   .kid-login{width:auto;margin-top:12px;padding:10px 20px;border:0;border-radius:14px;background:var(--brand,#4C6FFF);color:#fff;font-weight:800;font-size:15px}
 </style>
 </head>
 <body>
 <div id="app" class="kid-wrap" hidden>
   <div class="kid-title"><span id="childName">今天</span><span class="kid-points">⭐ <span id="points">0</span></span></div>
+  <div class="kid-sep kid-sep--today">今天要做的</div>
   <div id="flowers" class="kid-grid"></div>
   <div id="giftsWrap" hidden>
     <div class="kid-sep">我能换</div>
@@ -91,7 +102,15 @@
   </div>
   <div id="msg" class="kid-msg"></div>
   <div id="parentBar" class="kid-parentbar" hidden>
-    <button type="button" class="kid-parent" id="kidParent">家长管理 · 记一笔、目标、月报</button>
+    <button type="button" class="kid-parent" id="kidAddOne">记一笔</button>
+    <button type="button" class="kid-parent" id="kidParent">家长管理</button>
+  </div>
+  <div id="quickRow" class="kid-quick" hidden>
+    <input id="qaDesc" type="text" maxlength="60" placeholder="刚刚做了什么？" autocomplete="off">
+    <span class="qa-pts">
+      <button type="button" id="qaMinus" aria-label="少一点">−</button><b id="qaPts">3</b><button type="button" id="qaPlus" aria-label="多一点">+</button>
+    </span>
+    <button type="button" id="qaSave" class="qa-save">记下来</button>
   </div>
   <div id="kidHelp" class="kid-help" hidden>
     <h4>把这个变成平板桌面上的一个图标</h4>
@@ -202,12 +221,12 @@
   async function load() {
     var data = await call('kid_status', {});
     if (!data || !data.success) throw new Error('加载失败');
-    document.getElementById('childName').textContent = '今天能亮哪一朵';
+    document.getElementById('childName').textContent = '今天';
     document.getElementById('points').textContent = data.current_points;
 
     var wrap = document.getElementById('flowers');
     if (!data.flowers || !data.flowers.length) {
-      wrap.innerHTML = '<div class="kid-empty">还没有可以亮的花</div>';
+      wrap.innerHTML = '<div class="kid-empty">今天还没有安排</div>';
     } else {
       wrap.innerHTML = data.flowers.map(function (f, i) {
         var ic = ICONS[i % ICONS.length];
@@ -246,7 +265,7 @@
       var r = await call('kid_checkin', { wish_id: parseInt(el.dataset.id, 10) });
       el.classList.add('lit');
       document.getElementById('points').textContent = r.current_points;
-      say('亮了！继续', true);
+      say('今天做到了', true);
     } catch (e) {
       // 重复/失败都不打断：娃只当这一下没按成
       say(e.message || '没亮成', false);
@@ -285,6 +304,41 @@
     parentBtn.addEventListener('click', function () { location.href = 'index.html?manage=1'; });
   }
 
+  // 家长在第一屏直接记一笔（addBehavior 是家长常规接口，kid token 调会 403，所以只在家长模式出现）
+  var addOneBtn = document.getElementById('kidAddOne');
+  var quickRow = document.getElementById('quickRow');
+  var qaDesc = document.getElementById('qaDesc');
+  var qaPts = document.getElementById('qaPts');
+  if (addOneBtn && quickRow) {
+    addOneBtn.addEventListener('click', function () {
+      quickRow.hidden = !quickRow.hidden;
+      if (!quickRow.hidden && qaDesc) qaDesc.focus();
+    });
+    document.getElementById('qaMinus').addEventListener('click', function () {
+      qaPts.textContent = Math.max(1, (parseInt(qaPts.textContent, 10) || 3) - 1);
+    });
+    document.getElementById('qaPlus').addEventListener('click', function () {
+      qaPts.textContent = Math.min(20, (parseInt(qaPts.textContent, 10) || 3) + 1);
+    });
+    document.getElementById('qaSave').addEventListener('click', async function () {
+      var text = (qaDesc.value || '').trim();
+      if (!text) { say('写一句刚才做了什么吧', false); qaDesc.focus(); return; }
+      var pts = parseInt(qaPts.textContent, 10) || 3;
+      try {
+        var r = await call('addBehavior', { description: text, points: pts });
+        if (r && typeof r.current_points === 'number') {
+          document.getElementById('points').textContent = r.current_points;
+        }
+        qaDesc.value = '';
+        qaPts.textContent = '3';
+        quickRow.hidden = true;
+        say('记下了，+' + pts, true);
+      } catch (e) {
+        say(e.message || '没记上', false);
+      }
+    });
+  }
+
   // 装桌面图标：Chrome 会给 beforeinstallprompt，能直接一键装（比家长自己找菜单稳）。
   // 「安装应用」点了却桌面上没有图标 → 是启动器的事，页面里给指路，不装糊涂。
   var deferredPrompt = null;
@@ -307,7 +361,7 @@
     deferredPrompt = null;
     if (installBtn) installBtn.hidden = true;
     var steps = document.getElementById('kidHelpSteps');
-    if (steps) steps.innerHTML = '<li>装好啦。桌面上会有个「今天」的图标，点开就是全屏的花卡。</li>';
+    if (steps) steps.innerHTML = '<li>装好啦。桌面上会有个「今天」的图标，点开就是今天的打卡页。</li>';
   });
   if (installBtn) {
     installBtn.addEventListener('click', async function () {

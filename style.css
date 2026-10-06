@@ -5122,7 +5122,7 @@ a:hover { text-decoration: underline; }
 /* !important 必须有：否则会被 .v2-section{display:block} 之类的同特异性规则盖掉 */
 .home-extra, .home-navcard { display: none !important; }
 
-.home-quick { display: flex; gap: 10px; margin: 14px 0 2px; }
+.home-quick { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 2px; }
 .hq-btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     flex: 1 1 0; min-width: 0; width: auto;

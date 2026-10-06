@@ -92,6 +92,21 @@ async function setupDemo() {
   st.flowers > 0 ? ok(`花朵 ${st.flowers} 朵`) : bad('没有花朵', JSON.stringify(st));
   st.parentBar ? ok('底部出现「家长管理」') : bad('家长入口没出现', JSON.stringify(st));
   !st.loginBtn ? ok('没有误报「请大人先登录」') : bad('又回到要登录/要链接了', st.msg);
+  const names = await page.evaluate(() => ({
+    title: document.title,
+    head: (document.getElementById('childName') || {}).textContent || '',
+    sep: (document.querySelector('.kid-sep--today') || {}).textContent || '',
+    body: (document.body.innerText || '').replace(/\s+/g, ' '),
+  }));
+  names.title === '今天' && names.head === '今天' ? ok('页面叫「今天」') : bad('命名不对', JSON.stringify(names));
+  names.sep === '今天要做的' ? ok('有「今天要做的」小标题') : bad('缺小标题', names.sep);
+  const oldWords = ['大花', '亮一朵', '点花', '花卡'].filter((w) => names.body.includes(w));
+  oldWords.length === 0 ? ok('没有旧叫法（大花/亮一朵/点花）') : bad('还有旧叫法', oldWords.join('/'));
+  const bar2 = await page.evaluate(() => ({
+    addOne: !!document.getElementById('kidAddOne'),
+    parent: !!document.getElementById('kidParent'),
+  }));
+  bar2.addOne && bar2.parent ? ok('底部两个按钮：记一笔 / 家长管理') : bad('底部按钮不全', JSON.stringify(bar2));
   await page.screenshot({ path: path.join(OUT, 'kid-as-parent-390.png') });
 
   console.log('\n[3] 家长在大花页按花也记得上分');
@@ -105,6 +120,22 @@ async function setupDemo() {
   });
   lit.none ? bad('没有可点亮的花') : (lit.lit ? ok('花点亮了') : bad('花没点亮', JSON.stringify(lit)));
   !lit.none && lit.points > before ? ok(`分数 ${before} → ${lit.points}`) : bad('分数没涨', JSON.stringify(lit));
+
+  console.log('\n[3b] 家长在第一屏直接记一笔（不必跳页）');
+  const qaRes = await page.evaluate(async () => {
+    const before = parseInt((document.getElementById('points') || {}).textContent || '0', 10);
+    document.getElementById('kidAddOne').click();
+    await new Promise((r) => setTimeout(r, 300));
+    const row = document.getElementById('quickRow');
+    if (!row || row.hidden) return { opened: false };
+    document.getElementById('qaDesc').value = '验收：自己收拾了书包';
+    document.getElementById('qaSave').click();
+    await new Promise((r) => setTimeout(r, 1800));
+    return { opened: true, before, after: parseInt((document.getElementById('points') || {}).textContent || '0', 10), msg: (document.getElementById('msg') || {}).textContent || '' };
+  });
+  qaRes.opened ? ok('记一行打开了') : bad('记一行没打开', JSON.stringify(qaRes));
+  qaRes.opened && qaRes.after > qaRes.before ? ok(`记一笔加分 ${qaRes.before} → ${qaRes.after}（${qaRes.msg}）`) : bad('记一笔没加分', JSON.stringify(qaRes));
+  await page.screenshot({ path: path.join(OUT, 'kid-quick-390.png') });
 
   console.log('\n[4] 「家长管理」进管理端并停住');
   await page.evaluate(() => { const b = document.getElementById('kidParent'); if (b) b.scrollIntoView({ block: 'center' }); });
@@ -125,6 +156,22 @@ async function setupDemo() {
   }));
   onIndex.pts && onIndex.more ? ok('管理端正常（打卡 + 更多）') : bad('管理端没渲染', JSON.stringify(onIndex));
   await page.screenshot({ path: path.join(OUT, 'manage-from-kid-390.png') });
+
+  console.log('\n[5] 管理首页顶部有「今天」出口，能一步回大花页');
+  const navBox = await page.evaluate(() => {
+    const card = document.querySelector('.module-card--today');
+    if (!card) return { none: true };
+    card.scrollIntoView({ block: 'center' });
+    const r = card.getBoundingClientRect();
+    const top = document.elementFromPoint(r.left + r.width / 2, r.top + 24);
+    return { x: r.left + r.width / 2, y: r.top + 24, self: !!(top && (top === card || card.contains(top))), label: (card.querySelector('h3') || {}).textContent };
+  });
+  navBox.none ? bad('管理首页没有「今天」卡') : ok(`「今天」卡在导航区（${navBox.label}）`);
+  if (!navBox.none) {
+    await page.mouse.click(navBox.x, navBox.y);
+    await sleep(2500);
+    /\/kid\.html$/.test(page.url()) ? ok('点「今天」回到 ' + page.url()) : bad('没回到大花页', page.url());
+  }
 
   await browser.close();
   console.log(`\n结果: ${pass} 通过 / ${fail} 失败`);

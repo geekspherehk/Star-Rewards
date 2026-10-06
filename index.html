@@ -30,7 +30,7 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=110">
+    <link rel="stylesheet" href="style.css?v=111">
     <link rel="stylesheet" href="i18n.css?v=1">
     <!-- API Client for Hostinger MySQL -->
     <script defer src="api/api-client.js?v=33"></script>
@@ -107,6 +107,11 @@
 
         <!-- 功能模块导航：只留「打卡」一个入口，其余收进「更多」（首页要一进来就能点亮格子） -->
         <div class="module-cards">
+            <div class="module-card module-card--today" onclick="location.href='kid.html'">
+                <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg></span>
+                <h3>今天</h3>
+                <p>孩子按的那一屏</p>
+            </div>
             <div class="module-card module-card--checkin active" onclick="showModule('points-module')">
                 <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
                 <h3 data-i18n="weekly.module">打卡</h3>
@@ -198,7 +203,7 @@
                 <!-- 首页只留三个出口：记一笔 / 看月报 / 更多；其余区块默认不渲染 -->
                 <div class="home-quick" id="home-quick">
                     <button type="button" class="hq-btn" id="hq-behavior"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>记一笔</span></button>
-                    <button type="button" class="hq-btn" id="hq-report"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg><span>成长月报</span></button>
+                    <button type="button" class="hq-btn" id="hq-report"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg><span>月报</span></button>
                     <button type="button" class="hq-btn hq-btn--more" id="hq-more"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>更多</span></button>
                 </div>
 
