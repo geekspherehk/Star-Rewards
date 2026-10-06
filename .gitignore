@@ -67,3 +67,6 @@ weekly_selfcheck.html
 watch_discussion.py
 watch_discussion.pending
 .watch_discussion.state
+
+# 本地预览用的账号（明文凭据，绝不入库）
+scripts/.preview-account.json
