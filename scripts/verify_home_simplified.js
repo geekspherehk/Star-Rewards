@@ -136,7 +136,16 @@ async function setupDemo() {
     const s = document.getElementById('home-more-sheet');
     return s ? { shown: getComputedStyle(s).display !== 'none', items: s.querySelectorAll('.hs-item').length } : null;
   });
-  sheet && sheet.shown && sheet.items >= 10 ? ok(`抽屉弹出，${sheet.items} 项`) : bad('抽屉不对', JSON.stringify(sheet));
+  sheet && sheet.shown && sheet.items === 8 ? ok(`抽屉弹出，${sheet.items} 项`) : bad('抽屉不对（应为 8 项）', JSON.stringify(sheet));
+  // 家长点名删掉的四项不能再出现（记一笔在首页 pill，打卡/提醒/装大花暂不需要）
+  const banned = await page.evaluate(() => {
+    const s = document.getElementById('home-more-sheet');
+    if (!s) return [];
+    const want = ['记一笔', '打卡提醒', '给娃装大花', '每日提醒时间'];
+    const labels = [...s.querySelectorAll('.hs-item b')].map((b) => b.textContent.trim());
+    return want.filter((w) => labels.includes(w));
+  });
+  banned.length === 0 ? ok('已移除：记一笔 / 打卡提醒 / 给娃装大花 / 每日提醒时间') : bad('抽屉里还有', banned.join(' / '));
   await page.screenshot({ path: path.join(OUT, 'home-more-sheet-390.png') });
 
   console.log('\n[3] 抽屉里的东西真能打开');
